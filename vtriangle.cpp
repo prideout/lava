@@ -23,6 +23,7 @@
  * Author: Piers Daniell <pdaniell@nvidia.com>
  * Author: Gwan-gyeong Mun <elongbug@gmail.com>
  * Porter: Camilla Löwy <elmindreda@glfw.org>
+ * Author: Philip Rideout <philiprideout@gmail.com>
  */
 /*
  * Draw a textured triangle with depth testing.  This is written against Intel
@@ -87,7 +88,22 @@
         }                                                                      \
     }
 
-static const uint8_t fragShaderCode[] = {
+static const uint8_t vertShaderGLSL[] = R"GLSL(
+layout(location=0) in vec4 position;
+layout(location=1) in vec2 uv;
+
+void main() {
+    gl_Position = position;
+}
+)GLSL";
+
+static const uint8_t fragShaderGLSL[] = R"GLSL(
+void main() {
+    gl_FragColor = vec4(1);
+}
+)GLSL";
+
+static const uint8_t fragShaderSPIRV[] = {
     0x03, 0x02, 0x23, 0x07, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x08, 0x00,
     0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x02, 0x00,
     0x01, 0x00, 0x00, 0x00, 0x0b, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00,
@@ -143,7 +159,7 @@ static const uint8_t fragShaderCode[] = {
     0x38, 0x00, 0x01, 0x00
 };
 
-static const uint8_t vertShaderCode[] = {
+static const uint8_t vertShaderSPIRV[] = {
     0x03, 0x02, 0x23, 0x07, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x08, 0x00,
     0x1e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x02, 0x00,
     0x01, 0x00, 0x00, 0x00, 0x0b, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00,
@@ -1331,13 +1347,11 @@ static void demo_prepare_render_pass(Demo *demo) {
 
 static VkShaderModule
 demo_prepare_shader_module(Demo *demo, const uint32_t *code, size_t size) {
-    VkShaderModuleCreateInfo moduleCreateInfo;
     VkShaderModule module;
     VkResult U_ASSERT_ONLY err;
-
+    VkShaderModuleCreateInfo moduleCreateInfo;
     moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     moduleCreateInfo.pNext = NULL;
-
     moduleCreateInfo.codeSize = size;
     moduleCreateInfo.pCode = code;
     moduleCreateInfo.flags = 0;
@@ -1348,16 +1362,16 @@ demo_prepare_shader_module(Demo *demo, const uint32_t *code, size_t size) {
 }
 
 static VkShaderModule demo_prepare_vs(Demo *demo) {
-    size_t size = sizeof(vertShaderCode);
+    size_t size = sizeof(vertShaderSPIRV);
     demo->vert_shader_module = demo_prepare_shader_module(demo,
-        reinterpret_cast<const uint32_t*>(vertShaderCode), size);
+        reinterpret_cast<const uint32_t*>(vertShaderSPIRV), size);
     return demo->vert_shader_module;
 }
 
 static VkShaderModule demo_prepare_fs(Demo *demo) {
-    size_t size = sizeof(fragShaderCode);
+    size_t size = sizeof(fragShaderSPIRV);
     demo->frag_shader_module = demo_prepare_shader_module(demo,
-        reinterpret_cast<const uint32_t*>(fragShaderCode), size);
+        reinterpret_cast<const uint32_t*>(fragShaderSPIRV), size);
     return demo->frag_shader_module;
 }
 

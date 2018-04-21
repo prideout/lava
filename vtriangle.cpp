@@ -1,3 +1,9 @@
+// This demo uses no uniforms, 1 texture sampler, and 2 vertex attributes:
+//   Attributes: Interleaved XYZ (12 bytes) and UV (8 bytes)
+//   Textures:   2x2 VK_FORMAT_B8G8R8A8_UNORM
+
+
+
  /*
  * Copyright (c) 2015-2016 The Khronos Group Inc.
  * Copyright (c) 2015-2016 Valve Corporation

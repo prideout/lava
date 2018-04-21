@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.1)
 project(LavaDemos)
 
 add_subdirectory(extern/glfw)
+add_subdirectory(extern/glslang)
 
 link_libraries(glfw)
 

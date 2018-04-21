@@ -30,6 +30,8 @@
  * should.  It also does no error checking.
  */
 
+#include <vector>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -85,7 +87,7 @@
         }                                                                      \
     }
 
-static const char fragShaderCode[] = {
+static const uint8_t fragShaderCode[] = {
     0x03, 0x02, 0x23, 0x07, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x08, 0x00,
     0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x02, 0x00,
     0x01, 0x00, 0x00, 0x00, 0x0b, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00,
@@ -141,7 +143,7 @@ static const char fragShaderCode[] = {
     0x38, 0x00, 0x01, 0x00
 };
 
-static const char vertShaderCode[] = {
+static const uint8_t vertShaderCode[] = {
     0x03, 0x02, 0x23, 0x07, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x08, 0x00,
     0x1e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11, 0x00, 0x02, 0x00,
     0x01, 0x00, 0x00, 0x00, 0x0b, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00,
@@ -239,7 +241,7 @@ struct texture_object {
 
     VkDeviceMemory mem;
     VkImageView view;
-    int32_t tex_width, tex_height;
+    uint32_t tex_width, tex_height;
 };
 
 static int validation_error = 0;
@@ -258,13 +260,13 @@ BreakCallback(VkFlags msgFlags, VkDebugReportObjectTypeEXT objType,
     return false;
 }
 
-typedef struct {
+struct SwapchainBuffers {
     VkImage image;
     VkCommandBuffer cmd;
     VkImageView view;
-} SwapchainBuffers;
+};
 
-struct demo {
+struct Demo {
     GLFWwindow* window;
     VkSurfaceKHR surface;
     bool use_staging_buffer;
@@ -283,7 +285,7 @@ struct demo {
     const char *extension_names[64];
     const char *enabled_layers[64];
 
-    int width, height;
+    uint32_t width, height;
     VkFormat format;
     VkColorSpaceKHR color_space;
 
@@ -363,6 +365,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL
 dbgFunc(VkFlags msgFlags, VkDebugReportObjectTypeEXT objType,
     uint64_t srcObject, size_t location, int32_t msgCode,
     const char *pLayerPrefix, const char *pMsg, void *pUserData) {
+
     char *message = (char *)malloc(strlen(pMsg) + 100);
 
     assert(message);
@@ -394,9 +397,9 @@ dbgFunc(VkFlags msgFlags, VkDebugReportObjectTypeEXT objType,
 }
 
 // Forward declaration:
-static void demo_resize(struct demo *demo);
+static void demo_resize(Demo *demo);
 
-static bool memory_type_from_properties(struct demo *demo, uint32_t typeBits,
+static bool memory_type_from_properties(Demo *demo, uint32_t typeBits,
                                         VkFlags requirements_mask,
                                         uint32_t *typeIndex) {
     uint32_t i;
@@ -416,7 +419,7 @@ static bool memory_type_from_properties(struct demo *demo, uint32_t typeBits,
     return false;
 }
 
-static void demo_flush_init_cmd(struct demo *demo) {
+static void demo_flush_init_cmd(Demo *demo) {
     VkResult U_ASSERT_ONLY err;
 
     if (demo->setup_cmd == VK_NULL_HANDLE)
@@ -447,11 +450,11 @@ static void demo_flush_init_cmd(struct demo *demo) {
     demo->setup_cmd = VK_NULL_HANDLE;
 }
 
-static void demo_set_image_layout(struct demo *demo, VkImage image,
-                                  VkImageAspectFlags aspectMask,
+static void demo_set_image_layout(Demo *demo, VkImage image,
+                                  VkImageAspectFlagBits aspectMask,
                                   VkImageLayout old_image_layout,
                                   VkImageLayout new_image_layout,
-                                  VkAccessFlagBits srcAccessMask) {
+                                  VkAccessFlags srcAccessMask) {
 
     VkResult U_ASSERT_ONLY err;
 
@@ -517,7 +520,7 @@ static void demo_set_image_layout(struct demo *demo, VkImage image,
                          0, NULL, 1, pmemory_barrier);
 }
 
-static void demo_draw_build_cmd(struct demo *demo) {
+static void demo_draw_build_cmd(Demo *demo) {
     const VkCommandBufferBeginInfo cmd_buf_info = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .pNext = NULL,
@@ -613,7 +616,7 @@ static void demo_draw_build_cmd(struct demo *demo) {
     assert(!err);
 }
 
-static void demo_draw(struct demo *demo) {
+static void demo_draw(Demo *demo) {
     VkResult U_ASSERT_ONLY err;
     VkSemaphore imageAcquiredSemaphore, drawCompleteSemaphore;
     VkSemaphoreCreateInfo semaphoreCreateInfo = {
@@ -703,7 +706,7 @@ static void demo_draw(struct demo *demo) {
     vkDestroySemaphore(demo->device, drawCompleteSemaphore, NULL);
 }
 
-static void demo_prepare_buffers(struct demo *demo) {
+static void demo_prepare_buffers(Demo *demo) {
     VkResult U_ASSERT_ONLY err;
     VkSwapchainKHR oldSwapchain = demo->swapchain;
 
@@ -717,9 +720,9 @@ static void demo_prepare_buffers(struct demo *demo) {
     err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(
         demo->gpu, demo->surface, &presentModeCount, NULL);
     assert(!err);
-    VkPresentModeKHR *presentModes =
-        (VkPresentModeKHR *)malloc(presentModeCount * sizeof(VkPresentModeKHR));
-    assert(presentModes);
+    std::vector<VkPresentModeKHR> presentModesVector(presentModeCount);
+    VkPresentModeKHR *presentModes = presentModesVector.data();
+
     err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(
         demo->gpu, demo->surface, &presentModeCount, presentModes);
     assert(!err);
@@ -765,9 +768,8 @@ static void demo_prepare_buffers(struct demo *demo) {
         desiredNumOfSwapchainImages = surfCapabilities.maxImageCount;
     }
 
-    VkSurfaceTransformFlagsKHR preTransform;
-    if (surfCapabilities.supportedTransforms &
-        VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
+    VkSurfaceTransformFlagBitsKHR preTransform;
+    if (surfCapabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
         preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
     } else {
         preTransform = surfCapabilities.currentTransform;
@@ -784,8 +786,8 @@ static void demo_prepare_buffers(struct demo *demo) {
             {
              .width = swapchainExtent.width, .height = swapchainExtent.height,
             },
-        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-        .preTransform = preTransform,
+        .imageUsage = VkImageUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
+        .preTransform =  preTransform,
         .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         .imageArrayLayers = 1,
         .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
@@ -813,9 +815,8 @@ static void demo_prepare_buffers(struct demo *demo) {
                                         &demo->swapchainImageCount, NULL);
     assert(!err);
 
-    VkImage *swapchainImages =
-        (VkImage *)malloc(demo->swapchainImageCount * sizeof(VkImage));
-    assert(swapchainImages);
+    std::vector<VkImage> swapchainImagesVector(demo->swapchainImageCount);
+    VkImage *swapchainImages = swapchainImagesVector.data();
     err = demo->fpGetSwapchainImagesKHR(demo->device, demo->swapchain,
                                         &demo->swapchainImageCount,
                                         swapchainImages);
@@ -856,13 +857,9 @@ static void demo_prepare_buffers(struct demo *demo) {
     }
 
     demo->current_buffer = 0;
-
-    if (NULL != presentModes) {
-        free(presentModes);
-    }
 }
 
-static void demo_prepare_depth(struct demo *demo) {
+static void demo_prepare_depth(Demo *demo) {
     const VkFormat depth_format = VK_FORMAT_D16_UNORM;
     const VkImageCreateInfo image = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -938,7 +935,7 @@ static void demo_prepare_depth(struct demo *demo) {
 }
 
 static void
-demo_prepare_texture_image(struct demo *demo, const uint32_t *tex_colors,
+demo_prepare_texture_image(Demo *demo, const uint32_t *tex_colors,
                            struct texture_object *tex_obj, VkImageTiling tiling,
                            VkImageUsageFlags usage, VkFlags required_props) {
     const VkFormat tex_format = VK_FORMAT_B8G8R8A8_UNORM;
@@ -1022,19 +1019,19 @@ demo_prepare_texture_image(struct demo *demo, const uint32_t *tex_colors,
     tex_obj->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     demo_set_image_layout(demo, tex_obj->image, VK_IMAGE_ASPECT_COLOR_BIT,
                           VK_IMAGE_LAYOUT_PREINITIALIZED, tex_obj->imageLayout,
-                          VK_ACCESS_HOST_WRITE_BIT);
+                          VkAccessFlags(VK_ACCESS_HOST_WRITE_BIT));
     /* setting the image layout does not reference the actual memory so no need
      * to add a mem ref */
 }
 
-static void demo_destroy_texture_image(struct demo *demo,
+static void demo_destroy_texture_image(Demo *demo,
                                        struct texture_object *tex_obj) {
     /* clean up staging resources */
     vkDestroyImage(demo->device, tex_obj->image, NULL);
     vkFreeMemory(demo->device, tex_obj->mem, NULL);
 }
 
-static void demo_prepare_textures(struct demo *demo) {
+static void demo_prepare_textures(Demo *demo) {
     const VkFormat tex_format = VK_FORMAT_B8G8R8A8_UNORM;
     VkFormatProperties props;
     const uint32_t tex_colors[DEMO_TEXTURE_COUNT][2] = {
@@ -1158,7 +1155,7 @@ static void demo_prepare_textures(struct demo *demo) {
     }
 }
 
-static void demo_prepare_vertices(struct demo *demo) {
+static void demo_prepare_vertices(Demo *demo) {
     // clang-format off
     const float vb[3][5] = {
         /*      position             texcoord */
@@ -1238,7 +1235,7 @@ static void demo_prepare_vertices(struct demo *demo) {
     demo->vertices.vi_attrs[1].offset = sizeof(float) * 3;
 }
 
-static void demo_prepare_descriptor_layout(struct demo *demo) {
+static void demo_prepare_descriptor_layout(Demo *demo) {
     const VkDescriptorSetLayoutBinding layout_binding = {
         .binding = 0,
         .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -1270,7 +1267,7 @@ static void demo_prepare_descriptor_layout(struct demo *demo) {
     assert(!err);
 }
 
-static void demo_prepare_render_pass(struct demo *demo) {
+static void demo_prepare_render_pass(Demo *demo) {
     const VkAttachmentDescription attachments[2] = {
             [0] =
                 {
@@ -1333,7 +1330,7 @@ static void demo_prepare_render_pass(struct demo *demo) {
 }
 
 static VkShaderModule
-demo_prepare_shader_module(struct demo *demo, const void *code, size_t size) {
+demo_prepare_shader_module(Demo *demo, const uint32_t *code, size_t size) {
     VkShaderModuleCreateInfo moduleCreateInfo;
     VkShaderModule module;
     VkResult U_ASSERT_ONLY err;
@@ -1350,25 +1347,21 @@ demo_prepare_shader_module(struct demo *demo, const void *code, size_t size) {
     return module;
 }
 
-static VkShaderModule demo_prepare_vs(struct demo *demo) {
+static VkShaderModule demo_prepare_vs(Demo *demo) {
     size_t size = sizeof(vertShaderCode);
-
-    demo->vert_shader_module =
-        demo_prepare_shader_module(demo, vertShaderCode, size);
-
+    demo->vert_shader_module = demo_prepare_shader_module(demo,
+        reinterpret_cast<const uint32_t*>(vertShaderCode), size);
     return demo->vert_shader_module;
 }
 
-static VkShaderModule demo_prepare_fs(struct demo *demo) {
+static VkShaderModule demo_prepare_fs(Demo *demo) {
     size_t size = sizeof(fragShaderCode);
-
-    demo->frag_shader_module =
-        demo_prepare_shader_module(demo, fragShaderCode, size);
-
+    demo->frag_shader_module = demo_prepare_shader_module(demo,
+        reinterpret_cast<const uint32_t*>(fragShaderCode), size);
     return demo->frag_shader_module;
 }
 
-static void demo_prepare_pipeline(struct demo *demo) {
+static void demo_prepare_pipeline(Demo *demo) {
     VkGraphicsPipelineCreateInfo pipeline;
     VkPipelineCacheCreateInfo pipelineCache;
 
@@ -1486,7 +1479,7 @@ static void demo_prepare_pipeline(struct demo *demo) {
     vkDestroyShaderModule(demo->device, demo->vert_shader_module, NULL);
 }
 
-static void demo_prepare_descriptor_pool(struct demo *demo) {
+static void demo_prepare_descriptor_pool(Demo *demo) {
     const VkDescriptorPoolSize type_count = {
         .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         .descriptorCount = DEMO_TEXTURE_COUNT,
@@ -1505,7 +1498,7 @@ static void demo_prepare_descriptor_pool(struct demo *demo) {
     assert(!err);
 }
 
-static void demo_prepare_descriptor_set(struct demo *demo) {
+static void demo_prepare_descriptor_set(Demo *demo) {
     VkDescriptorImageInfo tex_descs[DEMO_TEXTURE_COUNT];
     VkWriteDescriptorSet write;
     VkResult U_ASSERT_ONLY err;
@@ -1537,7 +1530,7 @@ static void demo_prepare_descriptor_set(struct demo *demo) {
     vkUpdateDescriptorSets(demo->device, 1, &write, 0, NULL);
 }
 
-static void demo_prepare_framebuffers(struct demo *demo) {
+static void demo_prepare_framebuffers(Demo *demo) {
     VkImageView attachments[2];
     attachments[1] = demo->depth.view;
 
@@ -1566,7 +1559,7 @@ static void demo_prepare_framebuffers(struct demo *demo) {
     }
 }
 
-static void demo_prepare(struct demo *demo) {
+static void demo_prepare(Demo *demo) {
     VkResult U_ASSERT_ONLY err;
 
     const VkCommandPoolCreateInfo cmd_pool_info = {
@@ -1614,18 +1607,17 @@ static void demo_key_callback(GLFWwindow* window, int key, int scancode, int act
 }
 
 static void demo_refresh_callback(GLFWwindow* window) {
-    struct demo* demo = glfwGetWindowUserPointer(window);
-    demo_draw(demo);
+    demo_draw(static_cast<Demo*>(glfwGetWindowUserPointer(window)));
 }
 
 static void demo_resize_callback(GLFWwindow* window, int width, int height) {
-    struct demo* demo = glfwGetWindowUserPointer(window);
+    auto* demo = static_cast<Demo*>(glfwGetWindowUserPointer(window));
     demo->width = width;
     demo->height = height;
     demo_resize(demo);
 }
 
-static void demo_run(struct demo *demo) {
+static void demo_run(Demo *demo) {
     while (!glfwWindowShouldClose(demo->window)) {
         glfwPollEvents();
 
@@ -1646,7 +1638,7 @@ static void demo_run(struct demo *demo) {
     }
 }
 
-static void demo_create_window(struct demo *demo) {
+static void demo_create_window(Demo *demo) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     demo->window = glfwCreateWindow(demo->width,
@@ -1691,7 +1683,7 @@ static VkBool32 demo_check_layers(uint32_t check_count, const char **check_names
     return 1;
 }
 
-static void demo_init_vk(struct demo *demo) {
+static void demo_init_vk(Demo *demo) {
     VkResult err;
     uint32_t i = 0;
     uint32_t required_extension_count = 0;
@@ -1703,11 +1695,11 @@ static void demo_init_vk(struct demo *demo) {
     demo->enabled_extension_count = 0;
     demo->enabled_layer_count = 0;
 
-    char *instance_validation_layers_alt1[] = {
+    const char *instance_validation_layers_alt1[] = {
         "VK_LAYER_LUNARG_standard_validation"
     };
 
-    char *instance_validation_layers_alt2[] = {
+    const char *instance_validation_layers_alt2[] = {
         "VK_LAYER_GOOGLE_threading",       "VK_LAYER_LUNARG_parameter_validation",
         "VK_LAYER_LUNARG_object_tracker",  "VK_LAYER_LUNARG_image",
         "VK_LAYER_LUNARG_core_validation", "VK_LAYER_LUNARG_swapchain",
@@ -1723,8 +1715,8 @@ static void demo_init_vk(struct demo *demo) {
 
         instance_validation_layers = (const char**) instance_validation_layers_alt1;
         if (instance_layer_count > 0) {
-            VkLayerProperties *instance_layers =
-                    malloc(sizeof (VkLayerProperties) * instance_layer_count);
+            auto *instance_layers = static_cast<VkLayerProperties*>(
+                    malloc(sizeof (VkLayerProperties) * instance_layer_count));
             err = vkEnumerateInstanceLayerProperties(&instance_layer_count,
                     instance_layers);
             assert(!err);
@@ -1786,8 +1778,8 @@ static void demo_init_vk(struct demo *demo) {
     assert(!err);
 
     if (instance_extension_count > 0) {
-        VkExtensionProperties *instance_extensions =
-            malloc(sizeof(VkExtensionProperties) * instance_extension_count);
+        auto *instance_extensions = static_cast<VkExtensionProperties *>(
+            malloc(sizeof(VkExtensionProperties) * instance_extension_count));
         err = vkEnumerateInstanceExtensionProperties(
             NULL, &instance_extension_count, instance_extensions);
         assert(!err);
@@ -1849,8 +1841,8 @@ static void demo_init_vk(struct demo *demo) {
     assert(!err && gpu_count > 0);
 
     if (gpu_count > 0) {
-        VkPhysicalDevice *physical_devices =
-            malloc(sizeof(VkPhysicalDevice) * gpu_count);
+        auto *physical_devices = static_cast<VkPhysicalDevice *>(
+            malloc(sizeof(VkPhysicalDevice) * gpu_count));
         err = vkEnumeratePhysicalDevices(demo->inst, &gpu_count,
                                          physical_devices);
         assert(!err);
@@ -1875,8 +1867,8 @@ static void demo_init_vk(struct demo *demo) {
     assert(!err);
 
     if (device_extension_count > 0) {
-        VkExtensionProperties *device_extensions =
-                malloc(sizeof(VkExtensionProperties) * device_extension_count);
+        auto *device_extensions = static_cast<VkExtensionProperties *>(
+                malloc(sizeof(VkExtensionProperties) * device_extension_count));
         err = vkEnumerateDeviceExtensionProperties(
             demo->gpu, NULL, &device_extension_count, device_extensions);
         assert(!err);
@@ -1978,7 +1970,7 @@ static void demo_init_vk(struct demo *demo) {
     //       and appropriate tracking for QueueSubmit
 }
 
-static void demo_init_device(struct demo *demo) {
+static void demo_init_device(Demo *demo) {
     VkResult U_ASSERT_ONLY err;
 
     float queue_priorities[1] = {0.0};
@@ -2018,7 +2010,7 @@ static void demo_init_device(struct demo *demo) {
     GET_DEVICE_PROC_ADDR(demo->device, QueuePresentKHR);
 }
 
-static void demo_init_vk_swapchain(struct demo *demo) {
+static void demo_init_vk_swapchain(Demo *demo) {
     VkResult U_ASSERT_ONLY err;
     uint32_t i;
 
@@ -2113,7 +2105,7 @@ static void demo_init_vk_swapchain(struct demo *demo) {
     vkGetPhysicalDeviceMemoryProperties(demo->gpu, &demo->memory_properties);
 }
 
-static void demo_init_connection(struct demo *demo) {
+static void demo_init_connection(Demo *demo) {
     glfwSetErrorCallback(demo_error_callback);
 
     if (!glfwInit()) {
@@ -2129,7 +2121,7 @@ static void demo_init_connection(struct demo *demo) {
     }
 }
 
-static void demo_init(struct demo *demo, const int argc, const char *argv[])
+static void demo_init(Demo *demo, const int argc, const char *argv[])
 {
     int i;
     memset(demo, 0, sizeof(*demo));
@@ -2171,7 +2163,7 @@ static void demo_init(struct demo *demo, const int argc, const char *argv[])
     demo->depthIncrement = -0.01f;
 }
 
-static void demo_cleanup(struct demo *demo) {
+static void demo_cleanup(Demo *demo) {
     uint32_t i;
 
     for (i = 0; i < demo->swapchainImageCount; i++) {
@@ -2225,7 +2217,7 @@ static void demo_cleanup(struct demo *demo) {
     glfwTerminate();
 }
 
-static void demo_resize(struct demo *demo) {
+static void demo_resize(Demo *demo) {
     uint32_t i;
 
     // In order to properly resize the window, we must re-create the swapchain
@@ -2276,7 +2268,7 @@ static void demo_resize(struct demo *demo) {
 }
 
 int main(const int argc, const char *argv[]) {
-    struct demo demo;
+    Demo demo;
 
     demo_init(&demo, argc, argv);
     demo_create_window(&demo);

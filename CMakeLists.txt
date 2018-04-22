@@ -5,18 +5,25 @@ project(LavaDemos)
 add_subdirectory(extern/glfw)
 add_subdirectory(extern/glslang)
 
-link_libraries(glfw glslang SPIRV)
+link_libraries(
+    glfw
+    glslang
+    SPIRV
+    "${VULKAN_LIBRARY}")
+
+include_directories(${DEMO} PRIVATE
+    "${VULKAN_INCLUDE_DIR}"
+    extern/spdlog/include
+    include)
 
 set(CMAKE_CXX_FLAGS "-std=c++17 -stdlib=libc++")
 
 file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
 
-add_executable(vtriangle vtriangle.cpp ${LAVA_SOURCE})
+set(DEMO_NAMES
+    vtriangle
+    vertexid)
 
-target_include_directories(vtriangle PRIVATE
-    "${VULKAN_INCLUDE_DIR}"
-    extern/spdlog/include
-    include)
-
-target_link_libraries(vtriangle
-    "${VULKAN_LIBRARY}")
+foreach(DEMO ${DEMO_NAMES})
+    add_executable(${DEMO} demos/${DEMO}.cpp ${LAVA_SOURCE})
+endforeach()

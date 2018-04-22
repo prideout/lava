@@ -5,16 +5,16 @@
 #include <spdlog/spdlog.h>
 #include <SPIRV/GlslangToSpv.h>
 
+using namespace std;
 using namespace par;
 using namespace spdlog;
 
 class LavaCompilerImpl : public LavaCompiler {
 public:
-    LavaCompilerImpl();
-    ~LavaCompilerImpl();
-    bool compile(Stage stage, std::string_view glsl,
-        std::vector<uint32_t>* spirv) const;
-    std::shared_ptr<spdlog::logger> mConsole = spdlog::stdout_color_mt("console");
+    LavaCompilerImpl() noexcept;
+    ~LavaCompilerImpl() noexcept;
+    bool compile(Stage stage, string_view glsl, vector<uint32_t>* spirv) const noexcept;
+    shared_ptr<spdlog::logger> mConsole = spdlog::stdout_color_mt("console");
 };
 
 // BEGIN BoilerplateImpl
@@ -30,10 +30,10 @@ inline LavaCompilerImpl* upcast(LavaCompiler* that) noexcept {
 inline LavaCompilerImpl const* upcast(LavaCompiler const* that) noexcept {
     return static_cast<LavaCompilerImpl const *>(that);
 }
-LavaCompiler* LavaCompiler::create() {
+LavaCompiler* LavaCompiler::create() noexcept {
     return new LavaCompilerImpl();
 }
-void LavaCompiler::destroy(LavaCompiler** that) {
+void LavaCompiler::destroy(LavaCompiler** that) noexcept {
     delete upcast(*that);
     *that = nullptr;
 }
@@ -41,17 +41,17 @@ void LavaCompiler::destroy(LavaCompiler** that) {
 
 extern const TBuiltInResource DefaultTBuiltInResource;
 
-LavaCompilerImpl::LavaCompilerImpl() {
+LavaCompilerImpl::LavaCompilerImpl() noexcept {
     glslang::InitializeProcess();
     mConsole->set_pattern("%T %t %^%v%$");
 }
 
-LavaCompilerImpl::~LavaCompilerImpl() {
+LavaCompilerImpl::~LavaCompilerImpl() noexcept {
     glslang::FinalizeProcess();
 }
 
-bool LavaCompilerImpl::compile(Stage stage, std::string_view glsl,
-    std::vector<uint32_t>* spirv) const {
+bool LavaCompilerImpl::compile(Stage stage, string_view glsl,
+        vector<uint32_t>* spirv) const noexcept {
     EShLanguage lang;
     switch (stage) {
         case VERTEX: lang = EShLangVertex; break;
@@ -82,9 +82,7 @@ bool LavaCompilerImpl::compile(Stage stage, std::string_view glsl,
     return false;
 }
 
-bool LavaCompiler::compile(Stage stage,
-    std::string_view glsl,
-    std::vector<uint32_t>* spirv) const {
+bool LavaCompiler::compile(Stage stage, string_view glsl, vector<uint32_t>* spirv) const noexcept {
     return upcast(this)->compile(stage, glsl, spirv);
 }
 

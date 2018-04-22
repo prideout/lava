@@ -58,7 +58,6 @@
 #include <GLFW/glfw3.h>
 
 #define DEMO_TEXTURE_COUNT 1
-#define VERTEX_BUFFER_BIND_ID 0
 #define APP_SHORT_NAME "tri"
 #define APP_LONG_NAME "The Vulkan Triangle Demo Program"
 
@@ -103,13 +102,8 @@ LavaCompiler* gLavaCompiler;
 
 static const std::string vertShaderGLSL = R"GLSL(
 #version 450
-layout(location=0) in vec4 position;
-layout(location=1) in vec2 uv;
 layout(location=0) out vec2 TexCoord;
-
 void main() {
-    gl_Position = position;
-    TexCoord = uv;
     if (gl_VertexIndex == 0) {
         gl_Position = vec4(-1.0, -1.0, 0.25, 1.0);
         TexCoord = vec2(0.0, 0.0);
@@ -210,7 +204,6 @@ struct Demo {
 
     struct {
         VkFormat format;
-
         VkImage image;
         VkDeviceMemory mem;
         VkImageView view;
@@ -219,12 +212,7 @@ struct Demo {
     struct texture_object textures[DEMO_TEXTURE_COUNT];
 
     struct {
-        VkBuffer buf;
-        VkDeviceMemory mem;
-
         VkPipelineVertexInputStateCreateInfo vi;
-        VkVertexInputBindingDescription vi_bindings[1];
-        VkVertexInputAttributeDescription vi_attrs[2];
     } vertices;
 
     VkCommandBuffer setup_cmd; // Command Buffer for initialization commands
@@ -487,10 +475,6 @@ static void demo_draw_build_cmd(Demo *demo) {
     scissor.offset.x = 0;
     scissor.offset.y = 0;
     vkCmdSetScissor(demo->draw_cmd, 0, 1, &scissor);
-
-    VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(demo->draw_cmd, VERTEX_BUFFER_BIND_ID, 1,
-                           &demo->vertices.buf, offsets);
 
     vkCmdDraw(demo->draw_cmd, 3, 1, 0, 0);
     vkCmdEndRenderPass(demo->draw_cmd);
@@ -1056,82 +1040,12 @@ static void demo_prepare_textures(Demo *demo) {
 }
 
 static void demo_prepare_vertices(Demo *demo) {
-    // clang-format off
-    const float vb[3][5] = {
-        { 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0 },
-        { 0, 0, 0, 0, 0 },
-    };
-    // clang-format on
-    const VkBufferCreateInfo buf_info = {
-        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .pNext = NULL,
-        .size = sizeof(vb),
-        .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        .flags = 0,
-    };
-    VkMemoryAllocateInfo mem_alloc = {
-        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .pNext = NULL,
-        .allocationSize = 0,
-        .memoryTypeIndex = 0,
-    };
-    VkMemoryRequirements mem_reqs;
-    VkResult U_ASSERT_ONLY err;
-    bool U_ASSERT_ONLY pass;
-    void *data;
-
-    memset(&demo->vertices, 0, sizeof(demo->vertices));
-
-    err = vkCreateBuffer(demo->device, &buf_info, NULL, &demo->vertices.buf);
-    assert(!err);
-
-    vkGetBufferMemoryRequirements(demo->device, demo->vertices.buf, &mem_reqs);
-    assert(!err);
-
-    mem_alloc.allocationSize = mem_reqs.size;
-    pass = memory_type_from_properties(demo, mem_reqs.memoryTypeBits,
-                                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                       &mem_alloc.memoryTypeIndex);
-    assert(pass);
-
-    err = vkAllocateMemory(demo->device, &mem_alloc, NULL, &demo->vertices.mem);
-    assert(!err);
-
-    err = vkMapMemory(demo->device, demo->vertices.mem, 0,
-                      mem_alloc.allocationSize, 0, &data);
-    assert(!err);
-
-    memcpy(data, vb, sizeof(vb));
-
-    vkUnmapMemory(demo->device, demo->vertices.mem);
-
-    err = vkBindBufferMemory(demo->device, demo->vertices.buf,
-                             demo->vertices.mem, 0);
-    assert(!err);
-
-    demo->vertices.vi.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    demo->vertices.vi.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     demo->vertices.vi.pNext = NULL;
-    demo->vertices.vi.vertexBindingDescriptionCount = 1;
-    demo->vertices.vi.pVertexBindingDescriptions = demo->vertices.vi_bindings;
-    demo->vertices.vi.vertexAttributeDescriptionCount = 2;
-    demo->vertices.vi.pVertexAttributeDescriptions = demo->vertices.vi_attrs;
-
-    demo->vertices.vi_bindings[0].binding = VERTEX_BUFFER_BIND_ID;
-    demo->vertices.vi_bindings[0].stride = sizeof(vb[0]);
-    demo->vertices.vi_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    demo->vertices.vi_attrs[0].binding = VERTEX_BUFFER_BIND_ID;
-    demo->vertices.vi_attrs[0].location = 0;
-    demo->vertices.vi_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    demo->vertices.vi_attrs[0].offset = 0;
-
-    demo->vertices.vi_attrs[1].binding = VERTEX_BUFFER_BIND_ID;
-    demo->vertices.vi_attrs[1].location = 1;
-    demo->vertices.vi_attrs[1].format = VK_FORMAT_R32G32_SFLOAT;
-    demo->vertices.vi_attrs[1].offset = sizeof(float) * 3;
+    demo->vertices.vi.vertexBindingDescriptionCount = 0;
+    demo->vertices.vi.pVertexBindingDescriptions = nullptr;
+    demo->vertices.vi.vertexAttributeDescriptionCount = 0;
+    demo->vertices.vi.pVertexAttributeDescriptions = nullptr;
 }
 
 static void demo_prepare_descriptor_layout(Demo *demo) {
@@ -2086,9 +2000,6 @@ static void demo_cleanup(Demo *demo) {
     vkDestroyPipelineLayout(demo->device, demo->pipeline_layout, NULL);
     vkDestroyDescriptorSetLayout(demo->device, demo->desc_layout, NULL);
 
-    vkDestroyBuffer(demo->device, demo->vertices.buf, NULL);
-    vkFreeMemory(demo->device, demo->vertices.mem, NULL);
-
     for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
         vkDestroyImageView(demo->device, demo->textures[i].view, NULL);
         vkDestroyImage(demo->device, demo->textures[i].image, NULL);
@@ -2144,9 +2055,6 @@ static void demo_resize(Demo *demo) {
     vkDestroyRenderPass(demo->device, demo->render_pass, NULL);
     vkDestroyPipelineLayout(demo->device, demo->pipeline_layout, NULL);
     vkDestroyDescriptorSetLayout(demo->device, demo->desc_layout, NULL);
-
-    vkDestroyBuffer(demo->device, demo->vertices.buf, NULL);
-    vkFreeMemory(demo->device, demo->vertices.mem, NULL);
 
     for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
         vkDestroyImageView(demo->device, demo->textures[i].view, NULL);

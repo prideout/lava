@@ -2,8 +2,10 @@
 // Copyright (c) 2018 Philip Rideout
 
 #include <par/LavaCompiler.h>
-#include <spdlog/spdlog.h>
+#include <par/LavaLog.h>
 #include <SPIRV/GlslangToSpv.h>
+
+#include "LavaInternal.h"
 
 using namespace std;
 using namespace par;
@@ -14,36 +16,15 @@ public:
     LavaCompilerImpl() noexcept;
     ~LavaCompilerImpl() noexcept;
     bool compile(Stage stage, string_view glsl, vector<uint32_t>* spirv) const noexcept;
-    shared_ptr<spdlog::logger> mConsole = spdlog::stdout_color_mt("console");
+    LavaLog mLog;
 };
 
-// BEGIN BoilerplateImpl
-inline LavaCompilerImpl& upcast(LavaCompiler& that) noexcept {
-    return static_cast<LavaCompilerImpl &>(that);
-}
-inline const LavaCompilerImpl& upcast(const LavaCompiler& that) noexcept {
-    return static_cast<const LavaCompilerImpl &>(that);
-}
-inline LavaCompilerImpl* upcast(LavaCompiler* that) noexcept {
-    return static_cast<LavaCompilerImpl *>(that);
-}
-inline LavaCompilerImpl const* upcast(LavaCompiler const* that) noexcept {
-    return static_cast<LavaCompilerImpl const *>(that);
-}
-LavaCompiler* LavaCompiler::create() noexcept {
-    return new LavaCompilerImpl();
-}
-void LavaCompiler::destroy(LavaCompiler** that) noexcept {
-    delete upcast(*that);
-    *that = nullptr;
-}
-// END BoilerplateImpl
+LAVA_IMPL_CLASS(LavaCompiler)
 
 extern const TBuiltInResource DefaultTBuiltInResource;
 
 LavaCompilerImpl::LavaCompilerImpl() noexcept {
     glslang::InitializeProcess();
-    mConsole->set_pattern("%T %t %^%v%$");
 }
 
 LavaCompilerImpl::~LavaCompilerImpl() noexcept {
@@ -65,19 +46,19 @@ bool LavaCompilerImpl::compile(Stage stage, string_view glsl,
     const int glslangVersion = 100;
     if (glslShader.parse(&DefaultTBuiltInResource, glslangVersion, false, flags)) {
         if (*glslShader.getInfoLog()) {
-            mConsole->warn("{}", glslShader.getInfoLog());
+            mLog.warn(glslShader.getInfoLog());
         }
         if (*glslShader.getInfoDebugLog()) {
-            mConsole->debug("{}", glslShader.getInfoDebugLog());
+            mLog.debug(glslShader.getInfoDebugLog());
         }
         glslang::SpvOptions* options = nullptr;
         glslang::GlslangToSpv(*glslShader.getIntermediate(), *spirv, options);
         return true;
     }
-    mConsole->error("Can't compile {}", (stage == EShLangVertex ? "VS" : "FS"));
-    mConsole->warn("{}", glslShader.getInfoLog());
+    mLog.error("Can't compile {}", (stage == EShLangVertex ? "VS" : "FS"));
+    mLog.warn(glslShader.getInfoLog());
     if (*glslShader.getInfoDebugLog()) {
-        mConsole->debug("{}", glslShader.getInfoDebugLog());
+        mLog.debug(glslShader.getInfoDebugLog());
     }
     return false;
 }

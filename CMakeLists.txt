@@ -9,10 +9,9 @@ link_libraries(glfw glslang SPIRV)
 
 set(CMAKE_CXX_FLAGS "-std=c++17 -stdlib=libc++")
 
-set(SOURCE
-    src/LavaCompiler.cpp)
+file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
 
-add_executable(vtriangle vtriangle.cpp ${SOURCE})
+add_executable(vtriangle vtriangle.cpp ${LAVA_SOURCE})
 
 target_include_directories(vtriangle PRIVATE
     "${VULKAN_INCLUDE_DIR}"

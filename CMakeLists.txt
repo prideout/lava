@@ -5,7 +5,7 @@ project(LavaDemos)
 add_subdirectory(extern/glfw)
 add_subdirectory(extern/glslang)
 
-link_libraries(glfw)
+link_libraries(glfw glslang SPIRV)
 
 set(CMAKE_CXX_FLAGS "-std=c++17 -stdlib=libc++")
 

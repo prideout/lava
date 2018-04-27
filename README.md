@@ -4,11 +4,15 @@ This repository contains the source code and dependencies required to build the 
 
 ## Design philosophy
 
-lava is written in a subset of C++ that forbids RTTI, exceptions, and the use of <iostream>.
+This is a lightweight Vulkan library that makes no **vkCmd\*** calls; that's your job. It also doesn't include a materials system, or a scene graph, or an asset loader, or any platform-specific stuff like windowing and events. However it does a lot of other things!
+
+lava is written in a subset of C++17 that forbids RTTI, exceptions, nested namespaces, and the use of `<iostream>`.
+
+The public API is an even narrower subset of C++ whereby classes can only contain public methods.
 
 ## Code style
 
-The style is vertically compact, but no single line should be longer than 100 characters.
+The code is vertically compact, but no single line should be longer than 100 characters.
 
 ## How to build and run the demo apps
 

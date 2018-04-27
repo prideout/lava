@@ -21,6 +21,7 @@ set(CMAKE_CXX_FLAGS "-std=c++17 -stdlib=libc++ -fno-rtti")
 file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
 
 set(DEMO_NAMES
+    hellolava
     vtriangle
     vertexid)
 

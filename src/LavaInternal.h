@@ -3,6 +3,8 @@
 
 #pragma once
 
+#define VKALLOC nullptr
+
 #define LAVA_IMPL_CLASS(CLASS) \
 inline CLASS##Impl& upcast(CLASS& that) noexcept { \
     return static_cast<CLASS##Impl &>(that); \
@@ -15,9 +17,6 @@ inline CLASS##Impl* upcast(CLASS* that) noexcept { \
 } \
 inline CLASS##Impl const* upcast(CLASS const* that) noexcept { \
     return static_cast<CLASS##Impl const *>(that); \
-} \
-CLASS* CLASS::create() noexcept { \
-    return new CLASS##Impl(); \
 } \
 void CLASS::destroy(CLASS** that) noexcept { \
     delete upcast(*that); \

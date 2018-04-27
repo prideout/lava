@@ -23,6 +23,10 @@ LAVA_IMPL_CLASS(LavaCompiler)
 
 extern const TBuiltInResource DefaultTBuiltInResource;
 
+LavaCompiler* LavaCompiler::create() noexcept {
+    return new LavaCompilerImpl();
+}
+
 LavaCompilerImpl::LavaCompilerImpl() noexcept {
     glslang::InitializeProcess();
 }

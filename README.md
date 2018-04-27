@@ -1,20 +1,35 @@
 # lava
 
-This repository contains the source code and dependencies required to build the **lava** library and demo apps. At the time of this writing, only macOS is supported.
+This is a lightweight C++ Vulkan library that never adds to the command buffer (e.g., it never
+invokes `vkCmdDraw`). Writing to the command buffer is your job! The entire API consists of a
+handful of simple classes:
 
-## Design philosophy
+- **LavaContext** manages the instance, device, swap chain, and command buffers.
+- **LavaBinder** manages pipelines, descriptor sets, pipeline layouts, descriptor set layouts.
+- **LavaCpuBuffer** is a shared CPU-GPU buffer, useful for staging or uniform blocks.
+- **LavaGpuBuffer** is a fast device-only buffer used for vertex buffers and index buffers.
+- **LavaFramebuffer** is an abstraction of an off-screen rendering surface.
+- **LavaCompiler** helps you perform GLSL => SPIRV translation at run time.
 
-This is a lightweight Vulkan library that makes no **vkCmd\*** calls; that's your job. It also doesn't include a materials system, or a scene graph, or an asset loader, or any platform-specific stuff like windowing and events. However it does a lot of other things!
+Textures, UniformBlocks, and Programs?
 
-lava is written in a subset of C++17 that forbids RTTI, exceptions, nested namespaces, and the use of `<iostream>`.
+## Philosophy and style
 
-The public API is an even narrower subset of C++ whereby classes can only contain public methods.
+By design, lava does not include a materials system, or a scene graph, or an asset loader, or any
+platform-specific functionality like windowing and events. However it does a lot of other things!
 
-## Code style
+lava is written in a subset of C++17 that forbids RTTI, exceptions, nested namespaces, and the use
+of `<iostream>`.
 
-The code is vertically compact, but no single line should be longer than 100 characters.
+The public API is an even narrower subset of C++ whereby classes contain nothing but public methods.
 
-## How to build and run the demo apps
+The code is vertically compact, but no single line should be longer than 100 characters. All
+public-facing Lava types live in the `par` namespace and there are no nested namespaces.
+
+At the time of this writing, the only Vulkan implementation that we're testing against is MoltenVK,
+but it should work on other platforms with just a bit of tweaking to the CMake file.
+
+## How to build and run the demos
 
 1. Clone this repo with `--recursive` to get the submodules.
 1. Install the LunarG Vulkan SDK for macOS (see below).

@@ -4,7 +4,19 @@
 #pragma once
 
 #include <memory>
+#include <csignal>
 #include <spdlog/spdlog.h>
+
+#define LOG_CHECK(condition, msg) if (!(condition)) { \
+    LavaLog log; \
+    log.error("{}:{} {}", __FILE__, __LINE__, msg); \
+    std::raise(SIGTRAP); }
+
+#ifdef NDEBUG
+#define LOG_DCHECK(condition, msg)
+#else
+#define LOG_DCHECK(condition, msg) LOG_CHECK(condition, msg)
+#endif
 
 namespace par {
 

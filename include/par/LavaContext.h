@@ -7,24 +7,57 @@
 
 namespace par {
 
-// Encapsulates a single device and instance. Also manages a double-buffered swap chain and two
-// corresponding command buffers.
+// The LavaContext owns the Vulkan instance, device, swap chain, and command buffers.
+//
+// Clients should create the platform-specific VkSurface after creating LavaContext, but before
+// initializing the device. For example:
+//
+//     LavaContext* ctx = LavaContext::create(true);
+//     VkSurface surface = glfwCreateWindowSurface(ctx->getInstance(), ...);
+//     ctx->initDevice(surface, true);
+//     ...main app body...
+//     ctx->killDevice();
+//     glfwDestroySurface(surface);
+//     LavaContext::destroy(&ctx);
+//
 class LavaContext {
 public:
-    // Constructing the LavaContext creates the VkInstance and nothing else. All other Vulkan
-    // objects managed by this class are created during initialize().
-    static LavaContext* create(VkInstanceCreateInfo) noexcept;
+    // Constructs the LavaContext and creates the VkInstance.
+    static LavaContext* create(bool useValidation) noexcept;
 
-    // Frees the instance, the device, the swap chain, and the command buffers.
+    // Frees the instance. Be sure to call killDevice() first.
     static void destroy(LavaContext**) noexcept;
 
-    // Given a platform-specific surface, creates the device, swap chain, and command buffers.
-    void initialize(VkSurfaceKHR surface) noexcept;
+    // Creates the device, framebuffer, swap chain, and command buffers.
+    // The passed-in platform surface determines the dimensions of the swap chain.
+    void initDevice(VkSurfaceKHR surface, bool createDepthBuffer) noexcept;
 
-    // Accessors to Vulkan objects owned by this class.
+    // Destroys the device, swap chain, and command buffers.
+    void killDevice() noexcept;
+
+    // Swaps the current command buffer / framebuffer.
+    // TODO: consider renaming to "acquire"
+    void swap() noexcept;
+
+    // General accessors.
     VkInstance getInstance() const noexcept;
+    VkExtent2D getSize() const noexcept;
     VkDevice getDevice() const noexcept;
+    VkCommandPool getCommandPool() const noexcept;
+    VkPhysicalDevice getGpu() const noexcept;
+    const VkPhysicalDeviceFeatures& getGpuFeatures() const noexcept;
+    VkQueue getQueue() const noexcept;
+    VkFormat getFormat() const noexcept;
+    VkColorSpaceKHR getColorSpace() const noexcept;
+    const VkPhysicalDeviceMemoryProperties& getMemoryProperties() const noexcept;
+    VkRenderPass getRenderPass() const noexcept;
+    VkSwapchainKHR getSwapchain() const noexcept;
+
+    // Swap chain related accessors.
     VkCommandBuffer getCmdBuffer() const noexcept;
+    VkImage getImage() const noexcept;
+    VkImageView getImageView() const noexcept;
+    VkFramebuffer getFramebuffer() const noexcept;
 
 protected:
     LavaContext() noexcept = default;

@@ -1,6 +1,6 @@
 // This demo uses no uniforms, 1 texture sampler, and 2 vertex attributes:
 //   Attributes: Interleaved XYZ (12 bytes) and UV (8 bytes)
-//   Textures:   2x2 VK_FORMAT_B8G8R8A8_UNORM
+//   Textures:   2x2 VK__B8G8R8A8_UNORM
 
 /*
  * Draw a textured triangle with depth testing.  This is written against Intel
@@ -25,8 +25,8 @@
 
 #define DEMO_TEXTURE_COUNT 1
 #define VERTEX_BUFFER_BIND_ID 0
-#define APP_SHORT_NAME "tri"
-#define APP_LONG_NAME "The Vulkan Triangle Demo Program"
+#define DEMO_WIDTH 640
+#define DEMO_HEIGHT 480
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
@@ -43,21 +43,11 @@
         exit(1);                                                               \
     } while (0)
 
-#define GET_INSTANCE_PROC_ADDR(inst, entrypoint)                               \
-    {                                                                          \
-        demo->fp##entrypoint =                                                 \
-            (PFN_vk##entrypoint)vkGetInstanceProcAddr(inst, "vk" #entrypoint); \
-        if (demo->fp##entrypoint == NULL) {                                    \
-            ERR_EXIT("vkGetInstanceProcAddr failed to find vk" #entrypoint,    \
-                     "vkGetInstanceProcAddr Failure");                         \
-        }                                                                      \
-    }
-
 #define GET_DEVICE_PROC_ADDR(dev, entrypoint)                                  \
     {                                                                          \
-        demo->fp##entrypoint =                                                 \
+        demo.fp##entrypoint =                                                 \
             (PFN_vk##entrypoint)vkGetDeviceProcAddr(dev, "vk" #entrypoint);    \
-        if (demo->fp##entrypoint == NULL) {                                    \
+        if (demo.fp##entrypoint == NULL) {                                    \
             ERR_EXIT("vkGetDeviceProcAddr failed to find vk" #entrypoint,      \
                      "vkGetDeviceProcAddr Failure");                           \
         }                                                                      \
@@ -91,30 +81,11 @@ void main() {
 
 struct texture_object {
     VkSampler sampler;
-
     VkImage image;
     VkImageLayout imageLayout;
-
     VkDeviceMemory mem;
     VkImageView view;
     uint32_t tex_width, tex_height;
-};
-
-static int validation_error = 0;
-
-VKAPI_ATTR VkBool32 VKAPI_CALL
-BreakCallback(VkFlags msgFlags, VkDebugReportObjectTypeEXT objType,
-              uint64_t srcObject, size_t location, int32_t msgCode,
-              const char *pLayerPrefix, const char *pMsg,
-              void *pUserData) {
-    raise(SIGTRAP);
-    return false;
-}
-
-struct SwapchainBuffers {
-    VkImage image;
-    VkCommandBuffer cmd;
-    VkImageView view;
 };
 
 struct Demo {
@@ -122,133 +93,46 @@ struct Demo {
     VkSurfaceKHR surface;
     bool use_staging_buffer;
 
-    VkInstance inst;
-    VkPhysicalDevice gpu;
-    VkDevice device;
-    VkQueue queue;
-    VkPhysicalDeviceProperties gpu_props;
-    VkPhysicalDeviceFeatures gpu_features;
-    VkQueueFamilyProperties *queue_props;
-    uint32_t graphics_queue_node_index;
-
-    uint32_t enabled_extension_count;
-    uint32_t enabled_layer_count;
-    const char *extension_names[64];
-    const char *enabled_layers[64];
-
-    uint32_t width, height;
-    VkFormat format;
-    VkColorSpaceKHR color_space;
-
-    PFN_vkGetPhysicalDeviceSurfaceSupportKHR
-        fpGetPhysicalDeviceSurfaceSupportKHR;
-    PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR
-        fpGetPhysicalDeviceSurfaceCapabilitiesKHR;
-    PFN_vkGetPhysicalDeviceSurfaceFormatsKHR
-        fpGetPhysicalDeviceSurfaceFormatsKHR;
-    PFN_vkGetPhysicalDeviceSurfacePresentModesKHR
-        fpGetPhysicalDeviceSurfacePresentModesKHR;
-    PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR;
-    PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR;
-    PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR;
-    PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
-    PFN_vkQueuePresentKHR fpQueuePresentKHR;
-    uint32_t swapchainImageCount;
-    VkSwapchainKHR swapchain;
-    SwapchainBuffers *buffers;
-
-    VkCommandPool cmd_pool;
-
-    struct {
-        VkFormat format;
-
-        VkImage image;
-        VkDeviceMemory mem;
-        VkImageView view;
-    } depth;
+    // struct {
+    //     VkFormat format;
+    //     VkImage image;
+    //     VkDeviceMemory mem;
+    //     VkImageView view;
+    // } depth;
 
     struct texture_object textures[DEMO_TEXTURE_COUNT];
 
     struct {
         VkBuffer buf;
         VkDeviceMemory mem;
-
         VkPipelineVertexInputStateCreateInfo vi;
         VkVertexInputBindingDescription vi_bindings[1];
         VkVertexInputAttributeDescription vi_attrs[2];
     } vertices;
 
     VkCommandBuffer setup_cmd; // Command Buffer for initialization commands
-    VkCommandBuffer draw_cmd;  // Command Buffer for drawing commands
+
     VkPipelineLayout pipeline_layout;
     VkDescriptorSetLayout desc_layout;
     VkPipelineCache pipelineCache;
-    VkRenderPass render_pass;
     VkPipeline pipeline;
-
     VkShaderModule vert_shader_module;
     VkShaderModule frag_shader_module;
-
     VkDescriptorPool desc_pool;
     VkDescriptorSet desc_set;
 
-    VkFramebuffer *framebuffers;
-
-    VkPhysicalDeviceMemoryProperties memory_properties;
-
     int32_t curFrame;
     int32_t frameCount;
-    bool validate;
-    bool use_break;
-    PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
-    PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;
-    VkDebugReportCallbackEXT msg_callback;
-    PFN_vkDebugReportMessageEXT DebugReportMessage;
 
     float depthStencil;
     float depthIncrement;
 
     uint32_t current_buffer;
     uint32_t queue_count;
+
+    PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR;
+    PFN_vkQueuePresentKHR fpQueuePresentKHR;
 };
-
-VKAPI_ATTR VkBool32 VKAPI_CALL
-dbgFunc(VkFlags msgFlags, VkDebugReportObjectTypeEXT objType,
-    uint64_t srcObject, size_t location, int32_t msgCode,
-    const char *pLayerPrefix, const char *pMsg, void *pUserData) {
-
-    char *message = (char *)malloc(strlen(pMsg) + 100);
-
-    assert(message);
-
-    validation_error = 1;
-
-    if (msgFlags & VK_DEBUG_REPORT_ERROR_BIT_EXT) {
-        sprintf(message, "ERROR: [%s] Code %d : %s", pLayerPrefix, msgCode,
-            pMsg);
-    } else if (msgFlags & VK_DEBUG_REPORT_WARNING_BIT_EXT) {
-        sprintf(message, "WARNING: [%s] Code %d : %s", pLayerPrefix, msgCode,
-            pMsg);
-    } else {
-        return false;
-    }
-
-    printf("%s\n", message);
-    fflush(stdout);
-    free(message);
-
-    /*
-    * false indicates that layer should not bail-out of an
-    * API call that had validation failures. This may mean that the
-    * app dies inside the driver due to invalid parameter(s).
-    * That's what would happen without validation layers, so we'll
-    * keep that behavior here.
-    */
-    return false;
-}
-
-// Forward declaration:
-static void demo_resize(Demo *demo);
 
 static bool memory_type_from_properties(Demo *demo, uint32_t typeBits,
                                         VkFlags requirements_mask,
@@ -258,7 +142,7 @@ static bool memory_type_from_properties(Demo *demo, uint32_t typeBits,
     for (i = 0; i < VK_MAX_MEMORY_TYPES; i++) {
         if ((typeBits & 1) == 1) {
             // Type is available, does it match user properties?
-            if ((demo->memory_properties.memoryTypes[i].propertyFlags &
+            if ((gLavaContext->getMemoryProperties().memoryTypes[i].propertyFlags &
                  requirements_mask) == requirements_mask) {
                 *typeIndex = i;
                 return true;
@@ -291,21 +175,19 @@ static void demo_flush_init_cmd(Demo *demo) {
                                 .signalSemaphoreCount = 0,
                                 .pSignalSemaphores = NULL};
 
-    err = vkQueueSubmit(demo->queue, 1, &submit_info, nullFence);
+    err = vkQueueSubmit(gLavaContext->getQueue(), 1, &submit_info, nullFence);
     assert(!err);
 
-    err = vkQueueWaitIdle(demo->queue);
+    err = vkQueueWaitIdle(gLavaContext->getQueue());
     assert(!err);
 
-    vkFreeCommandBuffers(demo->device, demo->cmd_pool, 1, cmd_bufs);
+    vkFreeCommandBuffers(gLavaContext->getDevice(), gLavaContext->getCommandPool(), 1, cmd_bufs);
     demo->setup_cmd = VK_NULL_HANDLE;
 }
 
-static void demo_set_image_layout(Demo *demo, VkImage image,
-                                  VkImageAspectFlagBits aspectMask,
-                                  VkImageLayout old_image_layout,
-                                  VkImageLayout new_image_layout,
-                                  VkAccessFlags srcAccessMask) {
+static void demo_set_image_layout(Demo *demo, VkImage image, VkImageAspectFlagBits aspectMask,
+        VkImageLayout old_image_layout, VkImageLayout new_image_layout,
+        VkAccessFlags srcAccessMask) {
 
     VkResult U_ASSERT_ONLY err;
 
@@ -313,12 +195,12 @@ static void demo_set_image_layout(Demo *demo, VkImage image,
         const VkCommandBufferAllocateInfo cmd = {
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
             .pNext = NULL,
-            .commandPool = demo->cmd_pool,
+            .commandPool = gLavaContext->getCommandPool(),
             .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
             .commandBufferCount = 1,
         };
 
-        err = vkAllocateCommandBuffers(demo->device, &cmd, &demo->setup_cmd);
+        err = vkAllocateCommandBuffers(gLavaContext->getDevice(), &cmd, &demo->setup_cmd);
         assert(!err);
 
         VkCommandBufferBeginInfo cmd_buf_info = {
@@ -379,24 +261,23 @@ static void demo_draw_build_cmd(Demo *demo) {
         .pInheritanceInfo = NULL,
     };
     const VkClearValue clear_values[2] = {
-            [0] = {.color.float32 = {0.2f, 0.2f, 0.2f, 0.2f}},
+            [0] = {.color.float32 = {0.7f, 0.2f, 0.2f, 0.2f}},
             [1] = {.depthStencil = {demo->depthStencil, 0}},
     };
     const VkRenderPassBeginInfo rp_begin = {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .pNext = NULL,
-        .renderPass = demo->render_pass,
-        .framebuffer = demo->framebuffers[demo->current_buffer],
+        .renderPass = gLavaContext->getRenderPass(),
+        .framebuffer = gLavaContext->getFramebuffer(),
         .renderArea.offset.x = 0,
         .renderArea.offset.y = 0,
-        .renderArea.extent.width = demo->width,
-        .renderArea.extent.height = demo->height,
+        .renderArea.extent = gLavaContext->getSize(),
         .clearValueCount = 2,
         .pClearValues = clear_values,
     };
     VkResult U_ASSERT_ONLY err;
 
-    err = vkBeginCommandBuffer(demo->draw_cmd, &cmd_buf_info);
+    err = vkBeginCommandBuffer(gLavaContext->getCmdBuffer(), &cmd_buf_info);
     assert(!err);
 
     // We can use LAYOUT_UNDEFINED as a wildcard here because we don't care what
@@ -410,41 +291,37 @@ static void demo_draw_build_cmd(Demo *demo) {
         .newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = demo->buffers[demo->current_buffer].image,
+        .image = gLavaContext->getImage(),
         .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
 
-    vkCmdPipelineBarrier(demo->draw_cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+    vkCmdPipelineBarrier(gLavaContext->getCmdBuffer(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0,
                          NULL, 1, &image_memory_barrier);
-    vkCmdBeginRenderPass(demo->draw_cmd, &rp_begin, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(demo->draw_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+    vkCmdBeginRenderPass(gLavaContext->getCmdBuffer(), &rp_begin, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindPipeline(gLavaContext->getCmdBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                       demo->pipeline);
-    vkCmdBindDescriptorSets(demo->draw_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+    vkCmdBindDescriptorSets(gLavaContext->getCmdBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
                             demo->pipeline_layout, 0, 1, &demo->desc_set, 0,
                             NULL);
 
-    VkViewport viewport;
-    memset(&viewport, 0, sizeof(viewport));
-    viewport.height = (float)demo->height;
-    viewport.width = (float)demo->width;
-    viewport.minDepth = (float)0.0f;
-    viewport.maxDepth = (float)1.0f;
-    vkCmdSetViewport(demo->draw_cmd, 0, 1, &viewport);
+    VkViewport viewport = {};
+    viewport.width = gLavaContext->getSize().width;
+    viewport.height = gLavaContext->getSize().height;
+    vkCmdSetViewport(gLavaContext->getCmdBuffer(), 0, 1, &viewport);
 
     VkRect2D scissor;
     memset(&scissor, 0, sizeof(scissor));
-    scissor.extent.width = demo->width;
-    scissor.extent.height = demo->height;
+    scissor.extent = gLavaContext->getSize();
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    vkCmdSetScissor(demo->draw_cmd, 0, 1, &scissor);
+    vkCmdSetScissor(gLavaContext->getCmdBuffer(), 0, 1, &scissor);
 
     VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(demo->draw_cmd, VERTEX_BUFFER_BIND_ID, 1,
+    vkCmdBindVertexBuffers(gLavaContext->getCmdBuffer(), VERTEX_BUFFER_BIND_ID, 1,
                            &demo->vertices.buf, offsets);
 
-    vkCmdDraw(demo->draw_cmd, 3, 1, 0, 0);
-    vkCmdEndRenderPass(demo->draw_cmd);
+    vkCmdDraw(gLavaContext->getCmdBuffer(), 3, 1, 0, 0);
+    vkCmdEndRenderPass(gLavaContext->getCmdBuffer());
 
     VkImageMemoryBarrier prePresentBarrier = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -457,13 +334,13 @@ static void demo_draw_build_cmd(Demo *demo) {
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
 
-    prePresentBarrier.image = demo->buffers[demo->current_buffer].image;
+    prePresentBarrier.image = gLavaContext->getImage();
     VkImageMemoryBarrier *pmemory_barrier = &prePresentBarrier;
-    vkCmdPipelineBarrier(demo->draw_cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+    vkCmdPipelineBarrier(gLavaContext->getCmdBuffer(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0,
                          NULL, 1, pmemory_barrier);
 
-    err = vkEndCommandBuffer(demo->draw_cmd);
+    err = vkEndCommandBuffer(gLavaContext->getCmdBuffer());
     assert(!err);
 }
 
@@ -476,26 +353,20 @@ static void demo_draw(Demo *demo) {
         .flags = 0,
     };
 
-    err = vkCreateSemaphore(demo->device, &semaphoreCreateInfo,
+    err = vkCreateSemaphore(gLavaContext->getDevice(), &semaphoreCreateInfo,
                             NULL, &imageAcquiredSemaphore);
     assert(!err);
 
-    err = vkCreateSemaphore(demo->device, &semaphoreCreateInfo,
+    err = vkCreateSemaphore(gLavaContext->getDevice(), &semaphoreCreateInfo,
                             NULL, &drawCompleteSemaphore);
     assert(!err);
 
     // Get the index of the next available swapchain image:
-    err = demo->fpAcquireNextImageKHR(demo->device, demo->swapchain, UINT64_MAX,
-                                      imageAcquiredSemaphore,
-                                      (VkFence)0, // TODO: Show use of fence
-                                      &demo->current_buffer);
+    gLavaContext->swap();
+    err = demo->fpAcquireNextImageKHR(gLavaContext->getDevice(), gLavaContext->getSwapchain(),
+            UINT64_MAX, imageAcquiredSemaphore, (VkFence)0, &demo->current_buffer);
     if (err == VK_ERROR_OUT_OF_DATE_KHR) {
-        // demo->swapchain is out of date (e.g. the window was resized) and
-        // must be recreated:
-        demo_resize(demo);
-        demo_draw(demo);
-        vkDestroySemaphore(demo->device, imageAcquiredSemaphore, NULL);
-        vkDestroySemaphore(demo->device, drawCompleteSemaphore, NULL);
+        printf("Out of date.\n");
         return;
     } else if (err == VK_SUBOPTIMAL_KHR) {
         // demo->swapchain is not as optimal as it could be, but the platform's
@@ -513,36 +384,38 @@ static void demo_draw(Demo *demo) {
 
     demo_draw_build_cmd(demo);
     VkFence nullFence = VK_NULL_HANDLE;
-    VkPipelineStageFlags pipe_stage_flags =
-        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    VkSubmitInfo submit_info = {.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                .pNext = NULL,
-                                .waitSemaphoreCount = 1,
-                                .pWaitSemaphores = &imageAcquiredSemaphore,
-                                .pWaitDstStageMask = &pipe_stage_flags,
-                                .commandBufferCount = 1,
-                                .pCommandBuffers = &demo->draw_cmd,
-                                .signalSemaphoreCount = 1,
-                                .pSignalSemaphores = &drawCompleteSemaphore};
+    VkPipelineStageFlags pipe_stage_flags = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    VkCommandBuffer cmdbufs[] = { gLavaContext->getCmdBuffer() };
+    VkSubmitInfo submit_info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &imageAcquiredSemaphore,
+        .pWaitDstStageMask = &pipe_stage_flags,
+        .commandBufferCount = 1,
+        .pCommandBuffers = cmdbufs,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = &drawCompleteSemaphore
+    };
 
-    err = vkQueueSubmit(demo->queue, 1, &submit_info, nullFence);
+    err = vkQueueSubmit(gLavaContext->getQueue(), 1, &submit_info, nullFence);
     assert(!err);
 
+    VkSwapchainKHR chains[] = { gLavaContext->getSwapchain() };
     VkPresentInfoKHR present = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .pNext = NULL,
         .waitSemaphoreCount = 1,
         .pWaitSemaphores = &drawCompleteSemaphore,
         .swapchainCount = 1,
-        .pSwapchains = &demo->swapchain,
+        .pSwapchains = chains,
         .pImageIndices = &demo->current_buffer,
     };
 
-    err = demo->fpQueuePresentKHR(demo->queue, &present);
+    err = demo->fpQueuePresentKHR(gLavaContext->getQueue(), &present);
     if (err == VK_ERROR_OUT_OF_DATE_KHR) {
         // demo->swapchain is out of date (e.g. the window was resized) and
         // must be recreated:
-        demo_resize(demo);
+        printf("Out of date\n");
     } else if (err == VK_SUBOPTIMAL_KHR) {
         // demo->swapchain is not as optimal as it could be, but the platform's
         // presentation engine will still present the image correctly.
@@ -550,239 +423,11 @@ static void demo_draw(Demo *demo) {
         assert(!err);
     }
 
-    err = vkQueueWaitIdle(demo->queue);
+    err = vkQueueWaitIdle(gLavaContext->getQueue());
     assert(err == VK_SUCCESS);
 
-    vkDestroySemaphore(demo->device, imageAcquiredSemaphore, NULL);
-    vkDestroySemaphore(demo->device, drawCompleteSemaphore, NULL);
-}
-
-static void demo_prepare_buffers(Demo *demo) {
-    VkResult U_ASSERT_ONLY err;
-    VkSwapchainKHR oldSwapchain = demo->swapchain;
-
-    // Check the surface capabilities and formats
-    VkSurfaceCapabilitiesKHR surfCapabilities;
-    err = demo->fpGetPhysicalDeviceSurfaceCapabilitiesKHR(
-        demo->gpu, demo->surface, &surfCapabilities);
-    assert(!err);
-
-    uint32_t presentModeCount;
-    err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(
-        demo->gpu, demo->surface, &presentModeCount, NULL);
-    assert(!err);
-    std::vector<VkPresentModeKHR> presentModesVector(presentModeCount);
-    VkPresentModeKHR *presentModes = presentModesVector.data();
-
-    err = demo->fpGetPhysicalDeviceSurfacePresentModesKHR(
-        demo->gpu, demo->surface, &presentModeCount, presentModes);
-    assert(!err);
-
-    VkExtent2D swapchainExtent;
-    // width and height are either both 0xFFFFFFFF, or both not 0xFFFFFFFF.
-    if (surfCapabilities.currentExtent.width == 0xFFFFFFFF) {
-        // If the surface size is undefined, the size is set to the size
-        // of the images requested, which must fit within the minimum and
-        // maximum values.
-        swapchainExtent.width = demo->width;
-        swapchainExtent.height = demo->height;
-
-        if (swapchainExtent.width < surfCapabilities.minImageExtent.width) {
-            swapchainExtent.width = surfCapabilities.minImageExtent.width;
-        } else if (swapchainExtent.width > surfCapabilities.maxImageExtent.width) {
-            swapchainExtent.width = surfCapabilities.maxImageExtent.width;
-        }
-
-        if (swapchainExtent.height < surfCapabilities.minImageExtent.height) {
-            swapchainExtent.height = surfCapabilities.minImageExtent.height;
-        } else if (swapchainExtent.height > surfCapabilities.maxImageExtent.height) {
-            swapchainExtent.height = surfCapabilities.maxImageExtent.height;
-        }
-    } else {
-        // If the surface size is defined, the swap chain size must match
-        swapchainExtent = surfCapabilities.currentExtent;
-        demo->width = surfCapabilities.currentExtent.width;
-        demo->height = surfCapabilities.currentExtent.height;
-    }
-
-    VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
-
-    // Determine the number of VkImage's to use in the swap chain.
-    // Application desires to only acquire 1 image at a time (which is
-    // "surfCapabilities.minImageCount").
-    uint32_t desiredNumOfSwapchainImages = surfCapabilities.minImageCount;
-    // If maxImageCount is 0, we can ask for as many images as we want;
-    // otherwise we're limited to maxImageCount
-    if ((surfCapabilities.maxImageCount > 0) &&
-        (desiredNumOfSwapchainImages > surfCapabilities.maxImageCount)) {
-        // Application must settle for fewer images than desired:
-        desiredNumOfSwapchainImages = surfCapabilities.maxImageCount;
-    }
-
-    VkSurfaceTransformFlagBitsKHR preTransform;
-    if (surfCapabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
-        preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-    } else {
-        preTransform = surfCapabilities.currentTransform;
-    }
-
-    const VkSwapchainCreateInfoKHR swapchain = {
-        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        .pNext = NULL,
-        .surface = demo->surface,
-        .minImageCount = desiredNumOfSwapchainImages,
-        .imageFormat = demo->format,
-        .imageColorSpace = demo->color_space,
-        .imageExtent =
-            {
-             .width = swapchainExtent.width, .height = swapchainExtent.height,
-            },
-        .imageUsage = VkImageUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
-        .preTransform =  preTransform,
-        .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-        .imageArrayLayers = 1,
-        .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
-        .queueFamilyIndexCount = 0,
-        .pQueueFamilyIndices = NULL,
-        .presentMode = swapchainPresentMode,
-        .oldSwapchain = oldSwapchain,
-        .clipped = true,
-    };
-    uint32_t i;
-
-    err = demo->fpCreateSwapchainKHR(demo->device, &swapchain, NULL,
-                                     &demo->swapchain);
-    assert(!err);
-
-    // If we just re-created an existing swapchain, we should destroy the old
-    // swapchain at this point.
-    // Note: destroying the swapchain also cleans up all its associated
-    // presentable images once the platform is done with them.
-    if (oldSwapchain != VK_NULL_HANDLE) {
-        demo->fpDestroySwapchainKHR(demo->device, oldSwapchain, NULL);
-    }
-
-    err = demo->fpGetSwapchainImagesKHR(demo->device, demo->swapchain,
-                                        &demo->swapchainImageCount, NULL);
-    assert(!err);
-
-    std::vector<VkImage> swapchainImagesVector(demo->swapchainImageCount);
-    VkImage *swapchainImages = swapchainImagesVector.data();
-    err = demo->fpGetSwapchainImagesKHR(demo->device, demo->swapchain,
-                                        &demo->swapchainImageCount,
-                                        swapchainImages);
-    assert(!err);
-
-    demo->buffers = (SwapchainBuffers *)malloc(sizeof(SwapchainBuffers) *
-                                               demo->swapchainImageCount);
-    assert(demo->buffers);
-
-    for (i = 0; i < demo->swapchainImageCount; i++) {
-        VkImageViewCreateInfo color_attachment_view = {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .pNext = NULL,
-            .format = demo->format,
-            .components =
-                {
-                 .r = VK_COMPONENT_SWIZZLE_R,
-                 .g = VK_COMPONENT_SWIZZLE_G,
-                 .b = VK_COMPONENT_SWIZZLE_B,
-                 .a = VK_COMPONENT_SWIZZLE_A,
-                },
-            .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                 .baseMipLevel = 0,
-                                 .levelCount = 1,
-                                 .baseArrayLayer = 0,
-                                 .layerCount = 1},
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .flags = 0,
-        };
-
-        demo->buffers[i].image = swapchainImages[i];
-
-        color_attachment_view.image = demo->buffers[i].image;
-
-        err = vkCreateImageView(demo->device, &color_attachment_view, NULL,
-                                &demo->buffers[i].view);
-        assert(!err);
-    }
-
-    demo->current_buffer = 0;
-}
-
-static void demo_prepare_depth(Demo *demo) {
-    const VkFormat depth_format = VK_FORMAT_D16_UNORM;
-    const VkImageCreateInfo image = {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        .pNext = NULL,
-        .imageType = VK_IMAGE_TYPE_2D,
-        .format = depth_format,
-        .extent = {demo->width, demo->height, 1},
-        .mipLevels = 1,
-        .arrayLayers = 1,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .tiling = VK_IMAGE_TILING_OPTIMAL,
-        .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-        .flags = 0,
-    };
-    VkMemoryAllocateInfo mem_alloc = {
-        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .pNext = NULL,
-        .allocationSize = 0,
-        .memoryTypeIndex = 0,
-    };
-    VkImageViewCreateInfo view = {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .pNext = NULL,
-        .image = VK_NULL_HANDLE,
-        .format = depth_format,
-        .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
-                             .baseMipLevel = 0,
-                             .levelCount = 1,
-                             .baseArrayLayer = 0,
-                             .layerCount = 1},
-        .flags = 0,
-        .viewType = VK_IMAGE_VIEW_TYPE_2D,
-    };
-
-    VkMemoryRequirements mem_reqs;
-    VkResult U_ASSERT_ONLY err;
-    bool U_ASSERT_ONLY pass;
-
-    demo->depth.format = depth_format;
-
-    /* create image */
-    err = vkCreateImage(demo->device, &image, NULL, &demo->depth.image);
-    assert(!err);
-
-    /* get memory requirements for this object */
-    vkGetImageMemoryRequirements(demo->device, demo->depth.image, &mem_reqs);
-
-    /* select memory size and type */
-    mem_alloc.allocationSize = mem_reqs.size;
-    pass = memory_type_from_properties(demo, mem_reqs.memoryTypeBits,
-                                       0, /* No requirements */
-                                       &mem_alloc.memoryTypeIndex);
-    assert(pass);
-
-    /* allocate memory */
-    err = vkAllocateMemory(demo->device, &mem_alloc, NULL, &demo->depth.mem);
-    assert(!err);
-
-    /* bind memory */
-    err =
-        vkBindImageMemory(demo->device, demo->depth.image, demo->depth.mem, 0);
-    assert(!err);
-
-    demo_set_image_layout(demo, demo->depth.image, VK_IMAGE_ASPECT_DEPTH_BIT,
-                          VK_IMAGE_LAYOUT_UNDEFINED,
-                          VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                          0);
-
-    /* create image view */
-    view.image = demo->depth.image;
-    err = vkCreateImageView(demo->device, &view, NULL, &demo->depth.view);
-    assert(!err);
+    vkDestroySemaphore(gLavaContext->getDevice(), imageAcquiredSemaphore, NULL);
+    vkDestroySemaphore(gLavaContext->getDevice(), drawCompleteSemaphore, NULL);
 }
 
 static void
@@ -822,10 +467,10 @@ demo_prepare_texture_image(Demo *demo, const uint32_t *tex_colors,
     VkMemoryRequirements mem_reqs;
 
     err =
-        vkCreateImage(demo->device, &image_create_info, NULL, &tex_obj->image);
+        vkCreateImage(gLavaContext->getDevice(), &image_create_info, NULL, &tex_obj->image);
     assert(!err);
 
-    vkGetImageMemoryRequirements(demo->device, tex_obj->image, &mem_reqs);
+    vkGetImageMemoryRequirements(gLavaContext->getDevice(), tex_obj->image, &mem_reqs);
 
     mem_alloc.allocationSize = mem_reqs.size;
     pass =
@@ -834,11 +479,11 @@ demo_prepare_texture_image(Demo *demo, const uint32_t *tex_colors,
     assert(pass);
 
     /* allocate memory */
-    err = vkAllocateMemory(demo->device, &mem_alloc, NULL, &tex_obj->mem);
+    err = vkAllocateMemory(gLavaContext->getDevice(), &mem_alloc, NULL, &tex_obj->mem);
     assert(!err);
 
     /* bind memory */
-    err = vkBindImageMemory(demo->device, tex_obj->image, tex_obj->mem, 0);
+    err = vkBindImageMemory(gLavaContext->getDevice(), tex_obj->image, tex_obj->mem, 0);
     assert(!err);
 
     if (required_props & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
@@ -851,10 +496,10 @@ demo_prepare_texture_image(Demo *demo, const uint32_t *tex_colors,
         void *data;
         int32_t x, y;
 
-        vkGetImageSubresourceLayout(demo->device, tex_obj->image, &subres,
+        vkGetImageSubresourceLayout(gLavaContext->getDevice(), tex_obj->image, &subres,
                                     &layout);
 
-        err = vkMapMemory(demo->device, tex_obj->mem, 0,
+        err = vkMapMemory(gLavaContext->getDevice(), tex_obj->mem, 0,
                           mem_alloc.allocationSize, 0, &data);
         assert(!err);
 
@@ -864,7 +509,7 @@ demo_prepare_texture_image(Demo *demo, const uint32_t *tex_colors,
                 row[x] = tex_colors[(x & 1) ^ (y & 1)];
         }
 
-        vkUnmapMemory(demo->device, tex_obj->mem);
+        vkUnmapMemory(gLavaContext->getDevice(), tex_obj->mem);
     }
 
     tex_obj->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -875,23 +520,21 @@ demo_prepare_texture_image(Demo *demo, const uint32_t *tex_colors,
      * to add a mem ref */
 }
 
-static void demo_destroy_texture_image(Demo *demo,
-                                       struct texture_object *tex_obj) {
-    /* clean up staging resources */
-    vkDestroyImage(demo->device, tex_obj->image, NULL);
-    vkFreeMemory(demo->device, tex_obj->mem, NULL);
+static void demo_destroy_texture_image(Demo *demo, struct texture_object *tex_obj) {
+    vkDestroyImage(gLavaContext->getDevice(), tex_obj->image, NULL);
+    vkFreeMemory(gLavaContext->getDevice(), tex_obj->mem, NULL);
 }
 
 static void demo_prepare_textures(Demo *demo) {
     const VkFormat tex_format = VK_FORMAT_B8G8R8A8_UNORM;
     VkFormatProperties props;
     const uint32_t tex_colors[DEMO_TEXTURE_COUNT][2] = {
-        {0xffff0000, 0xff00ff00},
+        {0xff7f8050, 0xff008080},
     };
     uint32_t i;
     VkResult U_ASSERT_ONLY err;
 
-    vkGetPhysicalDeviceFormatProperties(demo->gpu, tex_format, &props);
+    vkGetPhysicalDeviceFormatProperties(gLavaContext->getGpu(), tex_format, &props);
 
     for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
         if ((props.linearTilingFeatures &
@@ -994,13 +637,13 @@ static void demo_prepare_textures(Demo *demo) {
         };
 
         /* create sampler */
-        err = vkCreateSampler(demo->device, &sampler, NULL,
+        err = vkCreateSampler(gLavaContext->getDevice(), &sampler, NULL,
                               &demo->textures[i].sampler);
         assert(!err);
 
         /* create image view */
         view.image = demo->textures[i].image;
-        err = vkCreateImageView(demo->device, &view, NULL,
+        err = vkCreateImageView(gLavaContext->getDevice(), &view, NULL,
                                 &demo->textures[i].view);
         assert(!err);
     }
@@ -1035,10 +678,10 @@ static void demo_prepare_vertices(Demo *demo) {
 
     memset(&demo->vertices, 0, sizeof(demo->vertices));
 
-    err = vkCreateBuffer(demo->device, &buf_info, NULL, &demo->vertices.buf);
+    err = vkCreateBuffer(gLavaContext->getDevice(), &buf_info, NULL, &demo->vertices.buf);
     assert(!err);
 
-    vkGetBufferMemoryRequirements(demo->device, demo->vertices.buf, &mem_reqs);
+    vkGetBufferMemoryRequirements(gLavaContext->getDevice(), demo->vertices.buf, &mem_reqs);
     assert(!err);
 
     mem_alloc.allocationSize = mem_reqs.size;
@@ -1048,18 +691,18 @@ static void demo_prepare_vertices(Demo *demo) {
                                        &mem_alloc.memoryTypeIndex);
     assert(pass);
 
-    err = vkAllocateMemory(demo->device, &mem_alloc, NULL, &demo->vertices.mem);
+    err = vkAllocateMemory(gLavaContext->getDevice(), &mem_alloc, NULL, &demo->vertices.mem);
     assert(!err);
 
-    err = vkMapMemory(demo->device, demo->vertices.mem, 0,
+    err = vkMapMemory(gLavaContext->getDevice(), demo->vertices.mem, 0,
                       mem_alloc.allocationSize, 0, &data);
     assert(!err);
 
     memcpy(data, vb, sizeof(vb));
 
-    vkUnmapMemory(demo->device, demo->vertices.mem);
+    vkUnmapMemory(gLavaContext->getDevice(), demo->vertices.mem);
 
-    err = vkBindBufferMemory(demo->device, demo->vertices.buf,
+    err = vkBindBufferMemory(gLavaContext->getDevice(), demo->vertices.buf,
                              demo->vertices.mem, 0);
     assert(!err);
 
@@ -1102,7 +745,7 @@ static void demo_prepare_descriptor_layout(Demo *demo) {
     };
     VkResult U_ASSERT_ONLY err;
 
-    err = vkCreateDescriptorSetLayout(demo->device, &descriptor_layout, NULL,
+    err = vkCreateDescriptorSetLayout(gLavaContext->getDevice(), &descriptor_layout, NULL,
                                       &demo->desc_layout);
     assert(!err);
 
@@ -1113,70 +756,8 @@ static void demo_prepare_descriptor_layout(Demo *demo) {
         .pSetLayouts = &demo->desc_layout,
     };
 
-    err = vkCreatePipelineLayout(demo->device, &pPipelineLayoutCreateInfo, NULL,
+    err = vkCreatePipelineLayout(gLavaContext->getDevice(), &pPipelineLayoutCreateInfo, NULL,
                                  &demo->pipeline_layout);
-    assert(!err);
-}
-
-static void demo_prepare_render_pass(Demo *demo) {
-    const VkAttachmentDescription attachments[2] = {
-            [0] =
-                {
-                 .format = demo->format,
-                 .samples = VK_SAMPLE_COUNT_1_BIT,
-                 .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                 .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-                 .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                 .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                 .initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                 .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                },
-            [1] =
-                {
-                 .format = demo->depth.format,
-                 .samples = VK_SAMPLE_COUNT_1_BIT,
-                 .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                 .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                 .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                 .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                 .initialLayout =
-                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                 .finalLayout =
-                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                },
-    };
-    const VkAttachmentReference color_reference = {
-        .attachment = 0, .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-    };
-    const VkAttachmentReference depth_reference = {
-        .attachment = 1,
-        .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-    };
-    const VkSubpassDescription subpass = {
-        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-        .flags = 0,
-        .inputAttachmentCount = 0,
-        .pInputAttachments = NULL,
-        .colorAttachmentCount = 1,
-        .pColorAttachments = &color_reference,
-        .pResolveAttachments = NULL,
-        .pDepthStencilAttachment = &depth_reference,
-        .preserveAttachmentCount = 0,
-        .pPreserveAttachments = NULL,
-    };
-    const VkRenderPassCreateInfo rp_info = {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        .pNext = NULL,
-        .attachmentCount = 2,
-        .pAttachments = attachments,
-        .subpassCount = 1,
-        .pSubpasses = &subpass,
-        .dependencyCount = 0,
-        .pDependencies = NULL,
-    };
-    VkResult U_ASSERT_ONLY err;
-
-    err = vkCreateRenderPass(demo->device, &rp_info, NULL, &demo->render_pass);
     assert(!err);
 }
 
@@ -1190,7 +771,7 @@ demo_prepare_shader_module(Demo *demo, const uint32_t *code, size_t nwords) {
     moduleCreateInfo.codeSize = nwords * 4;
     moduleCreateInfo.pCode = code;
     moduleCreateInfo.flags = 0;
-    err = vkCreateShaderModule(demo->device, &moduleCreateInfo, NULL, &module);
+    err = vkCreateShaderModule(gLavaContext->getDevice(), &moduleCreateInfo, NULL, &module);
     assert(!err);
 
     return module;
@@ -1315,23 +896,23 @@ static void demo_prepare_pipeline(Demo *demo) {
     pipeline.pViewportState = &vp;
     pipeline.pDepthStencilState = &ds;
     pipeline.pStages = shaderStages;
-    pipeline.renderPass = demo->render_pass;
+    pipeline.renderPass = gLavaContext->getRenderPass();
     pipeline.pDynamicState = &dynamicState;
 
     memset(&pipelineCache, 0, sizeof(pipelineCache));
     pipelineCache.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 
-    err = vkCreatePipelineCache(demo->device, &pipelineCache, NULL,
+    err = vkCreatePipelineCache(gLavaContext->getDevice(), &pipelineCache, NULL,
                                 &demo->pipelineCache);
     assert(!err);
-    err = vkCreateGraphicsPipelines(demo->device, demo->pipelineCache, 1,
+    err = vkCreateGraphicsPipelines(gLavaContext->getDevice(), demo->pipelineCache, 1,
                                     &pipeline, NULL, &demo->pipeline);
     assert(!err);
 
-    vkDestroyPipelineCache(demo->device, demo->pipelineCache, NULL);
+    vkDestroyPipelineCache(gLavaContext->getDevice(), demo->pipelineCache, NULL);
 
-    vkDestroyShaderModule(demo->device, demo->frag_shader_module, NULL);
-    vkDestroyShaderModule(demo->device, demo->vert_shader_module, NULL);
+    vkDestroyShaderModule(gLavaContext->getDevice(), demo->frag_shader_module, NULL);
+    vkDestroyShaderModule(gLavaContext->getDevice(), demo->vert_shader_module, NULL);
 }
 
 static void demo_prepare_descriptor_pool(Demo *demo) {
@@ -1348,7 +929,7 @@ static void demo_prepare_descriptor_pool(Demo *demo) {
     };
     VkResult U_ASSERT_ONLY err;
 
-    err = vkCreateDescriptorPool(demo->device, &descriptor_pool, NULL,
+    err = vkCreateDescriptorPool(gLavaContext->getDevice(), &descriptor_pool, NULL,
                                  &demo->desc_pool);
     assert(!err);
 }
@@ -1365,7 +946,7 @@ static void demo_prepare_descriptor_set(Demo *demo) {
         .descriptorPool = demo->desc_pool,
         .descriptorSetCount = 1,
         .pSetLayouts = &demo->desc_layout};
-    err = vkAllocateDescriptorSets(demo->device, &alloc_info, &demo->desc_set);
+    err = vkAllocateDescriptorSets(gLavaContext->getDevice(), &alloc_info, &demo->desc_set);
     assert(!err);
 
     memset(&tex_descs, 0, sizeof(tex_descs));
@@ -1382,73 +963,16 @@ static void demo_prepare_descriptor_set(Demo *demo) {
     write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     write.pImageInfo = tex_descs;
 
-    vkUpdateDescriptorSets(demo->device, 1, &write, 0, NULL);
-}
-
-static void demo_prepare_framebuffers(Demo *demo) {
-    VkImageView attachments[2];
-    attachments[1] = demo->depth.view;
-
-    const VkFramebufferCreateInfo fb_info = {
-        .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-        .pNext = NULL,
-        .renderPass = demo->render_pass,
-        .attachmentCount = 2,
-        .pAttachments = attachments,
-        .width = demo->width,
-        .height = demo->height,
-        .layers = 1,
-    };
-    VkResult U_ASSERT_ONLY err;
-    uint32_t i;
-
-    demo->framebuffers = (VkFramebuffer *)malloc(demo->swapchainImageCount *
-                                                 sizeof(VkFramebuffer));
-    assert(demo->framebuffers);
-
-    for (i = 0; i < demo->swapchainImageCount; i++) {
-        attachments[0] = demo->buffers[i].view;
-        err = vkCreateFramebuffer(demo->device, &fb_info, NULL,
-                                  &demo->framebuffers[i]);
-        assert(!err);
-    }
+    vkUpdateDescriptorSets(gLavaContext->getDevice(), 1, &write, 0, NULL);
 }
 
 static void demo_prepare(Demo *demo) {
-    VkResult U_ASSERT_ONLY err;
-
-    const VkCommandPoolCreateInfo cmd_pool_info = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .pNext = NULL,
-        .queueFamilyIndex = demo->graphics_queue_node_index,
-        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-    };
-    err = vkCreateCommandPool(demo->device, &cmd_pool_info, NULL,
-                              &demo->cmd_pool);
-    assert(!err);
-
-    const VkCommandBufferAllocateInfo cmd = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .pNext = NULL,
-        .commandPool = demo->cmd_pool,
-        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = 1,
-    };
-    err = vkAllocateCommandBuffers(demo->device, &cmd, &demo->draw_cmd);
-    assert(!err);
-
-    demo_prepare_buffers(demo);
-    demo_prepare_depth(demo);
     demo_prepare_textures(demo);
     demo_prepare_vertices(demo);
     demo_prepare_descriptor_layout(demo);
-    demo_prepare_render_pass(demo);
     demo_prepare_pipeline(demo);
-
     demo_prepare_descriptor_pool(demo);
     demo_prepare_descriptor_set(demo);
-
-    demo_prepare_framebuffers(demo);
 }
 
 static void demo_error_callback(int error, const char* description) {
@@ -1465,13 +989,6 @@ static void demo_refresh_callback(GLFWwindow* window) {
     demo_draw(static_cast<Demo*>(glfwGetWindowUserPointer(window)));
 }
 
-static void demo_resize_callback(GLFWwindow* window, int width, int height) {
-    auto* demo = static_cast<Demo*>(glfwGetWindowUserPointer(window));
-    demo->width = width;
-    demo->height = height;
-    demo_resize(demo);
-}
-
 static void demo_run(Demo *demo) {
     while (!glfwWindowShouldClose(demo->window)) {
         glfwPollEvents();
@@ -1486,466 +1003,57 @@ static void demo_run(Demo *demo) {
         demo->depthStencil += demo->depthIncrement;
 
         // Wait for work to finish before updating MVP.
-        vkDeviceWaitIdle(demo->device);
+        vkDeviceWaitIdle(gLavaContext->getDevice());
         demo->curFrame++;
         if (demo->frameCount != INT32_MAX && demo->curFrame == demo->frameCount)
             glfwSetWindowShouldClose(demo->window, GLFW_TRUE);
     }
 }
 
-static void demo_create_window(Demo *demo) {
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+static void demo_cleanup(Demo *demo) {
 
-    demo->window = glfwCreateWindow(demo->width,
-                                    demo->height,
-                                    APP_LONG_NAME,
-                                    NULL,
-                                    NULL);
-    if (!demo->window) {
-        // It didn't work, so try to give a useful error:
-        printf("Cannot create a window in which to draw!\n");
-        fflush(stdout);
-        exit(1);
+    vkDestroyDescriptorPool(gLavaContext->getDevice(), demo->desc_pool, NULL);
+
+    if (demo->setup_cmd) {
+        vkFreeCommandBuffers(gLavaContext->getDevice(), gLavaContext->getCommandPool(), 1,
+                &demo->setup_cmd);
     }
 
-    glfwSetWindowUserPointer(demo->window, demo);
-    glfwSetWindowRefreshCallback(demo->window, demo_refresh_callback);
-    glfwSetFramebufferSizeCallback(demo->window, demo_resize_callback);
-    glfwSetKeyCallback(demo->window, demo_key_callback);
+    vkDestroyPipeline(gLavaContext->getDevice(), demo->pipeline, NULL);
+    vkDestroyPipelineLayout(gLavaContext->getDevice(), demo->pipeline_layout, NULL);
+    vkDestroyDescriptorSetLayout(gLavaContext->getDevice(), demo->desc_layout, NULL);
+
+    vkDestroyBuffer(gLavaContext->getDevice(), demo->vertices.buf, NULL);
+    vkFreeMemory(gLavaContext->getDevice(), demo->vertices.mem, NULL);
+
+    for (uint32_t i = 0; i < DEMO_TEXTURE_COUNT; i++) {
+        vkDestroyImageView(gLavaContext->getDevice(), demo->textures[i].view, NULL);
+        vkDestroyImage(gLavaContext->getDevice(), demo->textures[i].image, NULL);
+        vkFreeMemory(gLavaContext->getDevice(), demo->textures[i].mem, NULL);
+        vkDestroySampler(gLavaContext->getDevice(), demo->textures[i].sampler, NULL);
+    }
+
+    // vkDestroyImageView(gLavaContext->getDevice(), demo->depth.view, NULL);
+    // vkDestroyImage(gLavaContext->getDevice(), demo->depth.image, NULL);
+    // vkFreeMemory(gLavaContext->getDevice(), demo->depth.mem, NULL);
+
+    gLavaContext->killDevice();
+
+    vkDestroySurfaceKHR(gLavaContext->getInstance(), demo->surface, NULL);
+
+    LavaContext::destroy(&gLavaContext);
+
+    glfwDestroyWindow(demo->window);
+    glfwTerminate();
 }
 
-/*
- * Return 1 (true) if all layer names specified in check_names
- * can be found in given layer properties.
- */
-static VkBool32 demo_check_layers(uint32_t check_count, const char **check_names,
-                                  uint32_t layer_count,
-                                  VkLayerProperties *layers) {
-    uint32_t i, j;
-    for (i = 0; i < check_count; i++) {
-        VkBool32 found = 0;
-        for (j = 0; j < layer_count; j++) {
-            if (!strcmp(check_names[i], layers[j].layerName)) {
-                found = 1;
-                break;
-            }
-        }
-        if (!found) {
-            fprintf(stderr, "Cannot find layer: %s\n", check_names[i]);
-            return 0;
-        }
-    }
-    return 1;
-}
-
-static void demo_init_vk(Demo *demo) {
-    VkResult err;
-    uint32_t i = 0;
-    uint32_t required_extension_count = 0;
-    uint32_t instance_extension_count = 0;
-    uint32_t instance_layer_count = 0;
-    uint32_t validation_layer_count = 0;
-    const char **required_extensions = NULL;
-    const char **instance_validation_layers = NULL;
-    demo->enabled_extension_count = 0;
-    demo->enabled_layer_count = 0;
-
-    const char *instance_validation_layers_alt1[] = {
-        "VK_LAYER_LUNARG_standard_validation"
+int main(const int argc, const char *argv[]) {
+    Demo demo = {
+        .frameCount = INT32_MAX,
+        .depthStencil = 1.0,
+        .depthIncrement = -0.01f,
     };
 
-    const char *instance_validation_layers_alt2[] = {
-        "VK_LAYER_GOOGLE_threading",       "VK_LAYER_LUNARG_parameter_validation",
-        "VK_LAYER_LUNARG_object_tracker",  "VK_LAYER_LUNARG_image",
-        "VK_LAYER_LUNARG_core_validation", "VK_LAYER_LUNARG_swapchain",
-        "VK_LAYER_GOOGLE_unique_objects"
-    };
-
-    /* Look for validation layers */
-    VkBool32 validation_found = 0;
-    if (demo->validate) {
-
-        err = vkEnumerateInstanceLayerProperties(&instance_layer_count, NULL);
-        assert(!err);
-
-        instance_validation_layers = (const char**) instance_validation_layers_alt1;
-        if (instance_layer_count > 0) {
-            auto *instance_layers = static_cast<VkLayerProperties*>(
-                    malloc(sizeof (VkLayerProperties) * instance_layer_count));
-            err = vkEnumerateInstanceLayerProperties(&instance_layer_count,
-                    instance_layers);
-            assert(!err);
-
-
-            validation_found = demo_check_layers(
-                    ARRAY_SIZE(instance_validation_layers_alt1),
-                    instance_validation_layers, instance_layer_count,
-                    instance_layers);
-            if (validation_found) {
-                demo->enabled_layer_count = ARRAY_SIZE(instance_validation_layers_alt1);
-                demo->enabled_layers[0] = "VK_LAYER_LUNARG_standard_validation";
-                validation_layer_count = 1;
-            } else {
-                // use alternative set of validation layers
-                instance_validation_layers =
-                    (const char**) instance_validation_layers_alt2;
-                demo->enabled_layer_count = ARRAY_SIZE(instance_validation_layers_alt2);
-                validation_found = demo_check_layers(
-                    ARRAY_SIZE(instance_validation_layers_alt2),
-                    instance_validation_layers, instance_layer_count,
-                    instance_layers);
-                validation_layer_count =
-                    ARRAY_SIZE(instance_validation_layers_alt2);
-                for (i = 0; i < validation_layer_count; i++) {
-                    demo->enabled_layers[i] = instance_validation_layers[i];
-                }
-            }
-            free(instance_layers);
-        }
-
-        if (!validation_found) {
-            ERR_EXIT("vkEnumerateInstanceLayerProperties failed to find "
-                    "required validation layer.\n\n"
-                    "Please look at the Getting Started guide for additional "
-                    "information.\n",
-                    "vkCreateInstance Failure");
-        }
-    }
-
-    /* Look for instance extensions */
-    required_extensions = glfwGetRequiredInstanceExtensions(&required_extension_count);
-    if (!required_extensions) {
-        ERR_EXIT("glfwGetRequiredInstanceExtensions failed to find the "
-                 "platform surface extensions.\n\nDo you have a compatible "
-                 "Vulkan installable client driver (ICD) installed?\nPlease "
-                 "look at the Getting Started guide for additional "
-                 "information.\n",
-                 "vkCreateInstance Failure");
-    }
-
-    for (i = 0; i < required_extension_count; i++) {
-        demo->extension_names[demo->enabled_extension_count++] = required_extensions[i];
-        assert(demo->enabled_extension_count < 64);
-    }
-
-    err = vkEnumerateInstanceExtensionProperties(
-        NULL, &instance_extension_count, NULL);
-    assert(!err);
-
-    if (instance_extension_count > 0) {
-        auto *instance_extensions = static_cast<VkExtensionProperties *>(
-            malloc(sizeof(VkExtensionProperties) * instance_extension_count));
-        err = vkEnumerateInstanceExtensionProperties(
-            NULL, &instance_extension_count, instance_extensions);
-        assert(!err);
-        for (i = 0; i < instance_extension_count; i++) {
-            if (!strcmp(VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-                        instance_extensions[i].extensionName)) {
-                if (demo->validate) {
-                    demo->extension_names[demo->enabled_extension_count++] =
-                        VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
-                }
-            }
-            assert(demo->enabled_extension_count < 64);
-        }
-
-        free(instance_extensions);
-    }
-
-    const VkApplicationInfo app = {
-        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pNext = NULL,
-        .pApplicationName = APP_SHORT_NAME,
-        .applicationVersion = 0,
-        .pEngineName = APP_SHORT_NAME,
-        .engineVersion = 0,
-        .apiVersion = VK_API_VERSION_1_0,
-    };
-
-    VkInstanceCreateInfo inst_info = {
-        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        .pNext = NULL,
-        .pApplicationInfo = &app,
-        .enabledLayerCount = demo->enabled_layer_count,
-        .ppEnabledLayerNames = (const char *const *)instance_validation_layers,
-        .enabledExtensionCount = demo->enabled_extension_count,
-        .ppEnabledExtensionNames = (const char *const *)demo->extension_names,
-    };
-
-    gLavaContext = LavaContext::create(inst_info);
-    demo->inst = gLavaContext->getInstance();
-
-    /* Make initial call to query gpu_count, then second call for gpu info*/
-    uint32_t gpu_count;
-    err = vkEnumeratePhysicalDevices(demo->inst, &gpu_count, NULL);
-    assert(!err && gpu_count > 0);
-
-    if (gpu_count > 0) {
-        auto *physical_devices = static_cast<VkPhysicalDevice *>(
-            malloc(sizeof(VkPhysicalDevice) * gpu_count));
-        err = vkEnumeratePhysicalDevices(demo->inst, &gpu_count,
-                                         physical_devices);
-        assert(!err);
-        /* For tri demo we just grab the first physical device */
-        demo->gpu = physical_devices[0];
-        free(physical_devices);
-    } else {
-        ERR_EXIT("vkEnumeratePhysicalDevices reported zero accessible devices."
-                 "\n\nDo you have a compatible Vulkan installable client"
-                 " driver (ICD) installed?\nPlease look at the Getting Started"
-                 " guide for additional information.\n",
-                 "vkEnumeratePhysicalDevices Failure");
-    }
-
-    /* Look for device extensions */
-    uint32_t device_extension_count = 0;
-    VkBool32 swapchainExtFound = 0;
-    demo->enabled_extension_count = 0;
-
-    err = vkEnumerateDeviceExtensionProperties(demo->gpu, NULL,
-                                               &device_extension_count, NULL);
-    assert(!err);
-
-    if (device_extension_count > 0) {
-        auto *device_extensions = static_cast<VkExtensionProperties *>(
-                malloc(sizeof(VkExtensionProperties) * device_extension_count));
-        err = vkEnumerateDeviceExtensionProperties(
-            demo->gpu, NULL, &device_extension_count, device_extensions);
-        assert(!err);
-
-        for (i = 0; i < device_extension_count; i++) {
-            if (!strcmp(VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-                        device_extensions[i].extensionName)) {
-                swapchainExtFound = 1;
-                demo->extension_names[demo->enabled_extension_count++] =
-                    VK_KHR_SWAPCHAIN_EXTENSION_NAME;
-            }
-            assert(demo->enabled_extension_count < 64);
-        }
-
-        free(device_extensions);
-    }
-
-    if (!swapchainExtFound) {
-        ERR_EXIT("vkEnumerateDeviceExtensionProperties failed to find "
-                 "the " VK_KHR_SWAPCHAIN_EXTENSION_NAME
-                 " extension.\n\nDo you have a compatible "
-                 "Vulkan installable client driver (ICD) installed?\nPlease "
-                 "look at the Getting Started guide for additional "
-                 "information.\n",
-                 "vkCreateInstance Failure");
-    }
-
-    if (demo->validate) {
-        demo->CreateDebugReportCallback =
-            (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(
-                demo->inst, "vkCreateDebugReportCallbackEXT");
-        demo->DestroyDebugReportCallback =
-            (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(
-                demo->inst, "vkDestroyDebugReportCallbackEXT");
-        if (!demo->CreateDebugReportCallback) {
-            ERR_EXIT(
-                "GetProcAddr: Unable to find vkCreateDebugReportCallbackEXT\n",
-                "vkGetProcAddr Failure");
-        }
-        if (!demo->DestroyDebugReportCallback) {
-            ERR_EXIT(
-                "GetProcAddr: Unable to find vkDestroyDebugReportCallbackEXT\n",
-                "vkGetProcAddr Failure");
-        }
-        demo->DebugReportMessage =
-            (PFN_vkDebugReportMessageEXT)vkGetInstanceProcAddr(
-                demo->inst, "vkDebugReportMessageEXT");
-        if (!demo->DebugReportMessage) {
-            ERR_EXIT("GetProcAddr: Unable to find vkDebugReportMessageEXT\n",
-                     "vkGetProcAddr Failure");
-        }
-
-        VkDebugReportCallbackCreateInfoEXT dbgCreateInfo;
-        dbgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
-        dbgCreateInfo.flags =
-            VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
-        dbgCreateInfo.pfnCallback = demo->use_break ? BreakCallback : dbgFunc;
-        dbgCreateInfo.pUserData = demo;
-        dbgCreateInfo.pNext = NULL;
-        err = demo->CreateDebugReportCallback(demo->inst, &dbgCreateInfo, NULL,
-                                              &demo->msg_callback);
-        switch (err) {
-        case VK_SUCCESS:
-            break;
-        case VK_ERROR_OUT_OF_HOST_MEMORY:
-            ERR_EXIT("CreateDebugReportCallback: out of host memory\n",
-                     "CreateDebugReportCallback Failure");
-            break;
-        default:
-            ERR_EXIT("CreateDebugReportCallback: unknown failure\n",
-                     "CreateDebugReportCallback Failure");
-            break;
-        }
-    }
-
-    // Having these GIPA queries of device extension entry points both
-    // BEFORE and AFTER vkCreateDevice is a good test for the loader
-    GET_INSTANCE_PROC_ADDR(demo->inst, GetPhysicalDeviceSurfaceCapabilitiesKHR);
-    GET_INSTANCE_PROC_ADDR(demo->inst, GetPhysicalDeviceSurfaceFormatsKHR);
-    GET_INSTANCE_PROC_ADDR(demo->inst, GetPhysicalDeviceSurfacePresentModesKHR);
-    GET_INSTANCE_PROC_ADDR(demo->inst, GetPhysicalDeviceSurfaceSupportKHR);
-
-    vkGetPhysicalDeviceProperties(demo->gpu, &demo->gpu_props);
-
-    // Query with NULL data to get count
-    vkGetPhysicalDeviceQueueFamilyProperties(demo->gpu, &demo->queue_count,
-                                             NULL);
-
-    demo->queue_props = (VkQueueFamilyProperties *)malloc(
-        demo->queue_count * sizeof(VkQueueFamilyProperties));
-    vkGetPhysicalDeviceQueueFamilyProperties(demo->gpu, &demo->queue_count,
-                                             demo->queue_props);
-    assert(demo->queue_count >= 1);
-
-    vkGetPhysicalDeviceFeatures(demo->gpu, &demo->gpu_features);
-
-    // Graphics queue and MemMgr queue can be separate.
-    // TODO: Add support for separate queues, including synchronization,
-    //       and appropriate tracking for QueueSubmit
-}
-
-static void demo_init_device(Demo *demo) {
-    VkResult U_ASSERT_ONLY err;
-
-    float queue_priorities[1] = {0.0};
-    const VkDeviceQueueCreateInfo queue = {
-        .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        .pNext = NULL,
-        .queueFamilyIndex = demo->graphics_queue_node_index,
-        .queueCount = 1,
-        .pQueuePriorities = queue_priorities};
-
-
-    VkPhysicalDeviceFeatures features;
-    memset(&features, 0, sizeof(features));
-    if (demo->gpu_features.shaderClipDistance) {
-        features.shaderClipDistance = VK_TRUE;
-    }
-
-    VkDeviceCreateInfo device = {
-        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .pNext = NULL,
-        .queueCreateInfoCount = 1,
-        .pQueueCreateInfos = &queue,
-        .enabledLayerCount = 0,
-        .ppEnabledLayerNames = NULL,
-        .enabledExtensionCount = demo->enabled_extension_count,
-        .ppEnabledExtensionNames = (const char *const *)demo->extension_names,
-        .pEnabledFeatures = &features,
-    };
-
-    err = vkCreateDevice(demo->gpu, &device, NULL, &demo->device);
-    assert(!err);
-
-    GET_DEVICE_PROC_ADDR(demo->device, CreateSwapchainKHR);
-    GET_DEVICE_PROC_ADDR(demo->device, DestroySwapchainKHR);
-    GET_DEVICE_PROC_ADDR(demo->device, GetSwapchainImagesKHR);
-    GET_DEVICE_PROC_ADDR(demo->device, AcquireNextImageKHR);
-    GET_DEVICE_PROC_ADDR(demo->device, QueuePresentKHR);
-}
-
-static void demo_init_vk_swapchain(Demo *demo) {
-    VkResult U_ASSERT_ONLY err;
-    uint32_t i;
-
-    // Create a WSI surface for the window:
-    glfwCreateWindowSurface(demo->inst, demo->window, NULL, &demo->surface);
-
-    // Iterate over each queue to learn whether it supports presenting:
-    VkBool32 *supportsPresent =
-        (VkBool32 *)malloc(demo->queue_count * sizeof(VkBool32));
-    for (i = 0; i < demo->queue_count; i++) {
-        demo->fpGetPhysicalDeviceSurfaceSupportKHR(demo->gpu, i, demo->surface,
-                                                   &supportsPresent[i]);
-    }
-
-    // Search for a graphics and a present queue in the array of queue
-    // families, try to find one that supports both
-    uint32_t graphicsQueueNodeIndex = UINT32_MAX;
-    uint32_t presentQueueNodeIndex = UINT32_MAX;
-    for (i = 0; i < demo->queue_count; i++) {
-        if ((demo->queue_props[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
-            if (graphicsQueueNodeIndex == UINT32_MAX) {
-                graphicsQueueNodeIndex = i;
-            }
-
-            if (supportsPresent[i] == VK_TRUE) {
-                graphicsQueueNodeIndex = i;
-                presentQueueNodeIndex = i;
-                break;
-            }
-        }
-    }
-    if (presentQueueNodeIndex == UINT32_MAX) {
-        // If didn't find a queue that supports both graphics and present, then
-        // find a separate present queue.
-        for (i = 0; i < demo->queue_count; ++i) {
-            if (supportsPresent[i] == VK_TRUE) {
-                presentQueueNodeIndex = i;
-                break;
-            }
-        }
-    }
-    free(supportsPresent);
-
-    // Generate error if could not find both a graphics and a present queue
-    if (graphicsQueueNodeIndex == UINT32_MAX ||
-        presentQueueNodeIndex == UINT32_MAX) {
-        ERR_EXIT("Could not find a graphics and a present queue\n",
-                 "Swapchain Initialization Failure");
-    }
-
-    // TODO: Add support for separate queues, including presentation,
-    //       synchronization, and appropriate tracking for QueueSubmit.
-    // NOTE: While it is possible for an application to use a separate graphics
-    //       and a present queues, this demo program assumes it is only using
-    //       one:
-    if (graphicsQueueNodeIndex != presentQueueNodeIndex) {
-        ERR_EXIT("Could not find a common graphics and a present queue\n",
-                 "Swapchain Initialization Failure");
-    }
-
-    demo->graphics_queue_node_index = graphicsQueueNodeIndex;
-
-    demo_init_device(demo);
-
-    vkGetDeviceQueue(demo->device, demo->graphics_queue_node_index, 0,
-                     &demo->queue);
-
-    // Get the list of VkFormat's that are supported:
-    uint32_t formatCount;
-    err = demo->fpGetPhysicalDeviceSurfaceFormatsKHR(demo->gpu, demo->surface,
-                                                     &formatCount, NULL);
-    assert(!err);
-    VkSurfaceFormatKHR *surfFormats =
-        (VkSurfaceFormatKHR *)malloc(formatCount * sizeof(VkSurfaceFormatKHR));
-    err = demo->fpGetPhysicalDeviceSurfaceFormatsKHR(demo->gpu, demo->surface,
-                                                     &formatCount, surfFormats);
-    assert(!err);
-    // If the format list includes just one entry of VK_FORMAT_UNDEFINED,
-    // the surface has no preferred format.  Otherwise, at least one
-    // supported format will be returned.
-    if (formatCount == 1 && surfFormats[0].format == VK_FORMAT_UNDEFINED) {
-        demo->format = VK_FORMAT_B8G8R8A8_UNORM;
-    } else {
-        assert(formatCount >= 1);
-        demo->format = surfFormats[0].format;
-    }
-    demo->color_space = surfFormats[0].colorSpace;
-
-    demo->curFrame = 0;
-
-    // Get Memory information and properties
-    vkGetPhysicalDeviceMemoryProperties(demo->gpu, &demo->memory_properties);
-}
-
-static void demo_init_connection(Demo *demo) {
     glfwSetErrorCallback(demo_error_callback);
 
     if (!glfwInit()) {
@@ -1959,166 +1067,40 @@ static void demo_init_connection(Demo *demo) {
         fflush(stdout);
         exit(1);
     }
-}
 
-static void demo_init(Demo *demo, const int argc, const char *argv[])
-{
-    int i;
-    memset(demo, 0, sizeof(*demo));
-    demo->frameCount = INT32_MAX;
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    glfwWindowHint(GLFW_DECORATED, GL_FALSE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
 
-    for (i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--use_staging") == 0) {
-            demo->use_staging_buffer = true;
-            continue;
-        }
-        if (strcmp(argv[i], "--break") == 0) {
-            demo->use_break = true;
-            continue;
-        }
-        if (strcmp(argv[i], "--validate") == 0) {
-            demo->validate = true;
-            continue;
-        }
-        if (strcmp(argv[i], "--c") == 0 && demo->frameCount == INT32_MAX &&
-            i < argc - 1 && sscanf(argv[i + 1], "%d", &demo->frameCount) == 1 &&
-            demo->frameCount >= 0) {
-            i++;
-            continue;
-        }
-
-        fprintf(stderr, "Usage:\n  %s [--use_staging] [--validate] [--break] "
-                        "[--c <framecount>]\n",
-                APP_SHORT_NAME);
-        fflush(stderr);
+    float xscale = 0, yscale = 0;
+    glfwGetMonitorContentScale(glfwGetPrimaryMonitor(), &xscale, &yscale);
+    demo.window = glfwCreateWindow(DEMO_WIDTH / xscale, DEMO_HEIGHT / yscale, "hellolava",
+            NULL, NULL);
+    if (!demo.window) {
+        printf("Cannot create a window in which to draw!\n");
+        fflush(stdout);
         exit(1);
     }
 
-    demo_init_connection(demo);
-    demo_init_vk(demo);
+    glfwSetWindowUserPointer(demo.window, &demo);
+    glfwSetWindowRefreshCallback(demo.window, demo_refresh_callback);
+    glfwSetKeyCallback(demo.window, demo_key_callback);
 
-    demo->width = 300;
-    demo->height = 300;
-    demo->depthStencil = 1.0;
-    demo->depthIncrement = -0.01f;
-}
+    gLavaContext = LavaContext::create(true);
 
-static void demo_cleanup(Demo *demo) {
-    uint32_t i;
+    glfwCreateWindowSurface(gLavaContext->getInstance(), demo.window, NULL, &demo.surface);
 
-    for (i = 0; i < demo->swapchainImageCount; i++) {
-        vkDestroyFramebuffer(demo->device, demo->framebuffers[i], NULL);
-    }
-    free(demo->framebuffers);
-    vkDestroyDescriptorPool(demo->device, demo->desc_pool, NULL);
+    gLavaContext->initDevice(demo.surface, true);
 
-    if (demo->setup_cmd) {
-        vkFreeCommandBuffers(demo->device, demo->cmd_pool, 1, &demo->setup_cmd);
-    }
-    vkFreeCommandBuffers(demo->device, demo->cmd_pool, 1, &demo->draw_cmd);
-    vkDestroyCommandPool(demo->device, demo->cmd_pool, NULL);
-
-    vkDestroyPipeline(demo->device, demo->pipeline, NULL);
-    vkDestroyRenderPass(demo->device, demo->render_pass, NULL);
-    vkDestroyPipelineLayout(demo->device, demo->pipeline_layout, NULL);
-    vkDestroyDescriptorSetLayout(demo->device, demo->desc_layout, NULL);
-
-    vkDestroyBuffer(demo->device, demo->vertices.buf, NULL);
-    vkFreeMemory(demo->device, demo->vertices.mem, NULL);
-
-    for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
-        vkDestroyImageView(demo->device, demo->textures[i].view, NULL);
-        vkDestroyImage(demo->device, demo->textures[i].image, NULL);
-        vkFreeMemory(demo->device, demo->textures[i].mem, NULL);
-        vkDestroySampler(demo->device, demo->textures[i].sampler, NULL);
-    }
-
-    for (i = 0; i < demo->swapchainImageCount; i++) {
-        vkDestroyImageView(demo->device, demo->buffers[i].view, NULL);
-    }
-
-    vkDestroyImageView(demo->device, demo->depth.view, NULL);
-    vkDestroyImage(demo->device, demo->depth.image, NULL);
-    vkFreeMemory(demo->device, demo->depth.mem, NULL);
-
-    demo->fpDestroySwapchainKHR(demo->device, demo->swapchain, NULL);
-    free(demo->buffers);
-
-    vkDestroyDevice(demo->device, NULL);
-    if (demo->validate) {
-        demo->DestroyDebugReportCallback(demo->inst, demo->msg_callback, NULL);
-    }
-    vkDestroySurfaceKHR(demo->inst, demo->surface, NULL);
-
-    LavaContext::destroy(&gLavaContext);
-
-    free(demo->queue_props);
-
-    glfwDestroyWindow(demo->window);
-    glfwTerminate();
-}
-
-static void demo_resize(Demo *demo) {
-    uint32_t i;
-
-    // In order to properly resize the window, we must re-create the swapchain
-    // AND redo the command buffers, etc.
-    //
-    // First, perform part of the demo_cleanup() function:
-
-    for (i = 0; i < demo->swapchainImageCount; i++) {
-        vkDestroyFramebuffer(demo->device, demo->framebuffers[i], NULL);
-    }
-    free(demo->framebuffers);
-    vkDestroyDescriptorPool(demo->device, demo->desc_pool, NULL);
-
-    if (demo->setup_cmd) {
-        vkFreeCommandBuffers(demo->device, demo->cmd_pool, 1, &demo->setup_cmd);
-    }
-    vkFreeCommandBuffers(demo->device, demo->cmd_pool, 1, &demo->draw_cmd);
-    vkDestroyCommandPool(demo->device, demo->cmd_pool, NULL);
-
-    vkDestroyPipeline(demo->device, demo->pipeline, NULL);
-    vkDestroyRenderPass(demo->device, demo->render_pass, NULL);
-    vkDestroyPipelineLayout(demo->device, demo->pipeline_layout, NULL);
-    vkDestroyDescriptorSetLayout(demo->device, demo->desc_layout, NULL);
-
-    vkDestroyBuffer(demo->device, demo->vertices.buf, NULL);
-    vkFreeMemory(demo->device, demo->vertices.mem, NULL);
-
-    for (i = 0; i < DEMO_TEXTURE_COUNT; i++) {
-        vkDestroyImageView(demo->device, demo->textures[i].view, NULL);
-        vkDestroyImage(demo->device, demo->textures[i].image, NULL);
-        vkFreeMemory(demo->device, demo->textures[i].mem, NULL);
-        vkDestroySampler(demo->device, demo->textures[i].sampler, NULL);
-    }
-
-    for (i = 0; i < demo->swapchainImageCount; i++) {
-        vkDestroyImageView(demo->device, demo->buffers[i].view, NULL);
-    }
-
-    vkDestroyImageView(demo->device, demo->depth.view, NULL);
-    vkDestroyImage(demo->device, demo->depth.image, NULL);
-    vkFreeMemory(demo->device, demo->depth.mem, NULL);
-
-    free(demo->buffers);
-
-    // Second, re-perform the demo_prepare() function, which will re-create the
-    // swapchain:
-    demo_prepare(demo);
-}
-
-int main(const int argc, const char *argv[]) {
-    Demo demo;
-
-    demo_init(&demo, argc, argv);
-    demo_create_window(&demo);
-    demo_init_vk_swapchain(&demo);
+    GET_DEVICE_PROC_ADDR(gLavaContext->getDevice(), AcquireNextImageKHR);
+    GET_DEVICE_PROC_ADDR(gLavaContext->getDevice(), QueuePresentKHR);
 
     demo_prepare(&demo);
     demo_run(&demo);
-
+    printf("Shutting down...\n");
+    fflush(stdout);
     demo_cleanup(&demo);
 
-    return validation_error;
+    return 0;
 }

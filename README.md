@@ -1,6 +1,16 @@
-# lava-demos
+# lava
 
-This repository contains the source code and dependencies required to build the **lava** demos. At the time of this writing, only macOS is supported.
+This repository contains the source code and dependencies required to build the **lava** library and demo apps. At the time of this writing, only macOS is supported.
+
+## Design philosophy
+
+lava is written in a subset of C++ that forbids RTTI, exceptions, and the use of <iostream>.
+
+## Code style
+
+The style is vertically compact, but no single line should be longer than 100 characters.
+
+## How to build and run the demo apps
 
 1. Clone this repo with `--recursive` to get the submodules.
 1. Install the LunarG Vulkan SDK for macOS (see below).

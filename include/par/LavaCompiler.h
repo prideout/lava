@@ -12,11 +12,7 @@ class LavaCompiler {
 public:
     static LavaCompiler* create() noexcept;
     static void destroy(LavaCompiler**) noexcept;
-    enum Stage {
-        VERTEX,
-        FRAGMENT,
-        COMPUTE,
-    };
+    enum Stage { VERTEX, FRAGMENT, COMPUTE };
     bool compile(Stage stage, std::string_view glsl, std::vector<uint32_t>* spirv) const noexcept;
 protected:
     LavaCompiler() noexcept = default;

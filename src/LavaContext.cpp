@@ -94,11 +94,14 @@ LavaContextImpl::LavaContextImpl(bool useValidation) noexcept {
             mEnabledLayers = kValidationLayers2;
         }
     }
+    for (auto layer : mEnabledLayers) {
+        mLog.info("Enabling instance layer {}.", layer);
+    }
 
     // Form list of requested extensions.
     mEnabledExtensions = kRequiredExtensions;
     if (useValidation && isExtensionSupported(VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
-        mLog.info("Enabling {}.", VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+        mLog.info("Enabling instance extension {}.", VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
         mEnabledExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
     }
 

@@ -1062,12 +1062,6 @@ int main(const int argc, const char *argv[]) {
         exit(1);
     }
 
-    if (!glfwVulkanSupported()) {
-        printf("GLFW failed to find the Vulkan loader.\nExiting ...\n");
-        fflush(stdout);
-        exit(1);
-    }
-
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
     glfwWindowHint(GLFW_DECORATED, GL_FALSE);

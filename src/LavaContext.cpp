@@ -83,6 +83,7 @@ static bool areAllLayersSupported(const LavaVector<VkLayerProperties>& props,
     const LavaVector<const char*>& layerNames) noexcept;
 
 LavaContextImpl::LavaContextImpl(bool useValidation) noexcept {
+    vkload::init();
     // Form list of requested layers.
     LavaVector<VkLayerProperties> props;
     VkResult error = vkEnumerateInstanceLayerProperties(&props.size, nullptr);
@@ -122,6 +123,7 @@ LavaContextImpl::LavaContextImpl(bool useValidation) noexcept {
     };
     error = vkCreateInstance(&info, VKALLOC, &mInstance);
     LOG_CHECK(!error, "Unable to create Vulkan instance.");
+    vkload::bind(mInstance);
 }
 
 LavaContextImpl::~LavaContextImpl() noexcept {

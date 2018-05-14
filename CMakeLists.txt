@@ -11,6 +11,11 @@ endif()
 # LLVM 5 or greater is required for -std=c++17
 find_package(LLVM 5.0 REQUIRED CONFIG)
 
+# We turn on the sanitizer for subprojects too, otherwise we'd get false positives that could
+# be worked around with ASAN_OPTIONS=detect_container_overflow=0.
+set(EXTRA_SANITIZE_OPTIONS "-fsanitize=undefined -fsanitize=address -fsanitize-recover=address")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_SANITIZE_OPTIONS}")
+
 add_subdirectory(extern/glfw)
 add_subdirectory(extern/glslang)
 

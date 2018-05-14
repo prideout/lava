@@ -12,38 +12,13 @@ static PFN_vkVoidFunction vkGetDeviceProcAddrWrapper(void* context, const char* 
 
 static const char* VKLIBRARY_PATH = "libvulkan.1.dylib";
 
-static std::string getCurrentExecutableFolder() {
-    char executable[2048];
-    uint32_t sz = sizeof(executable);
-    if (_NSGetExecutablePath(executable, &sz) == 0) {
-        std::string selfpath(executable);
-        selfpath = selfpath.substr(0, 1 + selfpath.rfind("/"));
-        return selfpath;
-    }
-    return "./";
-}
-
 bool vkload::init() {
-    const std::string executableFolder = getCurrentExecutableFolder();
-    std::string dylibPath = VKLIBRARY_PATH;
-
-#ifdef LOCAL_PACKAGE
-    const std::string jsonPath = executableFolder + "MoltenVK_icd.json";
-    setenv("VK_ICD_FILENAMES", jsonPath.c_str(), 1);
-    dylibPath = executableFolder + dylibPath;
-#endif
-
+    const std::string dylibPath = VKLIBRARY_PATH;
     void* module = dlopen(dylibPath.c_str(), RTLD_NOW | RTLD_LOCAL);
-    if (!module && getenv("VULKAN_SDK")) {
-        dylibPath = std::string(getenv("VULKAN_SDK")) + "/macOS/lib/" + VKLIBRARY_PATH;
-        module = dlopen(dylibPath.c_str(), RTLD_NOW | RTLD_LOCAL);
-    }
-
     if (!module) {
         std::cerr << "Unable to load " << dylibPath << std::endl;
         return false;
     }
-
     vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr) dlsym(module, "vkGetInstanceProcAddr");
     loadLoaderFunctions(nullptr, vkGetInstanceProcAddrWrapper);
     return true;

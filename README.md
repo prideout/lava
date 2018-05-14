@@ -62,9 +62,10 @@ You should now see a Cornell Box that looks like this:
 
 ```bash
 export VULKAN_SDK=$HOME/Vulkan
-export PATH=$VULKAN_SDK/macOS/bin:$PATH
 export VK_LAYER_PATH=$VULKAN_SDK/macOS/etc/vulkan/explicit_layers.d
 export VK_ICD_FILENAMES=$VULKAN_SDK/macOS/etc/vulkan/icd.d/MoltenVK_icd.json
+export PATH="$VULKAN_SDK/macOS/bin:$PATH"
+export LD_LIBRARY_PATH="$VULKAN_SDK/macOS/lib:$LD_LIBRARY_PATH"
 ```
 
 ## Internal code style

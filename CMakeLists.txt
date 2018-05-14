@@ -1,6 +1,15 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.6)
 
 project(LavaDemos)
+
+# To override the Debug build type, invoke cmake with -DCMAKE_BUILD_TYPE=Release
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to 'Debug' as none was specified.")
+  set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
+# LLVM 5 or greater is required for -std=c++17
+find_package(LLVM 5.0 REQUIRED CONFIG)
 
 add_subdirectory(extern/glfw)
 add_subdirectory(extern/glslang)

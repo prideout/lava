@@ -40,13 +40,13 @@ but it should work on other platforms with just a bit of tweaking to the CMake f
 
 1. Clone this repo with `--recursive` to get the submodules.
 1. Install the LunarG Vulkan SDK for macOS (see below).
-1. Use brew to install clang, cmake, and ninja.
+1. Use brew to install llvm@5, cmake, and ninja.
 1. Invoke the following commands in your terminal.
 
 ```bash
 cd <path to repo>
 mkdir cmake-debug ; cd cmake-debug
-rm -rf * ; cmake -DCMAKE_BUILD_TYPE=Debug .. -G Ninja
+rm -rf * ; cmake .. -G Ninja
 ninja && ./vtriangle
 ```
 

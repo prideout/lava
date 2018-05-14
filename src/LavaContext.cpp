@@ -165,6 +165,7 @@ void LavaContextImpl::killDevice() noexcept {
 }
 
 void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) noexcept {
+    assert(surface && "Missing VkSurfaceKHR instance.");
     // Pick the first physical device.
     LavaVector<VkPhysicalDevice> gpus;
     vkEnumeratePhysicalDevices(mInstance, &gpus.size, nullptr);

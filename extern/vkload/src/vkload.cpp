@@ -34,6 +34,10 @@ bool vkload::init() {
 #endif
 
     void* module = dlopen(dylibPath.c_str(), RTLD_NOW | RTLD_LOCAL);
+    if (!module && getenv("VULKAN_SDK")) {
+        dylibPath = std::string(getenv("VULKAN_SDK")) + "/macOS/lib/" + VKLIBRARY_PATH;
+        module = dlopen(dylibPath.c_str(), RTLD_NOW | RTLD_LOCAL);
+    }
 
     if (!module) {
         std::cerr << "Unable to load " << dylibPath << std::endl;

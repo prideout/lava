@@ -33,6 +33,7 @@ file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
 
 set(DEMO_NAMES
     hellolava
+    noscene
     vtriangle
     vertexid)
 

@@ -73,7 +73,6 @@ public:
     SwapchainBundle mSwap[2] = {};
     VkExtent2D mExtent;
     DepthBundle mDepth;
-    LavaLog mLog;
     friend class LavaContext;
 };
 
@@ -101,13 +100,13 @@ LavaContextImpl::LavaContextImpl(bool useValidation) noexcept {
         }
     }
     for (auto layer : mEnabledLayers) {
-        mLog.info("Enabling instance layer {}.", layer);
+        llog.info("Enabling instance layer {}.", layer);
     }
 
     // Form list of requested extensions.
     mEnabledExtensions = kRequiredExtensions;
     if (useValidation && isExtensionSupported(VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
-        mLog.info("Enabling instance extension {}.", VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+        llog.info("Enabling instance extension {}.", VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
         mEnabledExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
     }
 
@@ -284,7 +283,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     if (mExtent.width == 0xffffffff) {
         mExtent.width = 640;
         mExtent.height = 480;
-        mLog.warn("Platform surface does not have an extent, defaulting to {}x{}",
+        llog.warn("Platform surface does not have an extent, defaulting to {}x{}",
                 mExtent.width, mExtent.height);
     }
     LOG_CHECK(mExtent.width >= surfCapabilities.minImageExtent.width &&

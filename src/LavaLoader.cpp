@@ -8,6 +8,11 @@
 
 #include <string>
 
+namespace LavaLoader {
+    bool init();
+    void bind(VkInstance instance);
+}
+
 static void loadLoaderFunctions(void* context, PFN_vkVoidFunction (*loadcb)(void*, const char*));
 static void loadInstanceFunctions(void* context, PFN_vkVoidFunction (*loadcb)(void*, const char*));
 static void loadDeviceFunctions(void* context, PFN_vkVoidFunction (*loadcb)(void*, const char*));

@@ -17,7 +17,6 @@ public:
     LavaCompilerImpl() noexcept;
     ~LavaCompilerImpl() noexcept;
     bool compile(Stage stage, string_view glsl, vector<uint32_t>* spirv) const noexcept;
-    LavaLog mLog;
 };
 
 LAVA_IMPL_CLASS(LavaCompiler)
@@ -51,19 +50,19 @@ bool LavaCompilerImpl::compile(Stage stage, string_view glsl,
     const int glslangVersion = 100;
     if (glslShader.parse(&DefaultTBuiltInResource, glslangVersion, false, flags)) {
         if (*glslShader.getInfoLog()) {
-            mLog.warn(glslShader.getInfoLog());
+            llog.warn(glslShader.getInfoLog());
         }
         if (*glslShader.getInfoDebugLog()) {
-            mLog.debug(glslShader.getInfoDebugLog());
+            llog.debug(glslShader.getInfoDebugLog());
         }
         glslang::SpvOptions* options = nullptr;
         glslang::GlslangToSpv(*glslShader.getIntermediate(), *spirv, options);
         return true;
     }
-    mLog.error("Can't compile {}", (stage == EShLangVertex ? "VS" : "FS"));
-    mLog.warn(glslShader.getInfoLog());
+    llog.error("Can't compile {}", (stage == EShLangVertex ? "VS" : "FS"));
+    llog.warn(glslShader.getInfoLog());
     if (*glslShader.getInfoDebugLog()) {
-        mLog.debug(glslShader.getInfoDebugLog());
+        llog.debug(glslShader.getInfoDebugLog());
     }
     return false;
 }

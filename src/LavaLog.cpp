@@ -7,6 +7,8 @@ using namespace par;
 
 static bool sFirst = true;
 
+LavaLog par::llog;
+
 LavaLog::LavaLog() {
     if (sFirst) {
         mLogger = spdlog::stdout_color_mt("console");

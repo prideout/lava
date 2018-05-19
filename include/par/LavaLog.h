@@ -7,10 +7,7 @@
 #include <csignal>
 #include <spdlog/spdlog.h>
 
-#define LOG_CHECK(condition, msg) if (!(condition)) { \
-    LavaLog log; \
-    log.error("{}:{} {}", __FILE__, __LINE__, msg); \
-    std::raise(SIGTRAP); }
+#define LOG_CHECK(condition, msg) if (!(condition)) llog.fatal("{}:{} {}", __FILE__, __LINE__, msg);
 
 #ifdef NDEBUG
 #define LOG_DCHECK(condition, msg)
@@ -40,7 +37,7 @@ public:
     void error(const char *fmt, const Arg1 &, const Args &... args) const noexcept;
 
     template<typename Arg1, typename... Args>
-    void critical(const char *fmt, const Arg1 &, const Args &... args) const noexcept;
+    void fatal(const char *fmt, const Arg1 &, const Args &... args) const noexcept;
 
     template<typename T>
     void trace(const T &msg) const noexcept;
@@ -58,11 +55,13 @@ public:
     void error(const T &msg) const noexcept;
 
     template<typename T>
-    void critical(const T &msg) const noexcept;
+    void fatal(const T &msg) const noexcept;
 
 private:
     std::shared_ptr<spdlog::logger> mLogger;
 };
+
+extern LavaLog llog;
 
 template<typename Arg1, typename... Args>
 inline void LavaLog::trace(const char *fmt, const Arg1 &arg1, const Args &... args) const noexcept {
@@ -90,8 +89,9 @@ inline void LavaLog::error(const char *fmt, const Arg1 &arg1, const Args &... ar
 }
 
 template<typename Arg1, typename... Args>
-inline void LavaLog::critical(const char *f, const Arg1 &arg, const Args &... args) const noexcept {
-    mLogger->log(spdlog::level::critical, f, arg, args...);
+inline void LavaLog::fatal(const char *f, const Arg1 &arg, const Args &... args) const noexcept {
+    mLogger->log(spdlog::level::err, f, arg, args...);
+    std::raise(SIGTRAP);
 }
 
 template<typename T>
@@ -120,8 +120,9 @@ inline void LavaLog::error(const T &msg) const noexcept {
 }
 
 template<typename T>
-inline void LavaLog::critical(const T &msg) const noexcept {
-    mLogger->log(spdlog::level::critical, msg);
+inline void LavaLog::fatal(const T &msg) const noexcept {
+    mLogger->log(spdlog::level::err, msg);
+    std::raise(SIGTRAP);
 }
 
 }

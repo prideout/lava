@@ -10,6 +10,11 @@
 
 using namespace par;
 
+namespace LavaLoader {
+    bool init();
+    void bind(VkInstance instance);
+}
+
 static LavaVector<const char *> kRequiredExtensions {
     "VK_KHR_surface",
     "VK_MVK_macos_surface",
@@ -378,14 +383,14 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     if (createDepthBuffer) {
         subpass.pDepthStencilAttachment = &depthref;
         rpattachments.push_back(VkAttachmentDescription {
-                .format = VK_FORMAT_D16_UNORM,
-                .samples = VK_SAMPLE_COUNT_1_BIT,
-                .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            .format = VK_FORMAT_D16_UNORM,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
         });
     }
     const VkRenderPassCreateInfo rpinfo = {

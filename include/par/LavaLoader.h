@@ -11,11 +11,6 @@
     #include <vulkan/vulkan.h>
 #endif
 
-namespace LavaLoader {
-    bool init();
-    void bind(VkInstance instance);
-}
-
 #if defined(VK_VERSION_1_0)
 extern PFN_vkAllocateCommandBuffers vkAllocateCommandBuffers;
 extern PFN_vkAllocateDescriptorSets vkAllocateDescriptorSets;

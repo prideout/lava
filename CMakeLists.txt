@@ -8,9 +8,6 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-# LLVM 5 or greater is required for -std=c++17
-find_package(LLVM 5.0 REQUIRED CONFIG)
-
 # We turn on the sanitizer for subprojects too, otherwise we'd get false positives that could
 # be worked around with ASAN_OPTIONS=detect_container_overflow=0.
 set(EXTRA_SANITIZE_OPTIONS "-fsanitize=undefined -fsanitize=address -fsanitize-recover=address")
@@ -30,7 +27,7 @@ include_directories(${DEMO} PRIVATE
     extern/glslang
     include)
 
-set(CMAKE_CXX_FLAGS "-std=c++17 -stdlib=libc++ -fno-rtti")
+set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
 
 file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
 

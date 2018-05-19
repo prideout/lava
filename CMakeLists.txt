@@ -8,9 +8,9 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-# We turn on the sanitizer for subprojects too, otherwise we'd get false positives that could
-# be worked around with ASAN_OPTIONS=detect_container_overflow=0.
-set(EXTRA_SANITIZE_OPTIONS "-fsanitize=undefined -fsanitize=address -fsanitize-recover=address")
+# We turn on the sanitizer for subprojects too, otherwise we'd get false positives.
+# Note that -fsanitize=undefined is also an interesting option.
+set(EXTRA_SANITIZE_OPTIONS "-fsanitize=address")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_SANITIZE_OPTIONS}")
 
 add_subdirectory(extern/glfw)

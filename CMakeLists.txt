@@ -25,16 +25,14 @@ link_libraries(
     SPIRV)
 
 include_directories(${DEMO} PRIVATE
+    ${VULKAN_INCLUDE_DIR}
     extern/spdlog/include
-    extern/vkload/include
     extern/glslang
     include)
 
 set(CMAKE_CXX_FLAGS "-std=c++17 -stdlib=libc++ -fno-rtti")
 
 file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
-
-list(APPEND LAVA_SOURCE "extern/vkload/src/vkload.cpp")
 
 set(DEMO_NAMES
     hellolava

@@ -1,7 +1,7 @@
 #pragma once
 
 #if defined(VULKAN_H_) && !defined(VK_NO_PROTOTYPES)
-#error Please do not include vulkan.h when using vkload
+#error Please do not include vulkan.h when using LavaLoader
 #endif
 
 #ifndef VULKAN_H_
@@ -11,7 +11,7 @@
     #include <vulkan/vulkan.h>
 #endif
 
-namespace vkload {
+namespace LavaLoader {
     bool init();
     void bind(VkInstance instance);
 }

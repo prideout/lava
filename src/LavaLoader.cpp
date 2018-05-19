@@ -1,4 +1,8 @@
-#include <vkload.h>
+// The MIT License
+// Copyright (c) 2018 Philip Rideout
+
+#include <par/LavaLoader.h>
+
 #include <dlfcn.h>
 #include <mach-o/dyld.h>
 
@@ -12,7 +16,7 @@ static PFN_vkVoidFunction vkGetDeviceProcAddrWrapper(void* context, const char* 
 
 static const char* VKLIBRARY_PATH = "libvulkan.1.dylib";
 
-bool vkload::init() {
+bool LavaLoader::init() {
     const std::string dylibPath = VKLIBRARY_PATH;
     void* module = dlopen(dylibPath.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (!module) {
@@ -24,7 +28,7 @@ bool vkload::init() {
     return true;
 }
 
-void vkload::bind(VkInstance instance) {
+void LavaLoader::bind(VkInstance instance) {
     loadInstanceFunctions(instance, vkGetInstanceProcAddrWrapper);
     loadDeviceFunctions(instance, vkGetInstanceProcAddrWrapper);
 }

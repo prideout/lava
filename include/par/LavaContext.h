@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <vkload.h>
+#include <par/LavaLoader.h>
 
 namespace par {
 

@@ -32,10 +32,7 @@ set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
 file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
 
 set(DEMO_NAMES
-    hellolava
-    noscene
-    vtriangle
-    vertexid)
+    shadertest)
 
 foreach(DEMO ${DEMO_NAMES})
     add_executable(${DEMO} demos/${DEMO}.cpp ${LAVA_SOURCE})

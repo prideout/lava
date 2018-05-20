@@ -27,6 +27,11 @@ LavaCompiler* LavaCompiler::create() noexcept {
     return new LavaCompilerImpl();
 }
 
+void LavaCompiler::destroy(LavaCompiler** that) noexcept {
+    delete upcast(*that);
+    *that = nullptr;
+}
+
 LavaCompilerImpl::LavaCompilerImpl() noexcept {
     glslang::InitializeProcess();
 }

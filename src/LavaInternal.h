@@ -19,10 +19,6 @@ inline CLASS##Impl* upcast(CLASS* that) noexcept { \
 } \
 inline CLASS##Impl const* upcast(CLASS const* that) noexcept { \
     return static_cast<CLASS##Impl const *>(that); \
-} \
-void CLASS::destroy(CLASS** that) noexcept { \
-    delete upcast(*that); \
-    *that = nullptr; \
 }
 
 namespace par {

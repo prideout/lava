@@ -10,11 +10,6 @@
 
 using namespace par;
 
-namespace LavaLoader {
-    bool init();
-    void bind(VkInstance instance);
-}
-
 static LavaVector<const char *> kRequiredExtensions {
     "VK_KHR_surface",
     "VK_MVK_macos_surface",
@@ -76,10 +71,20 @@ public:
     friend class LavaContext;
 };
 
+namespace LavaLoader {
+    bool init();
+    void bind(VkInstance instance);
+}
+
 LAVA_IMPL_CLASS(LavaContext)
 
 LavaContext* LavaContext::create(bool useValidation) noexcept {
     return new LavaContextImpl(useValidation);
+}
+
+void LavaContext::destroy(LavaContext** that) noexcept {
+    delete upcast(*that);
+    *that = nullptr;
 }
 
 static bool isExtensionSupported(std::string_view ext) noexcept;

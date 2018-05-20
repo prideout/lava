@@ -1,7 +1,7 @@
 // The MIT License
 // Copyright (c) 2018 Philip Rideout
 
-#include <par/LavaCompiler.h>
+#include <par/LavaProgram.h>
 #include <par/LavaContext.h>
 #include <par/LavaLog.h>
 
@@ -77,26 +77,9 @@ int main(const int argc, const char *argv[]) {
     VkDevice device = context->getDevice();
 
     // Compile shaders.
-    auto compiler = LavaCompiler::create();
-    std::vector<uint32_t> vertShaderSPIRV;
-    bool success = compiler->compile(LavaCompiler::VERTEX, vertShaderGLSL, &vertShaderSPIRV);
-    if (!success) {
-        llog.fatal("vshader badness!");
-    }
-    std::vector<uint32_t> fragShaderSPIRV;
-    success = compiler->compile(LavaCompiler::FRAGMENT, fragShaderGLSL, &fragShaderSPIRV);
-    if (!success) {
-        llog.fatal("fshader badness!");
-    }
-    VkShaderModule module;
-    VkShaderModuleCreateInfo moduleCreateInfo {
-        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-        .codeSize = fragShaderSPIRV.size() * 4,
-        .pCode = fragShaderSPIRV.data()
-    };
-    VkResult err = vkCreateShaderModule(device, &moduleCreateInfo, VKALLOC, &module);
-    LOG_CHECK(!err, "Unable to create shader module.");
-    LavaCompiler::destroy(&compiler);
+    auto program = LavaProgram::create(vertShaderGLSL, fragShaderGLSL);
+    program->getVertexShader(device);
+    program->getFragmentShader(device);
 
     // Main game loop.
     while (!glfwWindowShouldClose(window)) {
@@ -108,7 +91,7 @@ int main(const int argc, const char *argv[]) {
     }
 
     // Cleanup.
-    vkDestroyShaderModule(device, module, VKALLOC);
+    LavaProgram::destroy(&program, device);
     context->killDevice();
     LavaContext::destroy(&context);
     return 0;

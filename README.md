@@ -1,10 +1,14 @@
 
 **lava** is a small set of Vulkan utilities that never adds to the command buffer. For example,
-the application must invoke `vkCmdDraw` on its own, but it can defer to lava for creating the
+the application must invoke `vkCmdDraw` on its own, but it can use lava to create the
 `VkDevice` and `VkQueue`. The API consists of the following classes:
 
 - [**LavaContext**](include/par/LavaContext.h#L10-L22)
-  manages the instance, device, swap chain, and command queue.
+  manages an instance, device, swap chain, and command queue.
+- [**LavaLoader**](include/par/LavaLoader.h)
+  loads all Vulkan entry points (include this instead of `vulkan.h`)
+- [**LavaProgram**](include/par/LavaProgram.h)
+  consumes GLSL or SPIRV and wraps a pair of `VkShaderModule` handles.
 - **LavaBinder**
   manages pipelines, descriptor sets, pipeline layouts, and descriptor set layouts.
 - **LavaCpuBuffer**
@@ -13,10 +17,12 @@ the application must invoke `vkCmdDraw` on its own, but it can defer to lava for
   is a fast device-only buffer used for vertex buffers and index buffers.
 - **LavaFramebuffer**
   is an abstraction of an off-screen rendering surface.
-- [**LavaCompiler**](include/par/LavaCompiler.h)
-  can optionally be used to perform GLSL => SPIRV translation.
 
 Textures, UniformBlocks, and Programs?
+
+All of these classes are independent of every other Lava class. For example, `LavaBinder` takes
+`VkShaderModule` rather than `LavaProgram`. This allows applications to select which subset of lava
+functionality they wish to use.
 
 In the name of simplicity, Lava is intentionally constrained and opinionated. For example,
 **LavaBinder** always creates 4 descriptor sets.
@@ -26,7 +32,7 @@ In the name of simplicity, Lava is intentionally constrained and opinionated. Fo
 By design, lava does not include a materials system, or a scene graph, or an asset loader, or any
 platform-specific functionality like windowing and events.
 
-lava is written in a subset of C++17 that forbids RTTI, exceptions, nested namespaces, and the use
+lava is written in a subset of C++14 that forbids RTTI, exceptions, nested namespaces, and the use
 of `<iostream>`.
 
 The public API is an even narrower subset of C++ whereby classes contain nothing but public methods.

@@ -12,6 +12,8 @@ using namespace std;
 using namespace par;
 using namespace spdlog;
 
+static int ninstances = 0;
+
 class LavaCompilerImpl : public LavaCompiler {
 public:
     LavaCompilerImpl() noexcept;
@@ -33,47 +35,67 @@ void LavaCompiler::destroy(LavaCompiler** that) noexcept {
 }
 
 LavaCompilerImpl::LavaCompilerImpl() noexcept {
-    glslang::InitializeProcess();
+    if (ninstances++ == 0) {
+        glslang::InitializeProcess();
+    }
 }
 
 LavaCompilerImpl::~LavaCompilerImpl() noexcept {
-    glslang::FinalizeProcess();
+    if (--ninstances == 0) {
+        glslang::FinalizeProcess();
+    }
 }
 
 bool LavaCompilerImpl::compile(Stage stage, string_view glsl,
         vector<uint32_t>* spirv) const noexcept {
+    // Create the glslang shader object.
     EShLanguage lang;
     switch (stage) {
         case VERTEX: lang = EShLangVertex; break;
         case FRAGMENT: lang = EShLangFragment; break;
         case COMPUTE: lang = EShLangCompute; break;
     }
-    const EShMessages flags = (EShMessages) (EShMsgSpvRules | EShMsgVulkanRules);
-    glslang::TShader glslShader(lang);
+    glslang::TShader shader(lang);
     const char *glslStrings[] = { glsl.data() };
-    glslShader.setStrings(glslStrings, 1);
-    const int glslangVersion = 450;
+    shader.setStrings(glslStrings, 1);
+
+    // Compile the shader program.
+    const EShMessages flags = (EShMessages) (EShMsgSpvRules | EShMsgVulkanRules);
+    const int glslangVersion = 100;
     const bool fwdCompatible = false;
-    if (glslShader.parse(&DefaultTBuiltInResource, glslangVersion, fwdCompatible, flags)) {
-        if (*glslShader.getInfoLog()) {
-            llog.warn(glslShader.getInfoLog());
+    if (!shader.parse(&DefaultTBuiltInResource, glslangVersion, fwdCompatible, flags)) {
+        llog.error("Can't compile {}", (stage == EShLangVertex ? "VS" : "FS"));
+        llog.warn(shader.getInfoLog());
+        if (*shader.getInfoDebugLog()) {
+            llog.debug(shader.getInfoDebugLog());
         }
-        if (*glslShader.getInfoDebugLog()) {
-            llog.debug(glslShader.getInfoDebugLog());
+        return false;
+    }
+    if (*shader.getInfoLog()) {
+        llog.warn(shader.getInfoLog());
+    }
+    if (*shader.getInfoDebugLog()) {
+        llog.debug(shader.getInfoDebugLog());
+    }
+
+    // Link a shader program containing the single shader.
+    glslang::TProgram program;
+    program.addShader(&shader);
+    if (!program.link(flags)) {
+        llog.error("Can't link {}", (stage == EShLangVertex ? "VS" : "FS"));
+        if (program.getInfoLog()) {
+            llog.warn(program.getInfoLog());
         }
-        glslang::SpvOptions options;
-        options.generateDebugInfo = false;
-        options.disableOptimizer = false;
-        options.optimizeSize = true;
-        glslang::GlslangToSpv(*glslShader.getIntermediate(), *spirv, &options);
-        return true;
+        if (program.getInfoDebugLog()) {
+            llog.debug(program.getInfoDebugLog());
+        }
+        return false;
     }
-    llog.error("Can't compile {}", (stage == EShLangVertex ? "VS" : "FS"));
-    llog.warn(glslShader.getInfoLog());
-    if (*glslShader.getInfoDebugLog()) {
-        llog.debug(glslShader.getInfoDebugLog());
-    }
-    return false;
+
+    // Output the SPIR-V code from the shader program
+    glslang::GlslangToSpv(*program.getIntermediate(lang), *spirv);
+
+    return true;
 }
 
 bool LavaCompiler::compile(Stage stage, string_view glsl, vector<uint32_t>* spirv) const noexcept {

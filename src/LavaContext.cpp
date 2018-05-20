@@ -5,10 +5,12 @@
 #include <par/LavaLog.h>
 
 #include <string_view>
+#include <limits>
 
 #include "LavaInternal.h"
 
 using namespace par;
+using namespace std;
 
 static LavaVector<const char *> kRequiredExtensions {
     "VK_KHR_surface",
@@ -87,7 +89,7 @@ void LavaContext::destroy(LavaContext** that) noexcept {
     *that = nullptr;
 }
 
-static bool isExtensionSupported(std::string_view ext) noexcept;
+static bool isExtensionSupported(string_view ext) noexcept;
 static bool areAllLayersSupported(const LavaVector<VkLayerProperties>& props,
     const LavaVector<const char*>& layerNames) noexcept;
 
@@ -197,15 +199,16 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
 
     // Iterate over each queue to learn whether it supports presenting.
     const uint32_t queueCount = mQueueProps.size;
-    std::vector<VkBool32> supportsPresent(queueCount);
+    vector<VkBool32> supportsPresent(queueCount);
     for (uint32_t i = 0; i < queueCount; i++) {
         vkGetPhysicalDeviceSurfaceSupportKHR(mGpu, i, surface, &supportsPresent[i]);
     }
 
     // Search for a graphics and a present queue in the array of queue
     // families, try to find one that supports both.
-    uint32_t graphicsQueueNodeIndex = UINT32_MAX;
-    uint32_t presentQueueNodeIndex = UINT32_MAX;
+    constexpr uint32_t NOT_FOUND = numeric_limits<uint32_t>::max();
+    uint32_t graphicsQueueNodeIndex = NOT_FOUND;
+    uint32_t presentQueueNodeIndex = NOT_FOUND;
     for (uint32_t i = 0; i < queueCount; i++) {
         if (mQueueProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             if (supportsPresent[i] == VK_TRUE) {
@@ -215,7 +218,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
             }
         }
     }
-    LOG_CHECK(presentQueueNodeIndex != UINT32_MAX, "Can't find queue that supports "
+    LOG_CHECK(presentQueueNodeIndex != NOT_FOUND, "Can't find queue that supports "
         "both presentation and graphics.");
 
     // Create the VkDevice and queue.
@@ -573,7 +576,7 @@ VkFramebuffer LavaContext::getFramebuffer() const noexcept {
     return upcast(this)->mSwap[0].framebuffer;
 }
 
-static bool isExtensionSupported(std::string_view ext) noexcept {
+static bool isExtensionSupported(string_view ext) noexcept {
     LavaVector<VkExtensionProperties> props;
     vkEnumerateInstanceExtensionProperties(nullptr, &props.size, nullptr);
     VkResult error = vkEnumerateInstanceExtensionProperties(nullptr, &props.size, props.alloc());

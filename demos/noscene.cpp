@@ -73,7 +73,8 @@ int main(const int argc, const char *argv[]) {
     glfwCreateWindowSurface(instance, window, nullptr, &surface);
 
     // Create the VkDevice and all related objects (command queue etc)
-    context->initDevice(surface, true);
+    static constexpr bool USE_DEPTH_BUFFER = true;
+    context->initDevice(surface, USE_DEPTH_BUFFER);
     VkDevice device = context->getDevice();
 
     // Compile shaders.

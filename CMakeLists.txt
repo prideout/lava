@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.6)
 
-project(LavaDemos)
+project(Lava)
 
 # To override the Debug build type, invoke cmake with -DCMAKE_BUILD_TYPE=Release
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -8,15 +8,16 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-# We turn on the sanitizer for subprojects too, otherwise we'd get false positives.
+# We turn on the sanitizer for subprojects to prevent false positives.
 # Note that -fsanitize=undefined is also an interesting option.
-set(EXTRA_SANITIZE_OPTIONS "-fsanitize=address")
+# set(EXTRA_SANITIZE_OPTIONS "-fsanitize=address")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_SANITIZE_OPTIONS}")
 
 add_subdirectory(extern/glfw)
 add_subdirectory(extern/glslang)
 
 link_libraries(
+    $ENV{VULKAN_SDK}/macOS/lib/libvulkan.1.dylib
     glfw
     glslang
     SPIRV)

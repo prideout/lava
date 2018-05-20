@@ -20,7 +20,7 @@ the application must invoke `vkCmdDraw` on its own, but it can use lava to creat
 
 Textures, UniformBlocks, and Programs?
 
-All of these classes are independent of every other Lava class. For example, `LavaBinder` takes
+Each Lava class is independent of every other Lava class. For example, `LavaBinder` takes
 `VkShaderModule` rather than `LavaProgram`. This allows applications to select which subset of lava
 functionality they wish to use.
 
@@ -71,7 +71,6 @@ export VULKAN_SDK=$HOME/Vulkan
 export VK_LAYER_PATH=$VULKAN_SDK/macOS/etc/vulkan/explicit_layers.d
 export VK_ICD_FILENAMES=$VULKAN_SDK/macOS/etc/vulkan/icd.d/MoltenVK_icd.json
 export PATH="$VULKAN_SDK/macOS/bin:$PATH"
-export LD_LIBRARY_PATH="$VULKAN_SDK/macOS/lib:$LD_LIBRARY_PATH"
 ```
 
 ## Internal code style

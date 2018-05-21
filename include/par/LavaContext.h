@@ -8,32 +8,15 @@
 namespace par {
 
 // The LavaContext owns the Vulkan instance, device, swap chain, and command buffers.
-//
-// Clients should create the platform-specific VkSurface after creating LavaContext, but before
-// initializing the device. For example:
-//
-//     LavaContext* ctx = LavaContext::create(true);
-//     VkSurface surface = glfwCreateWindowSurface(ctx->getInstance(), ...);
-//     ctx->initDevice(surface, true);
-//     ...main app body...
-//     ctx->killDevice();
-//     glfwDestroySurface(surface);
-//     LavaContext::destroy(&ctx);
-//
 class LavaContext {
 public:
-    // Constructs the LavaContext and creates the VkInstance.
-    static LavaContext* create(bool useValidation) noexcept;
-
-    // Frees the instance. Be sure to call killDevice() first.
+    struct Config {
+        bool depthBuffer;
+        bool validation;
+        std::function<VkSurfaceKHR(VkInstance)> createSurface;
+    };
+    static LavaContext* create(Config config) noexcept;
     static void destroy(LavaContext**) noexcept;
-
-    // Creates the device, framebuffer, swap chain, and command buffers.
-    // The passed-in platform surface determines the dimensions of the swap chain.
-    void initDevice(VkSurfaceKHR surface, bool createDepthBuffer) noexcept;
-
-    // Destroys the device, swap chain, and command buffers.
-    void killDevice() noexcept;
 
     // Swaps the current command buffer / framebuffer.
     // TODO: consider renaming to "acquire"
@@ -41,6 +24,7 @@ public:
 
     // General accessors.
     VkInstance getInstance() const noexcept;
+    VkSurfaceKHR getSurface() const noexcept;
     VkExtent2D getSize() const noexcept;
     VkDevice getDevice() const noexcept;
     VkCommandPool getCommandPool() const noexcept;

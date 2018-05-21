@@ -69,7 +69,8 @@ public:
     VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
     SwapchainBundle mSwap[2] = {};
     VkExtent2D mExtent;
-    DepthBundle mDepth;
+    DepthBundle mDepth = {};
+    VkSurfaceKHR mSurface;
     friend class LavaContext;
 };
 
@@ -80,12 +81,18 @@ namespace LavaLoader {
 
 LAVA_IMPL_CLASS(LavaContext)
 
-LavaContext* LavaContext::create(bool useValidation) noexcept {
-    return new LavaContextImpl(useValidation);
+LavaContext* LavaContext::create(Config config) noexcept {
+    LavaLoader::init();
+    LavaContextImpl* impl = new LavaContextImpl(config.validation);
+    impl->mSurface = config.createSurface(impl->mInstance);
+    impl->initDevice(impl->mSurface, config.depthBuffer);
+    return impl;
 }
 
 void LavaContext::destroy(LavaContext** that) noexcept {
-    delete upcast(*that);
+    LavaContextImpl* impl = upcast(*that);
+    impl->killDevice();
+    delete impl;
     *that = nullptr;
 }
 
@@ -498,14 +505,6 @@ bool LavaContextImpl::determineMemoryType(uint32_t typeBits, VkFlags requirement
         typeBits >>= 1;
     }
     return false;
-}
-
-void LavaContext::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) noexcept {
-    upcast(this)->initDevice(surface, createDepthBuffer);
-}
-
-void LavaContext::killDevice() noexcept {
-    upcast(this)->killDevice();
 }
 
 void LavaContext::swap() noexcept {

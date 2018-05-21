@@ -3,7 +3,7 @@
 the application must invoke `vkCmdDraw` on its own, but it can use lava to create the
 `VkDevice` and `VkQueue`. The API consists of the following classes:
 
-- [**LavaContext**](include/par/LavaContext.h#L10-L22)
+- [**LavaContext**](include/par/LavaContext.h)
   manages an instance, device, swap chain, and command queue.
 - [**LavaLoader**](include/par/LavaLoader.h)
   loads all Vulkan entry points (include this instead of `vulkan.h`)

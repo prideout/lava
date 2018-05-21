@@ -9,7 +9,6 @@
 
 #define DEMO_WIDTH 640
 #define DEMO_HEIGHT 480
-#define VKALLOC nullptr
 
 using namespace par;
 
@@ -65,16 +64,16 @@ int main(const int argc, const char *argv[]) {
         }
     });
 
-    // First create the VkInstance, then the platform-specific VkSurfaceKHR.
-    static constexpr bool USE_VALIDATION = true;
-    auto context = LavaContext::create(USE_VALIDATION);
-    VkInstance instance = context->getInstance();
-    VkSurfaceKHR surface;
-    glfwCreateWindowSurface(instance, window, nullptr, &surface);
-
-    // Create the VkDevice and all related objects (command queue etc)
-    static constexpr bool USE_DEPTH_BUFFER = true;
-    context->initDevice(surface, USE_DEPTH_BUFFER);
+    // Create the VkInstance, VkDevice, etc.
+    auto context = LavaContext::create({
+        .depthBuffer = false,
+        .validation = true,
+        .createSurface = [window] (VkInstance instance) {
+            VkSurfaceKHR surface;
+            glfwCreateWindowSurface(instance, window, nullptr, &surface);
+            return surface;
+        }
+    });
     VkDevice device = context->getDevice();
 
     // Compile shaders.
@@ -93,7 +92,6 @@ int main(const int argc, const char *argv[]) {
 
     // Cleanup.
     LavaProgram::destroy(&program, device);
-    context->killDevice();
     LavaContext::destroy(&context);
     return 0;
 }

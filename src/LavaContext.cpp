@@ -48,7 +48,7 @@ public:
     ~LavaContextImpl() noexcept;
     void initDevice(VkSurfaceKHR surface, bool createDepthBuffer) noexcept;
     void killDevice() noexcept;
-    void swap() noexcept;
+    void submit() noexcept;
     void initDepthBuffer() noexcept;
     bool determineMemoryType(uint32_t typeBits, VkFlags requirements,
             uint32_t *typeIndex) const noexcept;
@@ -67,9 +67,9 @@ public:
     LavaVector<const char*> mEnabledLayers;
     VkRenderPass mRenderPass = VK_NULL_HANDLE;
     VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
-    SwapchainBundle mSwap[2] = {};
+    SwapchainBundle mSwap[2] {};
     VkExtent2D mExtent;
-    DepthBundle mDepth = {};
+    DepthBundle mDepth {};
     VkSurfaceKHR mSurface;
     friend class LavaContext;
 };
@@ -125,13 +125,13 @@ LavaContextImpl::LavaContextImpl(bool useValidation) noexcept {
     }
 
     // Create the instance.
-    const VkApplicationInfo app = {
+    const VkApplicationInfo app {
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pApplicationName = "Lava Application",
         .pEngineName = "Lava Engine",
         .apiVersion = VK_API_VERSION_1_0,
     };
-    const VkInstanceCreateInfo info = {
+    const VkInstanceCreateInfo info {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .pApplicationInfo = &app,
         .enabledLayerCount = mEnabledLayers.size,
@@ -229,16 +229,16 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
         "both presentation and graphics.");
 
     // Create the VkDevice and queue.
-    const float priorities[1] = { 0 };
-    const VkDeviceQueueCreateInfo queueInfo = {
+    const float priorities[1] { 0 };
+    const VkDeviceQueueCreateInfo queueInfo {
         .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
         .queueFamilyIndex = graphicsQueueNodeIndex,
         .queueCount = 1,
         .pQueuePriorities = priorities,
     };
-    VkPhysicalDeviceFeatures features = {};
+    VkPhysicalDeviceFeatures features {};
     features.shaderClipDistance = mGpuFeatures.shaderClipDistance;
-    VkDeviceCreateInfo deviceInfo = {
+    VkDeviceCreateInfo deviceInfo {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .queueCreateInfoCount = 1,
         .pQueueCreateInfos = &queueInfo,
@@ -264,14 +264,14 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     mColorSpace = formats[0].colorSpace;
 
     // Create the command pool and command buffers.
-    const VkCommandPoolCreateInfo poolinfo = {
+    const VkCommandPoolCreateInfo poolinfo {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .queueFamilyIndex = graphicsQueueNodeIndex,
         .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
     };
     error = vkCreateCommandPool(mDevice, &poolinfo, VKALLOC, &mCommandPool);
     LOG_CHECK(!error, "Unable to create command pool.");
-    const VkCommandBufferAllocateInfo bufinfo = {
+    const VkCommandBufferAllocateInfo bufinfo {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .commandPool = mCommandPool,
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
@@ -316,7 +316,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     } else {
         preTransform = surfCapabilities.currentTransform;
     }
-    const VkSwapchainCreateInfoKHR swapinfo = {
+    const VkSwapchainCreateInfoKHR swapinfo {
         .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .surface = surface,
         .minImageCount = 2,
@@ -343,7 +343,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     mSwap[1].image = images[1];
 
     // Create the VkImageView objects.
-    VkImageViewCreateInfo viewinfo = {
+    VkImageViewCreateInfo viewinfo {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .format = mFormat,
         .components = {
@@ -381,15 +381,15 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
          .initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
          .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
     });
-    const VkAttachmentReference colorref = {
+    const VkAttachmentReference colorref {
         .attachment = 0,
         .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
     };
-    const VkAttachmentReference depthref = {
+    const VkAttachmentReference depthref {
         .attachment = 1,
         .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
     };
-    VkSubpassDescription subpass = {
+    VkSubpassDescription subpass {
         .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
         .colorAttachmentCount = 1,
         .pColorAttachments = &colorref,
@@ -407,7 +407,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
             .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
         });
     }
-    const VkRenderPassCreateInfo rpinfo = {
+    const VkRenderPassCreateInfo rpinfo {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .attachmentCount = rpattachments.size,
         .pAttachments = rpattachments.data,
@@ -423,7 +423,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     if (createDepthBuffer) {
         fbattachments.push_back(mDepth.view);
     }
-    const VkFramebufferCreateInfo fbinfo = {
+    const VkFramebufferCreateInfo fbinfo {
         .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
         .renderPass = mRenderPass,
         .attachmentCount = fbattachments.size,
@@ -439,12 +439,12 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     LOG_CHECK(!error, "Unable to create framebuffer.");
 }
 
-void LavaContextImpl::swap() noexcept {
+void LavaContextImpl::submit() noexcept {
     std::swap(mSwap[0], mSwap[1]);
 }
 
 void LavaContextImpl::initDepthBuffer() noexcept {
-    const VkImageCreateInfo image = {
+    const VkImageCreateInfo image {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .imageType = VK_IMAGE_TYPE_2D,
         .format = mDepth.format,
@@ -455,7 +455,7 @@ void LavaContextImpl::initDepthBuffer() noexcept {
         .tiling = VK_IMAGE_TILING_OPTIMAL,
         .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
     };
-    VkMemoryAllocateInfo memalloc = {
+    VkMemoryAllocateInfo memalloc {
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
     };
     VkResult error = vkCreateImage(mDevice, &image, VKALLOC, &mDepth.image);
@@ -477,7 +477,7 @@ void LavaContextImpl::initDepthBuffer() noexcept {
     // demo_set_image_layout(demo, mDepth.image, VK_IMAGE_ASPECT_DEPTH_BIT,
     //     VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 0);
 
-    const VkImageViewCreateInfo viewinfo = {
+    const VkImageViewCreateInfo viewinfo {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .format = mDepth.format,
         .subresourceRange = {
@@ -507,8 +507,8 @@ bool LavaContextImpl::determineMemoryType(uint32_t typeBits, VkFlags requirement
     return false;
 }
 
-void LavaContext::swap() noexcept {
-    upcast(this)->swap();
+void LavaContext::submit() noexcept {
+    upcast(this)->submit();
 }
 
 VkInstance LavaContext::getInstance() const noexcept {

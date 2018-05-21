@@ -18,9 +18,8 @@ public:
     static LavaContext* create(Config config) noexcept;
     static void destroy(LavaContext**) noexcept;
 
-    // Swaps the current command buffer / framebuffer.
-    // TODO: consider renaming to "acquire"
-    void swap() noexcept;
+    // Submits the command buffer, then swaps the current command buffer / framebuffer.
+    void submit() noexcept;
 
     // General accessors.
     VkInstance getInstance() const noexcept;

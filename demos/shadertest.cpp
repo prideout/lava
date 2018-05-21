@@ -85,9 +85,9 @@ int main(const int argc, const char *argv[]) {
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        // TODO: draw
+        context->submit();
 
-        vkDeviceWaitIdle(device);
+        vkDeviceWaitIdle(device); // TODO: remove?
     }
 
     // Cleanup.

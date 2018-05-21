@@ -51,7 +51,7 @@ int main(const int argc, const char *argv[]) {
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
     // glfwWindowHint(GLFW_DECORATED, GL_FALSE);
     glfwWindowHint(GLFW_SAMPLES, 4);
-    GLFWwindow* window = glfwCreateWindow(DEMO_WIDTH / xscale, DEMO_HEIGHT / yscale, "noscene",
+    GLFWwindow* window = glfwCreateWindow(DEMO_WIDTH / xscale, DEMO_HEIGHT / yscale, "shadertest",
             monitor, share);
     if (!window) {
         llog.fatal("Cannot create a window in which to draw!");
@@ -81,13 +81,26 @@ int main(const int argc, const char *argv[]) {
     program->getVertexShader(device);
     program->getFragmentShader(device);
 
+    VkClearValue clearValues[1] = {{ .color.float32 = {1, 0, 0, 1} }};
+    VkRenderPassBeginInfo rpbi {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = context->getRenderPass(),
+        .framebuffer = context->getFramebuffer(),
+        .renderArea.extent.width = context->getSize().width,
+        .renderArea.extent.height = context->getSize().height,
+        .pClearValues = &clearValues[0],
+        .clearValueCount = 1
+    };
+
     // Main game loop.
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-
+        VkCommandBuffer cmdbuffer = context->getCmdBuffer();
+        vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdEndRenderPass(cmdbuffer);
         context->submit();
-
         vkDeviceWaitIdle(device); // TODO: remove?
+        break;
     }
 
     // Cleanup.

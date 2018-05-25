@@ -5,7 +5,6 @@
 #include <par/LavaLog.h>
 
 #include <string_view>
-#include <limits>
 
 #include "LavaInternal.h"
 
@@ -33,6 +32,7 @@ struct SwapchainBundle {
     VkCommandBuffer cmd;
     VkImageView view;
     VkFramebuffer framebuffer;
+    VkFence fence;
 };
 
 struct DepthBundle {
@@ -48,7 +48,8 @@ public:
     ~LavaContextImpl() noexcept;
     void initDevice(VkSurfaceKHR surface, bool createDepthBuffer) noexcept;
     void killDevice() noexcept;
-    void submit() noexcept;
+    VkCommandBuffer beginFrame() noexcept;
+    void endFrame() noexcept;
     void initDepthBuffer() noexcept;
     bool determineMemoryType(uint32_t typeBits, VkFlags requirements,
             uint32_t *typeIndex) const noexcept;
@@ -71,6 +72,9 @@ public:
     VkExtent2D mExtent;
     DepthBundle mDepth {};
     VkSurfaceKHR mSurface;
+    VkSemaphore mImageAvailable;
+    VkSemaphore mDrawFinished;
+    uint32_t mCurrentSwapIndex = 3u;
     friend class LavaContext;
 };
 
@@ -140,7 +144,7 @@ LavaContextImpl::LavaContextImpl(bool useValidation) noexcept {
         .ppEnabledExtensionNames = mEnabledExtensions.data,
     };
     error = vkCreateInstance(&info, VKALLOC, &mInstance);
-    LOG_CHECK(!error, "Unable to create Vulkan instance.");
+    LOG_CHECK(not error, "Unable to create Vulkan instance.");
     LavaLoader::bind(mInstance);
 }
 
@@ -149,6 +153,7 @@ LavaContextImpl::~LavaContextImpl() noexcept {
 }
 
 void LavaContextImpl::killDevice() noexcept {
+    vkDeviceWaitIdle(mDevice);
     vkDestroyImageView(mDevice, mSwap[0].view, VKALLOC);
     vkDestroyImageView(mDevice, mSwap[1].view, VKALLOC);
     mSwap[0].view = mSwap[1].view = VK_NULL_HANDLE;
@@ -163,6 +168,14 @@ void LavaContextImpl::killDevice() noexcept {
     vkDestroyRenderPass(mDevice, mRenderPass, VKALLOC);
     mRenderPass = VK_NULL_HANDLE;
 
+    vkDestroyFence(mDevice, mSwap[0].fence, VKALLOC);
+    vkDestroyFence(mDevice, mSwap[1].fence, VKALLOC);
+    mSwap[0].fence = mSwap[1].fence = VK_NULL_HANDLE;
+
+    vkDestroySemaphore(mDevice, mImageAvailable, VKALLOC);
+    vkDestroySemaphore(mDevice, mDrawFinished, VKALLOC);
+    mImageAvailable = mDrawFinished = VK_NULL_HANDLE;
+
     vkDestroyFramebuffer(mDevice, mSwap[0].framebuffer, VKALLOC);
     vkDestroyFramebuffer(mDevice, mSwap[1].framebuffer, VKALLOC);
     mSwap[0].framebuffer = mSwap[1].framebuffer = VK_NULL_HANDLE;
@@ -176,7 +189,6 @@ void LavaContextImpl::killDevice() noexcept {
 
     vkDestroyCommandPool(mDevice, mCommandPool, VKALLOC);
     mCommandPool = VK_NULL_HANDLE;
-    mSwap[0].cmd = mSwap[1].cmd = VK_NULL_HANDLE;
 
     vkDestroyDevice(mDevice, VKALLOC);
     mDevice = VK_NULL_HANDLE;
@@ -188,7 +200,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     LavaVector<VkPhysicalDevice> gpus;
     vkEnumeratePhysicalDevices(mInstance, &gpus.size, nullptr);
     VkResult error = vkEnumeratePhysicalDevices(mInstance, &gpus.size, gpus.alloc());
-    LOG_CHECK(!error, "Unable to enumerate Vulkan devices.");
+    LOG_CHECK(not error, "Unable to enumerate Vulkan devices.");
     mGpu = gpus[0];
 
     // We could call vkEnumerateDeviceExtensionProperties here to ensure that the platform-specific
@@ -211,9 +223,8 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
         vkGetPhysicalDeviceSurfaceSupportKHR(mGpu, i, surface, &supportsPresent[i]);
     }
 
-    // Search for a graphics and a present queue in the array of queue
-    // families, try to find one that supports both.
-    constexpr uint32_t NOT_FOUND = numeric_limits<uint32_t>::max();
+    // Search for a graphics and present queue in the array of queue families.
+    constexpr uint32_t NOT_FOUND = ~0u;
     uint32_t graphicsQueueNodeIndex = NOT_FOUND;
     uint32_t presentQueueNodeIndex = NOT_FOUND;
     for (uint32_t i = 0; i < queueCount; i++) {
@@ -247,7 +258,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
         .pEnabledFeatures = &features,
     };
     error = vkCreateDevice(mGpu, &deviceInfo, VKALLOC, &mDevice);
-    LOG_CHECK(!error, "Unable to create Vulkan device.");
+    LOG_CHECK(not error, "Unable to create Vulkan device.");
     vkGetPhysicalDeviceMemoryProperties(mGpu, &mMemoryProperties);
     vkGetDeviceQueue(mDevice, graphicsQueueNodeIndex, 0, &mQueue);
 
@@ -270,7 +281,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
         .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
     };
     error = vkCreateCommandPool(mDevice, &poolinfo, VKALLOC, &mCommandPool);
-    LOG_CHECK(!error, "Unable to create command pool.");
+    LOG_CHECK(not error, "Unable to create command pool.");
     const VkCommandBufferAllocateInfo bufinfo {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .commandPool = mCommandPool,
@@ -279,14 +290,14 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     };
     VkCommandBuffer bufs[2];
     error = vkAllocateCommandBuffers(mDevice, &bufinfo, bufs);
-    LOG_CHECK(!error, "Unable to allocate command buffers.");
+    LOG_CHECK(not error, "Unable to allocate command buffers.");
     mSwap[0].cmd = bufs[0];
     mSwap[1].cmd = bufs[1];
 
     // Check the surface capabilities and formats.
     VkSurfaceCapabilitiesKHR surfCapabilities;
     error = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mGpu, surface, &surfCapabilities);
-    LOG_CHECK(!error, "Unable to get surface caps.");
+    LOG_CHECK(not error, "Unable to get surface caps.");
 
     LavaVector<VkPresentModeKHR> modes;
     vkGetPhysicalDeviceSurfacePresentModesKHR(mGpu, surface, &modes.size, nullptr);
@@ -332,7 +343,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
         .clipped = true,
     };
     error = vkCreateSwapchainKHR(mDevice, &swapinfo, VKALLOC, &mSwapchain);
-    LOG_CHECK(!error, "Unable to create swap chain.");
+    LOG_CHECK(not error, "Unable to create swap chain.");
 
     // Extract the VkImage objects from the swap chain.
     LavaVector<VkImage> images;
@@ -362,7 +373,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     for (int i = 0; i < 2; i++) {
         viewinfo.image = mSwap[i].image;
         error = vkCreateImageView(mDevice, &viewinfo, VKALLOC, &mSwap[i].view);
-        LOG_CHECK(!error, "Unable to create swap chain image view.");
+        LOG_CHECK(not error, "Unable to create swap chain image view.");
     }
 
     if (createDepthBuffer) {
@@ -378,8 +389,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
          .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
          .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
          .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-         .initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-         .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+         .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
     });
     const VkAttachmentReference colorref {
         .attachment = 0,
@@ -415,7 +425,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
         .pSubpasses = &subpass,
     };
     error = vkCreateRenderPass(mDevice, &rpinfo, VKALLOC, &mRenderPass);
-    LOG_CHECK(!error, "Unable to create render pass.");
+    LOG_CHECK(not error, "Unable to create render pass.");
 
     // Create two framebuffers (one for each element in the swap chain)
     LavaVector<VkImageView> fbattachments;
@@ -433,15 +443,71 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
         .layers = 1,
     };
     error = vkCreateFramebuffer(mDevice, &fbinfo, VKALLOC, &mSwap[0].framebuffer);
-    LOG_CHECK(!error, "Unable to create framebuffer.");
+    LOG_CHECK(not error, "Unable to create framebuffer.");
     fbattachments[0] = mSwap[1].view;
     error = vkCreateFramebuffer(mDevice, &fbinfo, VKALLOC, &mSwap[1].framebuffer);
-    LOG_CHECK(!error, "Unable to create framebuffer.");
+    LOG_CHECK(not error, "Unable to create framebuffer.");
+
+    // Create a fence for each command buffer.
+    VkFenceCreateInfo fenceInfo = {
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+    };
+    vkCreateFence(mDevice, &fenceInfo, VKALLOC, &mSwap[0].fence);
+    vkCreateFence(mDevice, &fenceInfo, VKALLOC, &mSwap[1].fence);
+
+    VkSemaphoreCreateInfo semaphoreInfo { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+    vkCreateSemaphore(mDevice, &semaphoreInfo, VKALLOC, &mImageAvailable);
+    vkCreateSemaphore(mDevice, &semaphoreInfo, VKALLOC, &mDrawFinished);
 }
 
-void LavaContextImpl::submit() noexcept {
+VkCommandBuffer LavaContextImpl::beginFrame() noexcept {
+    // Wait for the previous frame's command buffer to finish executing.
+    vkWaitForFences(mDevice, 1, &mSwap[0].fence, VK_TRUE, ~0ull);
+    vkResetFences(mDevice, 1, &mSwap[0].fence);
+    // The given CPU fence and GPU semaphore will both be signaled when the presentation engine
+    // releases the next available presentable image.
+    uint32_t swapIndex;
+    VkResult result = vkAcquireNextImageKHR(mDevice, mSwapchain, ~0ull, mImageAvailable,
+             VK_NULL_HANDLE, &swapIndex);
+    LOG_CHECK(result != VK_ERROR_OUT_OF_DATE_KHR, "Stale / resized swap chain not yet supported.");
+    LOG_CHECK(result == VK_SUBOPTIMAL_KHR || result == VK_SUCCESS, "vkAcquireNextImageKHR error.");
+    assert(swapIndex != mCurrentSwapIndex);
+    mCurrentSwapIndex = swapIndex;
+    // Start the command buffer.
+    VkCommandBuffer cmdbuffer = mSwap[0].cmd;
+    VkCommandBufferBeginInfo beginInfo { .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+    vkResetCommandBuffer(cmdbuffer, 0);
+    vkBeginCommandBuffer(cmdbuffer, &beginInfo);
+    return cmdbuffer;
+}
+
+void LavaContextImpl::endFrame() noexcept {
+    VkPipelineStageFlags waitDestStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    VkSubmitInfo submitInfo {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &mImageAvailable,
+        .pWaitDstStageMask = &waitDestStageMask,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &mSwap[0].cmd,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = &mDrawFinished,
+    };
+    VkPresentInfoKHR presentInfo {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &mDrawFinished,
+        .swapchainCount = 1,
+        .pSwapchains = &mSwapchain,
+        .pImageIndices = &mCurrentSwapIndex,
+    };
+    vkEndCommandBuffer(mSwap[0].cmd);
+    vkQueueSubmit(mQueue, 1, &submitInfo, mSwap[0].fence);
+    vkQueuePresentKHR(mQueue, &presentInfo);
     std::swap(mSwap[0], mSwap[1]);
 }
+
 
 void LavaContextImpl::initDepthBuffer() noexcept {
     const VkImageCreateInfo image {
@@ -459,7 +525,7 @@ void LavaContextImpl::initDepthBuffer() noexcept {
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
     };
     VkResult error = vkCreateImage(mDevice, &image, VKALLOC, &mDepth.image);
-    LOG_CHECK(!error, "Unable to create depth image.");
+    LOG_CHECK(not error, "Unable to create depth image.");
 
     VkMemoryRequirements memreqs;
     vkGetImageMemoryRequirements(mDevice, mDepth.image, &memreqs);
@@ -469,13 +535,10 @@ void LavaContextImpl::initDepthBuffer() noexcept {
     LOG_CHECK(pass, "Unable to determine memory type.");
 
     error = vkAllocateMemory(mDevice, &memalloc, VKALLOC, &mDepth.mem);
-    LOG_CHECK(!error, "Unable to allocate depth image.");
+    LOG_CHECK(not error, "Unable to allocate depth image.");
 
     error = vkBindImageMemory(mDevice, mDepth.image, mDepth.mem, 0);
-    LOG_CHECK(!error, "Unable to bind depth image.");
-
-    // demo_set_image_layout(demo, mDepth.image, VK_IMAGE_ASPECT_DEPTH_BIT,
-    //     VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 0);
+    LOG_CHECK(not error, "Unable to bind depth image.");
 
     const VkImageViewCreateInfo viewinfo {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -489,7 +552,7 @@ void LavaContextImpl::initDepthBuffer() noexcept {
         .viewType = VK_IMAGE_VIEW_TYPE_2D,
     };
     error = vkCreateImageView(mDevice, &viewinfo, VKALLOC, &mDepth.view);
-    LOG_CHECK(!error, "Unable to create depth view.");
+    LOG_CHECK(not error, "Unable to create depth view.");
 }
 
 bool LavaContextImpl::determineMemoryType(uint32_t typeBits, VkFlags requirements,
@@ -507,8 +570,12 @@ bool LavaContextImpl::determineMemoryType(uint32_t typeBits, VkFlags requirement
     return false;
 }
 
-void LavaContext::submit() noexcept {
-    upcast(this)->submit();
+VkCommandBuffer LavaContext::beginFrame() noexcept {
+    return upcast(this)->beginFrame();
+}
+
+void LavaContext::endFrame() noexcept {
+    upcast(this)->endFrame();
 }
 
 VkInstance LavaContext::getInstance() const noexcept {
@@ -579,7 +646,7 @@ static bool isExtensionSupported(string_view ext) noexcept {
     LavaVector<VkExtensionProperties> props;
     vkEnumerateInstanceExtensionProperties(nullptr, &props.size, nullptr);
     VkResult error = vkEnumerateInstanceExtensionProperties(nullptr, &props.size, props.alloc());
-    LOG_CHECK(!error, "Unable to enumerate extension properties.");
+    LOG_CHECK(not error, "Unable to enumerate extension properties.");
     for (auto prop : props) {
         if (ext != prop.extensionName) {
             return true;

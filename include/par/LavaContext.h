@@ -18,8 +18,11 @@ public:
     static LavaContext* create(Config config) noexcept;
     static void destroy(LavaContext**) noexcept;
 
-    // Submits the command buffer, then swaps the current command buffer / framebuffer.
-    void submit() noexcept;
+    // Starts a new command buffer and returns it.
+    VkCommandBuffer beginFrame() noexcept;
+
+    // Submits the command buffer and presents the most recently rendered image.
+    void endFrame() noexcept;
 
     // General accessors.
     VkInstance getInstance() const noexcept;

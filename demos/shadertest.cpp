@@ -49,7 +49,7 @@ int main(const int argc, const char *argv[]) {
     constexpr GLFWwindow* share = nullptr;
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    // glfwWindowHint(GLFW_DECORATED, GL_FALSE);
+    glfwWindowHint(GLFW_DECORATED, GL_FALSE);
     glfwWindowHint(GLFW_SAMPLES, 4);
     GLFWwindow* window = glfwCreateWindow(DEMO_WIDTH / xscale, DEMO_HEIGHT / yscale, "shadertest",
             monitor, share);
@@ -81,26 +81,30 @@ int main(const int argc, const char *argv[]) {
     program->getVertexShader(device);
     program->getFragmentShader(device);
 
-    VkClearValue clearValues[1] = {{ .color.float32 = {1, 0, 0, 1} }};
-    VkRenderPassBeginInfo rpbi {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass = context->getRenderPass(),
-        .framebuffer = context->getFramebuffer(),
-        .renderArea.extent.width = context->getSize().width,
-        .renderArea.extent.height = context->getSize().height,
-        .pClearValues = &clearValues[0],
-        .clearValueCount = 1
-    };
-
     // Main game loop.
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        VkCommandBuffer cmdbuffer = context->getCmdBuffer();
+
+        // Start the command buffer and begin the render pass.
+        VkCommandBuffer cmdbuffer = context->beginFrame();
+        const float red = fmod(glfwGetTime(), 1.0);
+        const VkClearValue clearValue = { .color.float32 = {red, 0, 0, 1} };
+        const VkRenderPassBeginInfo rpbi {
+            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            .framebuffer = context->getFramebuffer(),
+            .renderPass = context->getRenderPass(),
+            .renderArea.extent.width = context->getSize().width,
+            .renderArea.extent.height = context->getSize().height,
+            .pClearValues = &clearValue,
+            .clearValueCount = 1
+        };
         vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
+
+        // ...do not draw any geometry...
+
+        // End the render pass, flush the command buffer, and present the backbuffer.
         vkCmdEndRenderPass(cmdbuffer);
-        context->submit();
-        vkDeviceWaitIdle(device); // TODO: remove?
-        break;
+        context->endFrame();
     }
 
     // Cleanup.

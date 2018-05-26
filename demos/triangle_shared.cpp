@@ -7,10 +7,12 @@
 
 #include <GLFW/glfw3.h>
 
-#define DEMO_WIDTH 640
-#define DEMO_HEIGHT 480
+#include <math.h>
 
 using namespace par;
+
+static constexpr int DEMO_WIDTH = 640;
+static constexpr int DEMO_HEIGHT = 480;
 
 static const std::string vertShaderGLSL = R"GLSL(
 #version 450
@@ -33,31 +35,27 @@ void main() {
 }
 )GLSL";
 
+struct Vertex {
+    float position[2];
+    uint32_t color;
+};
+
+static const Vertex TRIANGLE_VERTICES[] {
+    {{1, 0}, 0xffff0000u},
+    {{cosf(M_PI * 2 / 3), sinf(M_PI * 2 / 3)}, 0xff00ff00u},
+    {{cosf(M_PI * 4 / 3), sinf(M_PI * 4 / 3)}, 0xff0000ffu},
+};
+
 int main(const int argc, const char *argv[]) {
     // Initialize GLFW.
-    glfwSetErrorCallback([] (int error, const char* description) {
-        llog.error(description);
-    });
-    LOG_CHECK(glfwInit(), "Cannot initialize GLFW.");
-
-    // Check if this is a high DPI display.
-    float xscale = 0, yscale = 0;
+    glfwInit();
+    float xscale, yscale;
     glfwGetMonitorContentScale(glfwGetPrimaryMonitor(), &xscale, &yscale);
-
-    // Create the window.
-    constexpr GLFWmonitor* monitor = nullptr;
-    constexpr GLFWwindow* share = nullptr;
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
     glfwWindowHint(GLFW_DECORATED, GL_FALSE);
     glfwWindowHint(GLFW_SAMPLES, 4);
-    GLFWwindow* window = glfwCreateWindow(DEMO_WIDTH / xscale, DEMO_HEIGHT / yscale, "shadertest",
-            monitor, share);
-    if (!window) {
-        llog.fatal("Cannot create a window in which to draw!");
-    }
-
-    // Allow the Escape key to quit.
+    auto* window = glfwCreateWindow(DEMO_WIDTH, DEMO_HEIGHT, "triangle", 0, 0);
     glfwSetKeyCallback(window, [] (GLFWwindow* window, int key, int, int action, int) {
         if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -65,7 +63,7 @@ int main(const int argc, const char *argv[]) {
     });
 
     // Create the VkInstance, VkDevice, etc.
-    auto context = LavaContext::create({
+    LavaContext* context = LavaContext::create({
         .depthBuffer = false,
         .validation = true,
         .createSurface = [window] (VkInstance instance) {
@@ -75,6 +73,14 @@ int main(const int argc, const char *argv[]) {
         }
     });
     VkDevice device = context->getDevice();
+
+    // Fill in a shared CPU-GPU vertex buffer.
+    LavaCpuBuffer* vertexBuffer = LavaCpuBuffer::create({
+        .device = device,
+        .size = sizeof(TRIANGLE_VERTICES),
+        .source = TRIANGLE_VERTICES,
+        .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+    });
 
     // Compile shaders.
     auto program = LavaProgram::create(vertShaderGLSL, fragShaderGLSL);
@@ -87,8 +93,7 @@ int main(const int argc, const char *argv[]) {
 
         // Start the command buffer and begin the render pass.
         VkCommandBuffer cmdbuffer = context->beginFrame();
-        const float red = fmod(glfwGetTime(), 1.0);
-        const VkClearValue clearValue = { .color.float32 = {red, 0, 0, 1} };
+        const VkClearValue clearValue = { .color.float32 = {0.1, 0.2, 0.4, 1.0} };
         const VkRenderPassBeginInfo rpbi {
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             .framebuffer = context->getFramebuffer(),
@@ -100,7 +105,9 @@ int main(const int argc, const char *argv[]) {
         };
         vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
 
-        // ...do not draw any geometry...
+        // Draw the triangle.
+        vkCmdBindVertexBuffers(...);
+        vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
 
         // End the render pass, flush the command buffer, and present the backbuffer.
         vkCmdEndRenderPass(cmdbuffer);
@@ -108,6 +115,7 @@ int main(const int argc, const char *argv[]) {
     }
 
     // Cleanup.
+    LavaCpuBuffer::destroy(&vertexBuffer, device);
     LavaProgram::destroy(&program, device);
     LavaContext::destroy(&context);
     return 0;

@@ -33,7 +33,8 @@ set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
 file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
 
 set(DEMO_NAMES
-    shadertest)
+    triangle_shared
+    shader_test)
 
 foreach(DEMO ${DEMO_NAMES})
     add_executable(${DEMO} demos/${DEMO}.cpp ${LAVA_SOURCE})

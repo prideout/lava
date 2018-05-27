@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <par/LavaLoader.h>
-
 #include <string_view>
 
 namespace par {

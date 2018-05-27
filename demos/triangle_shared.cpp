@@ -1,9 +1,11 @@
 // The MIT License
 // Copyright (c) 2018 Philip Rideout
 
-#include <par/LavaProgram.h>
+#include <par/LavaLoader.h>
 #include <par/LavaContext.h>
 #include <par/LavaCpuBuffer.h>
+#include <par/LavaPipeCache.h>
+#include <par/LavaProgram.h>
 
 #include <GLFW/glfw3.h>
 
@@ -11,30 +13,25 @@
 
 using namespace par;
 
-static constexpr int DEMO_WIDTH = 640;
-static constexpr int DEMO_HEIGHT = 480;
+static constexpr int DEMO_WIDTH = 512;
+static constexpr int DEMO_HEIGHT = 512;
 static constexpr float PI = 3.1415926535;
 
-static const std::string vertShaderGLSL = R"GLSL(
-#version 450
-layout(location=0) in vec4 position;
-layout(location=1) in vec2 uv;
-layout(location=0) out vec2 TexCoord;
+static const std::string vertShaderGLSL = R"GLSL(#version 450
+layout(location=0) in vec2 position;
+layout(location=1) in vec4 color;
+layout(location=0) out vec4 vert_color;
 void main() {
-    gl_Position = position;
-    TexCoord = uv;
-}
-)GLSL";
+    gl_Position = vec4(position, 0, 1);
+    vert_color = color;
+})GLSL";
 
-static const std::string fragShaderGLSL = R"GLSL(
-#version 450
-layout(location=0) out vec4 Color;
-layout(location=0) in vec2 uv;
-layout(binding=0, set=0) uniform sampler2D tex;
+static const std::string fragShaderGLSL = R"GLSL(#version 450
+layout(location=0) out vec4 frag_color;
+layout(location=0) in vec4 vert_color;
 void main() {
-    Color = texture(tex, uv);
-}
-)GLSL";
+    frag_color = vert_color;;
+})GLSL";
 
 struct Vertex {
     float position[2];
@@ -48,10 +45,8 @@ static const Vertex TRIANGLE_VERTICES[] {
 };
 
 int main(const int argc, const char *argv[]) {
-    // Initialize GLFW.
+    // Initialize GLFW and create the window.
     glfwInit();
-    float xscale, yscale;
-    glfwGetMonitorContentScale(glfwGetPrimaryMonitor(), &xscale, &yscale);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
     glfwWindowHint(GLFW_DECORATED, GL_FALSE);
@@ -73,8 +68,10 @@ int main(const int argc, const char *argv[]) {
             return surface;
         }
     });
-    VkDevice device = context->getDevice();
-    VkPhysicalDevice gpu = context->getGpu();
+    const VkDevice device = context->getDevice();
+    const VkPhysicalDevice gpu = context->getGpu();
+    const VkRenderPass renderPass = context->getRenderPass();
+    const VkExtent2D extent = context->getSize();
 
     // Fill in a shared CPU-GPU vertex buffer.
     LavaCpuBuffer* vertexBuffer = LavaCpuBuffer::create({
@@ -87,8 +84,37 @@ int main(const int argc, const char *argv[]) {
 
     // Compile shaders.
     auto program = LavaProgram::create(vertShaderGLSL, fragShaderGLSL);
-    program->getVertexShader(device);
-    program->getFragmentShader(device);
+    VkShaderModule vshader = program->getVertexShader(device);
+    VkShaderModule fshader = program->getFragmentShader(device);
+
+    // Create the pipeline.
+    static_assert(sizeof(Vertex) == 12, "Unexpected vertex size.");
+    LavaPipeCache* pipelines = LavaPipeCache::create({
+        .device = device,
+        .vertex = {
+            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            .attributes = { {
+                .binding = 0u,
+                .format = VK_FORMAT_R32G32_SFLOAT,
+                .location = 0u,
+                .offset = 0u,
+            }, {
+                .binding = 0u,
+                .format = VK_FORMAT_R8G8B8A8_UNORM,
+                .location = 1u,
+                .offset = 8u,
+            } },
+            .buffers = { {
+                .binding = 0u,
+                .stride = 12,
+            } }
+        },
+        .layouts = {},
+        .vshader = vshader,
+        .fshader = fshader,
+        .renderPass = renderPass
+    });
+    VkPipeline pipeline = pipelines->getPipeline();
 
     // Main game loop.
     while (!glfwWindowShouldClose(window)) {
@@ -100,26 +126,39 @@ int main(const int argc, const char *argv[]) {
         const VkRenderPassBeginInfo rpbi {
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             .framebuffer = context->getFramebuffer(),
-            .renderPass = context->getRenderPass(),
-            .renderArea.extent.width = context->getSize().width,
-            .renderArea.extent.height = context->getSize().height,
+            .renderPass = renderPass,
+            .renderArea.extent = extent,
             .pClearValues = &clearValue,
             .clearValueCount = 1
         };
         vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
 
-        // Draw the triangle.
-        //vkCmdBindVertexBuffers(...);
-        //vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
+        VkViewport viewport = { .width = (float) extent.width, .height = (float) extent.height };
+        vkCmdSetViewport(cmdbuffer, 0, 1, &viewport);
+
+        VkRect2D scissor { .extent = extent };
+        vkCmdSetScissor(cmdbuffer, 0, 1, &scissor);
+
+        vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+        VkBuffer buffer[] = { vertexBuffer->getBuffer() };
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
+
+        vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
 
         // End the render pass, flush the command buffer, and present the backbuffer.
         vkCmdEndRenderPass(cmdbuffer);
         context->endFrame();
     }
 
+    // Wait for the command buffers to finish executing.
+    context->finish();
+
     // Cleanup.
     LavaCpuBuffer::destroy(&vertexBuffer);
     LavaProgram::destroy(&program, device);
+    LavaPipeCache::destroy(&pipelines);
     LavaContext::destroy(&context);
     return 0;
 }

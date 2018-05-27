@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <par/LavaLoader.h>
-
 namespace par {
 
 // The LavaContext owns the Vulkan instance, device, swap chain, and command buffers.
@@ -23,6 +21,9 @@ public:
 
     // Submits the command buffer and presents the most recently rendered image.
     void endFrame() noexcept;
+
+    // Waits for all frames to finish.
+    void finish() noexcept;
 
     // General accessors.
     VkInstance getInstance() const noexcept;

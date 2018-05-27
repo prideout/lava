@@ -7,6 +7,7 @@
 #define VMA_IMPLEMENTATION
 #include "LavaInternal.h"
 
+#include <chrono>
 #include <unordered_map>
 
 namespace par {
@@ -52,6 +53,33 @@ void createVma(VkDevice device, VkPhysicalDevice gpu) {
 void destroyVma(VkDevice device) {
     vmaDestroyAllocator(sVmaAllocators[device]);
     sVmaAllocators[device] = VK_NULL_HANDLE;
+}
+
+uint64_t getCurrentTime() {
+    auto now = std::chrono::system_clock::now();
+    auto duration = now.time_since_epoch();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+}
+
+size_t murmurHash(uint32_t const* words, uint32_t nwords, uint32_t seed) {
+    uint32_t h = seed;
+    size_t i = nwords;
+    do {
+        uint32_t k = *words++;
+        k *= 0xcc9e2d51;
+        k = (k << 15) | (k >> 17);
+        k *= 0x1b873593;
+        h ^= k;
+        h = (h << 13) | (h >> 19);
+        h = (h * 5) + 0xe6546b64;
+    } while (--i);
+    h ^= nwords;
+    h ^= h >> 16;
+    h *= 0x85ebca6b;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35;
+    h ^= h >> 16;
+    return h;
 }
 
 }

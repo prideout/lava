@@ -29,6 +29,17 @@ VmaAllocator getVma(VkDevice device, VkPhysicalDevice gpu);
 void createVma(VkDevice device, VkPhysicalDevice gpu);
 void destroyVma(VkDevice device);
 
+uint64_t getCurrentTime();
+size_t murmurHash(uint32_t const* words, uint32_t nwords, uint32_t seed);
+
+template<typename T>
+struct MurmurHashFn {
+    uint32_t operator()(const T& key) const {
+        static_assert(0 == (sizeof(key) & 3), "Hashing requires a size that is a multiple of 4.");
+        return murmurHash((uint32_t const *) &key, sizeof(key) / 4, 0u);
+    }
+};
+
 // Wraps a std::vector and exposes the data pointer and size as public fields.
 //
 // This works nicely with Vulkan queries. For example:

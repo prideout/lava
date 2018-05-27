@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <par/LavaLoader.h>
-
 namespace par {
 
 class LavaCpuBuffer {

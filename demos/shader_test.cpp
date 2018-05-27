@@ -1,6 +1,7 @@
 // The MIT License
 // Copyright (c) 2018 Philip Rideout
 
+#include <par/LavaLoader.h>
 #include <par/LavaProgram.h>
 #include <par/LavaContext.h>
 #include <par/LavaLog.h>

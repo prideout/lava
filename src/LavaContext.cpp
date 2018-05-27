@@ -1,6 +1,7 @@
 // The MIT License
 // Copyright (c) 2018 Philip Rideout
 
+#include <par/LavaLoader.h>
 #include <par/LavaContext.h>
 #include <par/LavaLog.h>
 
@@ -453,7 +454,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     LOG_CHECK(not error, "Unable to create framebuffer.");
 
     // Create a fence for each command buffer.
-    VkFenceCreateInfo fenceInfo = {
+    VkFenceCreateInfo fenceInfo {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
         .flags = VK_FENCE_CREATE_SIGNALED_BIT,
     };
@@ -644,6 +645,12 @@ VkImageView LavaContext::getImageView() const noexcept {
 
 VkFramebuffer LavaContext::getFramebuffer() const noexcept {
     return upcast(this)->mSwap[0].framebuffer;
+}
+
+void LavaContext::finish() noexcept {
+    auto impl = upcast(this);
+    const VkFence fences[] = {impl->mSwap[0].fence, impl->mSwap[1].fence};
+    vkWaitForFences(impl->mDevice, 2, fences, VK_TRUE, ~0ull);
 }
 
 static bool isExtensionSupported(string_view ext) noexcept {

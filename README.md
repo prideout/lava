@@ -9,12 +9,14 @@ the application must invoke `vkCmdDraw` on its own, but it can use lava to creat
   loads all Vulkan entry points (include this instead of `vulkan.h`)
 - [**LavaProgram**](include/par/LavaProgram.h)
   consumes GLSL or SPIRV and wraps a pair of `VkShaderModule` handles.
+- [**LavaPipeCache**](include/par/LavaPipeCache.h)
+  manages a set of pipelines for a given pipeline layout.
 - [**LavaCpuBuffer**](include/par/LavaCpuBuffer.h)
   is a shared CPU-GPU buffer, useful for staging or uniform buffers.
 - **LavaGpuBuffer**
   is a fast device-only buffer used for vertex buffers and index buffers.
 - **LavaBinder**
-  manages pipelines, descriptor sets, pipeline layouts, and descriptor set layouts.
+  create a descriptor set layout amd manages a set of corollary descriptor sets.
 - **LavaFramebuffer**
   is an abstraction of an off-screen rendering surface.
 

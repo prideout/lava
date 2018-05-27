@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <vk_mem_alloc.h>
+
 #include <vector>
 
 #define VKALLOC nullptr
@@ -22,6 +24,10 @@ inline CLASS##Impl const* upcast(CLASS const* that) noexcept { \
 }
 
 namespace par {
+
+VmaAllocator getVma(VkDevice device, VkPhysicalDevice gpu);
+void createVma(VkDevice device, VkPhysicalDevice gpu);
+void destroyVma(VkDevice device);
 
 // Wraps a std::vector and exposes the data pointer and size as public fields.
 //

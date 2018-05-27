@@ -3,7 +3,7 @@
 
 #include <par/LavaProgram.h>
 #include <par/LavaContext.h>
-#include <par/LavaLog.h>
+#include <par/LavaCpuBuffer.h>
 
 #include <GLFW/glfw3.h>
 
@@ -13,6 +13,7 @@ using namespace par;
 
 static constexpr int DEMO_WIDTH = 640;
 static constexpr int DEMO_HEIGHT = 480;
+static constexpr float PI = 3.1415926535;
 
 static const std::string vertShaderGLSL = R"GLSL(
 #version 450
@@ -42,8 +43,8 @@ struct Vertex {
 
 static const Vertex TRIANGLE_VERTICES[] {
     {{1, 0}, 0xffff0000u},
-    {{cosf(M_PI * 2 / 3), sinf(M_PI * 2 / 3)}, 0xff00ff00u},
-    {{cosf(M_PI * 4 / 3), sinf(M_PI * 4 / 3)}, 0xff0000ffu},
+    {{cosf(PI * 2 / 3), sinf(PI * 2 / 3)}, 0xff00ff00u},
+    {{cosf(PI * 4 / 3), sinf(PI * 4 / 3)}, 0xff0000ffu},
 };
 
 int main(const int argc, const char *argv[]) {
@@ -73,10 +74,12 @@ int main(const int argc, const char *argv[]) {
         }
     });
     VkDevice device = context->getDevice();
+    VkPhysicalDevice gpu = context->getGpu();
 
     // Fill in a shared CPU-GPU vertex buffer.
     LavaCpuBuffer* vertexBuffer = LavaCpuBuffer::create({
         .device = device,
+        .gpu = gpu,
         .size = sizeof(TRIANGLE_VERTICES),
         .source = TRIANGLE_VERTICES,
         .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
@@ -106,8 +109,8 @@ int main(const int argc, const char *argv[]) {
         vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
 
         // Draw the triangle.
-        vkCmdBindVertexBuffers(...);
-        vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
+        //vkCmdBindVertexBuffers(...);
+        //vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
 
         // End the render pass, flush the command buffer, and present the backbuffer.
         vkCmdEndRenderPass(cmdbuffer);
@@ -115,7 +118,7 @@ int main(const int argc, const char *argv[]) {
     }
 
     // Cleanup.
-    LavaCpuBuffer::destroy(&vertexBuffer, device);
+    LavaCpuBuffer::destroy(&vertexBuffer);
     LavaProgram::destroy(&program, device);
     LavaContext::destroy(&context);
     return 0;

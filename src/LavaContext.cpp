@@ -154,6 +154,7 @@ LavaContextImpl::~LavaContextImpl() noexcept {
 
 void LavaContextImpl::killDevice() noexcept {
     vkDeviceWaitIdle(mDevice);
+    destroyVma(mDevice);
     vkDestroyImageView(mDevice, mSwap[0].view, VKALLOC);
     vkDestroyImageView(mDevice, mSwap[1].view, VKALLOC);
     mSwap[0].view = mSwap[1].view = VK_NULL_HANDLE;
@@ -261,6 +262,9 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     LOG_CHECK(not error, "Unable to create Vulkan device.");
     vkGetPhysicalDeviceMemoryProperties(mGpu, &mMemoryProperties);
     vkGetDeviceQueue(mDevice, graphicsQueueNodeIndex, 0, &mQueue);
+
+    // Create the GPU memory allocator.
+    createVma(mDevice, mGpu);
 
     // Get the list of formats that are supported:
     LavaVector<VkSurfaceFormatKHR> formats;

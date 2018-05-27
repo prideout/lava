@@ -26,6 +26,7 @@ include_directories(${DEMO} PRIVATE
     ${VULKAN_INCLUDE_DIR}
     extern/spdlog/include
     extern/glslang
+    extern/VulkanMemoryAllocator/src
     include)
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")

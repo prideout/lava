@@ -22,8 +22,20 @@ public:
     // Submits the command buffer and presents the most recently rendered image.
     void endFrame() noexcept;
 
-    // Waits for all frames to finish.
-    void finish() noexcept;
+    // Waits for the most recently submitted frame to finish.
+    void waitFrame() noexcept;
+
+    // Similar to beginFrame/endFrame/waitFrame for non-presentation work.
+    VkCommandBuffer beginWork() noexcept;
+    void endWork() noexcept;
+    void waitWork() noexcept;
+
+    // Allows commands to be recorded and played back later.
+    VkCommandBuffer beginRecording() noexcept;
+    void endRecording() noexcept;
+    void waitRecording() noexcept;
+    void freeRecording(VkCommandBuffer) noexcept;
+    void playRecording(VkCommandBuffer) noexcept;
 
     // General accessors.
     VkInstance getInstance() const noexcept;
@@ -41,7 +53,6 @@ public:
     VkSwapchainKHR getSwapchain() const noexcept;
 
     // Swap chain related accessors.
-    VkCommandBuffer getCmdBuffer() const noexcept;
     VkImage getImage() const noexcept;
     VkImageView getImageView() const noexcept;
     VkFramebuffer getFramebuffer() const noexcept;

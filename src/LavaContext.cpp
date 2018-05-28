@@ -631,10 +631,6 @@ VkSwapchainKHR LavaContext::getSwapchain() const noexcept {
     return upcast(this)->mSwapchain;
 }
 
-VkCommandBuffer LavaContext::getCmdBuffer() const noexcept {
-    return upcast(this)->mSwap[0].cmd;
-}
-
 VkImage LavaContext::getImage() const noexcept {
     return upcast(this)->mSwap[0].image;
 }
@@ -647,7 +643,7 @@ VkFramebuffer LavaContext::getFramebuffer() const noexcept {
     return upcast(this)->mSwap[0].framebuffer;
 }
 
-void LavaContext::finish() noexcept {
+void LavaContext::waitFrame() noexcept {
     auto impl = upcast(this);
     const VkFence fences[] = {impl->mSwap[0].fence, impl->mSwap[1].fence};
     vkWaitForFences(impl->mDevice, 2, fences, VK_TRUE, ~0ull);

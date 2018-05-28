@@ -153,7 +153,7 @@ int main(const int argc, const char *argv[]) {
     }
 
     // Wait for the command buffers to finish executing.
-    context->finish();
+    context->waitFrame();
 
     // Cleanup.
     LavaCpuBuffer::destroy(&vertexBuffer);

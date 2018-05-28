@@ -1,0 +1,55 @@
+
+lavacore
+    LavaxProgram
+    LavaxCompiler
+
+Add a Dependencies section to the README to discuss spdlog.
+
+Uniforms and DescriptorCache (not Binder)
+    spin_shared and spin_recorded
+
+Textures
+
+mathfu
+
+travis after going open source
+                               
+demos
+        demos/circle    Fixed size 640x480 window, draws a filled-in circle with random sampling
+        demos/gamma     https://www.shadertoy.com/view/llBGz1
+        demos/smallpt   https://www.codeplay.com/portal/sycl-ing-the-smallpt-raytracer
+        demos/sdfshapes https://www.shadertoy.com/view/4dfXDn
+        demos/klein     3Dlabs demo nostalgia (par_shapes and stencil draw-twice reflection)
+           https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
+        demos/skinning  Cesium Skinning and glTF and rapidjson
+        https://github.com/prideout/recipes
+        http://xeogl.org/examples/#materials_metallic_fireHydrant
+
+markdeep documenation: https://morgan3d.github.io/include.js/ ... but it would be cooler to use netlify
+resize Windows capability?  imgui example?
+par for par_shapes and par_denoise ?
+
+---------------------
+
+Vulkan Compute Path Tracer
+
+Also inspirational:
+ https://github.com/prideout/aobaker
+ https://github.com/aras-p/ToyPathTracer
+
+https://github.com/lighttransport/nanort
+
+http://aantron.github.io/better-enums/ (overkill)
+https://www.cgbookcase.com/downloads/
+
+par:
+  Add single-file C/C++ denoising library that uses https://casual-effects.com/research/Mara2017Denoise/
+
+http://graphics.stanford.edu/~henrik/images/cbox.html (best cornell box)
+https://github.com/SaschaWillems/Vulkan/blob/master/examples/raytracing/raytracing.cpp
+https://github.com/GoGreenOrDieTryin/Vulkan-GPU-Ray-Tracer
+http://www.kevinbeason.com/smallpt/
+https://github.com/munificent/smallpt/blob/master/smallpt.cpp
+http://www.hxa.name/minilight/
+
+github c679fa0797b131c80468863097211787d16f9233

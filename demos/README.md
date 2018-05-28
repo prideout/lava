@@ -2,7 +2,9 @@ This folder contains a series of simple independent Lava demos that use
 [glfw](https://github.com/glfw/glfw) for windowing and
 [glslang](https://github.com/KhronosGroup/glslang) for real-time SPIRV generation.
 
-*Note that the core Lava library does not have dependencies on GLFW or glslang.*
+Note that the core Lava library does not have dependencies on GLFW or glslang.
+
+![](../extras/triangle.png)
 
 - [shader_test](shader_test.cpp)
   is the simplest demo and does not draw any geometry.

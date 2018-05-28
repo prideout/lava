@@ -24,7 +24,6 @@ link_libraries(
 
 include_directories(${DEMO} PRIVATE
     ${VULKAN_INCLUDE_DIR}
-    extras/spdlog/include
     extras/glslang
     include)
 

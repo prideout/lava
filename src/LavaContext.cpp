@@ -9,6 +9,15 @@
 
 #include "LavaInternal.h"
 
+namespace par {
+    struct LavaRecording {
+        VkCommandBuffer cmd[2];
+        VkFence fence[2];
+        bool doneRecording[2];
+        uint32_t currentIndex;
+    };
+}
+
 using namespace par;
 using namespace std;
 
@@ -77,6 +86,7 @@ struct LavaContextImpl : LavaContext {
     VkCommandBuffer mWorkCmd;
     VkFence mWorkFence;
     uint32_t mCurrentSwapIndex = ~0u;
+    LavaRecording* mCurrentRecording = nullptr;
 };
 
 namespace LavaLoader {
@@ -598,10 +608,6 @@ VkDevice LavaContext::getDevice() const noexcept {
     return upcast(this)->mDevice;
 }
 
-VkCommandPool LavaContext::getCommandPool() const noexcept {
-    return upcast(this)->mCommandPool;
-}
-
 VkPhysicalDevice LavaContext::getGpu() const noexcept {
     return upcast(this)->mGpu;
 }
@@ -634,16 +640,16 @@ VkSwapchainKHR LavaContext::getSwapchain() const noexcept {
     return upcast(this)->mSwapchain;
 }
 
-VkImage LavaContext::getImage() const noexcept {
-    return upcast(this)->mSwap[0].image;
+VkImage LavaContext::getImage(uint32_t i) const noexcept {
+    return upcast(this)->mSwap[i].image;
 }
 
-VkImageView LavaContext::getImageView() const noexcept {
-    return upcast(this)->mSwap[0].view;
+VkImageView LavaContext::getImageView(uint32_t i) const noexcept {
+    return upcast(this)->mSwap[i].view;
 }
 
-VkFramebuffer LavaContext::getFramebuffer() const noexcept {
-    return upcast(this)->mSwap[0].framebuffer;
+VkFramebuffer LavaContext::getFramebuffer(uint32_t i) const noexcept {
+    return upcast(this)->mSwap[i].framebuffer;
 }
 
 void LavaContext::waitFrame() noexcept {
@@ -677,6 +683,96 @@ void LavaContext::endWork() noexcept {
 void LavaContext::waitWork() noexcept {
     auto impl = upcast(this);
     vkWaitForFences(impl->mDevice, 1, &impl->mWorkFence, VK_TRUE, ~0ull);
+}
+
+LavaRecording* LavaContext::createRecording() noexcept {
+    auto impl = upcast(this);
+    LavaRecording* recording = new LavaRecording();
+    const VkCommandBufferAllocateInfo bufinfo {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = impl->mCommandPool,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 2,
+    };
+    vkAllocateCommandBuffers(impl->mDevice, &bufinfo, recording->cmd);
+    VkFenceCreateInfo fenceInfo {
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+    };
+    vkCreateFence(impl->mDevice, &fenceInfo, VKALLOC, &recording->fence[0]);
+    vkCreateFence(impl->mDevice, &fenceInfo, VKALLOC, &recording->fence[1]);
+    recording->doneRecording[0] = false;
+    recording->doneRecording[1] = false;
+    recording->currentIndex = ~0u;
+    return recording;
+}
+
+void LavaContext::freeRecording(LavaRecording* recording) noexcept {
+    auto impl = upcast(this);
+    assert(recording);
+    vkDestroyFence(impl->mDevice, recording->fence[0], VKALLOC);
+    vkDestroyFence(impl->mDevice, recording->fence[1], VKALLOC);
+    vkFreeCommandBuffers(impl->mDevice, impl->mCommandPool, 2, recording->cmd);
+    delete recording;
+}
+
+VkCommandBuffer LavaContext::beginRecording(LavaRecording* recording, uint32_t i) noexcept {
+    auto impl = upcast(this);
+    assert(recording && i < 2);
+    impl->mCurrentRecording = recording;
+    recording->currentIndex = i;
+    VkCommandBufferBeginInfo beginInfo { .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+    vkBeginCommandBuffer(recording->cmd[i], &beginInfo);
+    return recording->cmd[i];
+}
+
+void LavaContext::endRecording() noexcept {
+    auto impl = upcast(this);
+    assert(impl->mCurrentRecording);
+    LavaRecording* recording = impl->mCurrentRecording;
+    impl->mCurrentRecording = nullptr;
+    const uint32_t index = recording->currentIndex;
+    vkEndCommandBuffer(recording->cmd[index]);
+    recording->doneRecording[index] = true;
+    recording->currentIndex = 1 - index;
+}
+
+void LavaContext::presentRecording(LavaRecording* recording) noexcept {
+    auto impl = upcast(this);
+    assert(recording && recording->doneRecording[0] && recording->doneRecording[1]);
+    constexpr VkPipelineStageFlags waitDestStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    uint32_t index = 0;
+    vkAcquireNextImageKHR(impl->mDevice, impl->mSwapchain, ~0ull, impl->mImageAvailable,
+             VK_NULL_HANDLE, &index);
+    VkSubmitInfo submitInfo {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &impl->mImageAvailable,
+        .pWaitDstStageMask = &waitDestStage,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &recording->cmd[index],
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = &impl->mDrawFinished,
+    };
+    VkPresentInfoKHR presentInfo {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &impl->mDrawFinished,
+        .swapchainCount = 1,
+        .pSwapchains = &impl->mSwapchain,
+        .pImageIndices = &index,
+    };
+    VkFence fence = recording->fence[index];
+    vkWaitForFences(impl->mDevice, 1, &fence, VK_TRUE, ~0ull);
+    vkResetFences(impl->mDevice, 1, &fence);
+    vkQueueSubmit(impl->mQueue, 1, &submitInfo, fence);
+    vkQueuePresentKHR(impl->mQueue, &presentInfo);
+}
+
+void LavaContext::waitRecording(LavaRecording* recording) noexcept {
+    auto impl = upcast(this);
+    assert(recording && recording->doneRecording[0] && recording->doneRecording[1]);
+    vkWaitForFences(impl->mDevice, 2, recording->fence, VK_TRUE, ~0ull);
 }
 
 static bool isExtensionSupported(string_view ext) noexcept {

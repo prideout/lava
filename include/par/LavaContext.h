@@ -5,6 +5,8 @@
 
 namespace par {
 
+struct LavaRecording;
+
 // The LavaContext owns the Vulkan instance, device, swap chain, and command buffers.
 class LavaContext {
 public:
@@ -31,18 +33,18 @@ public:
     void waitWork() noexcept;
 
     // Allows commands to be recorded and played back later.
-    VkCommandBuffer beginRecording() noexcept;
+    LavaRecording* createRecording() noexcept;
+    VkCommandBuffer beginRecording(LavaRecording*, uint32_t i) noexcept;
     void endRecording() noexcept;
-    void waitRecording() noexcept;
-    void freeRecording(VkCommandBuffer) noexcept;
-    void playRecording(VkCommandBuffer) noexcept;
+    void presentRecording(LavaRecording*) noexcept;
+    void freeRecording(LavaRecording*) noexcept;
+    void waitRecording(LavaRecording*) noexcept;
 
     // General accessors.
     VkInstance getInstance() const noexcept;
     VkSurfaceKHR getSurface() const noexcept;
     VkExtent2D getSize() const noexcept;
     VkDevice getDevice() const noexcept;
-    VkCommandPool getCommandPool() const noexcept;
     VkPhysicalDevice getGpu() const noexcept;
     const VkPhysicalDeviceFeatures& getGpuFeatures() const noexcept;
     VkQueue getQueue() const noexcept;
@@ -53,9 +55,9 @@ public:
     VkSwapchainKHR getSwapchain() const noexcept;
 
     // Swap chain related accessors.
-    VkImage getImage() const noexcept;
-    VkImageView getImageView() const noexcept;
-    VkFramebuffer getFramebuffer() const noexcept;
+    VkImage getImage(uint32_t i = 0) const noexcept;
+    VkImageView getImageView(uint32_t i = 0) const noexcept;
+    VkFramebuffer getFramebuffer(uint32_t i = 0) const noexcept;
 
 protected:
     // par::heaponly

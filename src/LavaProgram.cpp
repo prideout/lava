@@ -11,8 +11,7 @@
 using namespace par;
 using namespace std;
 
-class LavaProgramImpl : public LavaProgram {
-public:
+struct LavaProgramImpl : LavaProgram {
     LavaProgramImpl(string_view vshader, string_view fshader) noexcept;
     ~LavaProgramImpl() noexcept;
     VkShaderModule getVertexShader(VkDevice device) noexcept;
@@ -22,7 +21,6 @@ public:
     string_view mFragShader;
     VkShaderModule mVertModule = VK_NULL_HANDLE;
     VkShaderModule mFragModule = VK_NULL_HANDLE;
-    friend class LavaProgram;
 };
 
 LAVA_DEFINE_UPCAST(LavaProgram)

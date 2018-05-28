@@ -15,8 +15,10 @@ public:
     enum Stage { VERTEX, FRAGMENT, COMPUTE };
     bool compile(Stage stage, std::string_view glsl, std::vector<uint32_t>* spirv) const noexcept;
 protected:
+    // par::heaponly
     LavaCompiler() noexcept = default;
     ~LavaCompiler() noexcept = default;
+    // par::noncopyable
     LavaCompiler(LavaCompiler const&) = delete;
     LavaCompiler(LavaCompiler&&) = delete;
     LavaCompiler& operator=(LavaCompiler const&) = delete;

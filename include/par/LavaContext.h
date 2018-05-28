@@ -58,8 +58,10 @@ public:
     VkFramebuffer getFramebuffer() const noexcept;
 
 protected:
+    // par::heaponly
     LavaContext() noexcept = default;
     ~LavaContext() noexcept = default;
+    // par::noncopyable
     LavaContext(LavaContext const&) = delete;
     LavaContext(LavaContext&&) = delete;
     LavaContext& operator=(LavaContext const&) = delete;

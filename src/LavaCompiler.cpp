@@ -14,8 +14,7 @@ using namespace spdlog;
 
 static int ninstances = 0;
 
-class LavaCompilerImpl : public LavaCompiler {
-public:
+struct LavaCompilerImpl : LavaCompiler {
     LavaCompilerImpl() noexcept;
     ~LavaCompilerImpl() noexcept;
     bool compile(Stage stage, string_view glsl, vector<uint32_t>* spirv) const noexcept;

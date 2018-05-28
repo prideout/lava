@@ -14,8 +14,10 @@ public:
     VkShaderModule getVertexShader(VkDevice device) noexcept;
     VkShaderModule getFragmentShader(VkDevice device) noexcept;
 protected:
+    // par::heaponly
     LavaProgram() noexcept = default;
     ~LavaProgram() noexcept = default;
+    // par::noncopyable
     LavaProgram(LavaProgram const&) = delete;
     LavaProgram(LavaProgram&&) = delete;
     LavaProgram& operator=(LavaProgram const&) = delete;

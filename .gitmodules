@@ -1,12 +1,9 @@
-[submodule "extern/glfw"]
-	path = extern/glfw
+[submodule "extras/glfw"]
+	path = extras/glfw
 	url = https://github.com/glfw/glfw.git
-[submodule "extern/glslang"]
-	path = extern/glslang
+[submodule "extras/glslang"]
+	path = extras/glslang
 	url = https://github.com/KhronosGroup/glslang.git
-[submodule "extern/spdlog"]
-	path = extern/spdlog
+[submodule "extras/spdlog"]
+	path = extras/spdlog
 	url = https://github.com/gabime/spdlog.git
-[submodule "extern/VulkanMemoryAllocator"]
-	path = extern/VulkanMemoryAllocator
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

@@ -34,7 +34,7 @@ In the name of simplicity, Lava is intentionally constrained and opinionated. Fo
 By design, lava does not include a materials system, or a scene graph, or an asset loader, or any
 platform-specific functionality like windowing and events.
 
-lava is written in a subset of C++14 that forbids RTTI, exceptions, nested namespaces, and the use
+lava is written in a subset of C++14 that forbids RTTI, exceptions, and the use
 of `<iostream>`.
 
 The public API is an even narrower subset of C++ whereby classes contain nothing but public methods.

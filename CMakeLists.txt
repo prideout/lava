@@ -13,8 +13,8 @@ endif()
 # set(EXTRA_SANITIZE_OPTIONS "-fsanitize=address")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_SANITIZE_OPTIONS}")
 
-add_subdirectory(extern/glfw)
-add_subdirectory(extern/glslang)
+add_subdirectory(extras/glfw)
+add_subdirectory(extras/glslang)
 
 link_libraries(
     $ENV{VULKAN_SDK}/macOS/lib/libvulkan.1.dylib
@@ -24,9 +24,8 @@ link_libraries(
 
 include_directories(${DEMO} PRIVATE
     ${VULKAN_INCLUDE_DIR}
-    extern/spdlog/include
-    extern/glslang
-    extern/VulkanMemoryAllocator/src
+    extras/spdlog/include
+    extras/glslang
     include)
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")

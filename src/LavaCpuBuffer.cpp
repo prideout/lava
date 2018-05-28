@@ -9,17 +9,15 @@
 
 using namespace par;
 
-class LavaCpuBufferImpl : public LavaCpuBuffer {
-public:
+struct LavaCpuBufferImpl : LavaCpuBuffer {
     LavaCpuBufferImpl(Config config) noexcept;
-    VkDevice mDevice;
-    VkBuffer mBuffer;
-    VmaAllocation mMemory;
-    VmaAllocator mAlloc;
-    friend class LavaCpuBuffer;
+    VkDevice device;
+    VkBuffer buffer;
+    VmaAllocation memory;
+    VmaAllocator vma;
 };
 
-LAVA_IMPL_CLASS(LavaCpuBuffer)
+LAVA_DEFINE_UPCAST(LavaCpuBuffer)
 
 LavaCpuBuffer* LavaCpuBuffer::create(Config config) noexcept {
     return new LavaCpuBufferImpl(config);
@@ -27,21 +25,21 @@ LavaCpuBuffer* LavaCpuBuffer::create(Config config) noexcept {
 
 void LavaCpuBuffer::destroy(LavaCpuBuffer** that) noexcept {
     LavaCpuBufferImpl* impl = upcast(*that);
-    vmaDestroyBuffer(impl->mAlloc, impl->mBuffer, impl->mMemory);
+    vmaDestroyBuffer(impl->vma, impl->buffer, impl->memory);
     delete upcast(impl);
     *that = nullptr;
 }
 
-LavaCpuBufferImpl::LavaCpuBufferImpl(Config config) noexcept : mDevice(config.device) {
+LavaCpuBufferImpl::LavaCpuBufferImpl(Config config) noexcept : device(config.device) {
     assert(config.device && config.gpu && config.size > 0);
-    mAlloc = getVma(config.device, config.gpu);
+    vma = getVma(config.device, config.gpu);
     VkBufferCreateInfo bufferInfo {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = config.size,
         .usage = config.usage
     };
     VmaAllocationCreateInfo allocInfo { .usage = VMA_MEMORY_USAGE_CPU_TO_GPU };
-    vmaCreateBuffer(mAlloc, &bufferInfo, &allocInfo, &mBuffer, &mMemory, nullptr);
+    vmaCreateBuffer(vma, &bufferInfo, &allocInfo, &buffer, &memory, nullptr);
     if (config.source) {
         setData(config.source, config.size);
     }
@@ -50,11 +48,11 @@ LavaCpuBufferImpl::LavaCpuBufferImpl(Config config) noexcept : mDevice(config.de
 void LavaCpuBuffer::setData(void const* sourceData, uint32_t bytesToCopy) noexcept {
     auto impl = upcast(this);
     void* mappedData;
-    vmaMapMemory(impl->mAlloc, impl->mMemory, &mappedData);
+    vmaMapMemory(impl->vma, impl->memory, &mappedData);
     memcpy(mappedData, sourceData, bytesToCopy);
-    vmaUnmapMemory(impl->mAlloc, impl->mMemory);
+    vmaUnmapMemory(impl->vma, impl->memory);
 }
 
 VkBuffer LavaCpuBuffer::getBuffer() const noexcept {
-    return upcast(this)->mBuffer;
+    return upcast(this)->buffer;
 }

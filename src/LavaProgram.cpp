@@ -25,7 +25,7 @@ public:
     friend class LavaProgram;
 };
 
-LAVA_IMPL_CLASS(LavaProgram)
+LAVA_DEFINE_UPCAST(LavaProgram)
 
 LavaProgram* LavaProgram::create(string_view vshader, string_view fshader) noexcept {
     return new LavaProgramImpl(vshader, fshader);

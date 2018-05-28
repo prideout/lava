@@ -13,10 +13,10 @@ the application must invoke `vkCmdDraw` on its own, but it can use lava to creat
   manages a set of pipelines for a given pipeline layout.
 - [**LavaCpuBuffer**](include/par/LavaCpuBuffer.h)
   is a shared CPU-GPU buffer, useful for staging or uniform buffers.
-- **LavaGpuBuffer**
+- [**LavaGpuBuffer**](include/par/LavaGpuBuffer.h)
   is a fast device-only buffer used for vertex buffers and index buffers.
 - **LavaBinder**
-  create a descriptor set layout amd manages a set of corollary descriptor sets.
+  creates a descriptor set layout amd manages a set of corollary descriptor sets.
 - **LavaFramebuffer**
   is an abstraction of an off-screen rendering surface.
 

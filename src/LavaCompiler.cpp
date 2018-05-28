@@ -21,7 +21,7 @@ public:
     bool compile(Stage stage, string_view glsl, vector<uint32_t>* spirv) const noexcept;
 };
 
-LAVA_IMPL_CLASS(LavaCompiler)
+LAVA_DEFINE_UPCAST(LavaCompiler)
 
 extern const TBuiltInResource DefaultTBuiltInResource;
 

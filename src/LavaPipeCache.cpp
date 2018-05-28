@@ -87,7 +87,7 @@ struct LavaPipeCacheImpl : LavaPipeCache {
     VkPipelineLayout pipelineLayout;
 };
 
-LAVA_IMPL_CLASS(LavaPipeCache)
+LAVA_DEFINE_UPCAST(LavaPipeCache)
 
 LavaPipeCache::RasterState createDefaultRasterState() {
     VkPipelineRasterizationStateCreateInfo rasterization {};

@@ -43,8 +43,7 @@ struct DepthBundle {
     VkFormat format = VK_FORMAT_D16_UNORM;
 };
 
-class LavaContextImpl : public LavaContext {
-public:
+struct LavaContextImpl : LavaContext {
     LavaContextImpl(bool useValidation) noexcept;
     ~LavaContextImpl() noexcept;
     void initDevice(VkSurfaceKHR surface, bool createDepthBuffer) noexcept;
@@ -75,8 +74,9 @@ public:
     VkSurfaceKHR mSurface;
     VkSemaphore mImageAvailable;
     VkSemaphore mDrawFinished;
-    uint32_t mCurrentSwapIndex = 3u;
-    friend class LavaContext;
+    VkCommandBuffer mWorkCmd;
+    VkFence mWorkFence;
+    uint32_t mCurrentSwapIndex = ~0u;
 };
 
 namespace LavaLoader {
@@ -84,7 +84,7 @@ namespace LavaLoader {
     void bind(VkInstance instance);
 }
 
-LAVA_IMPL_CLASS(LavaContext)
+LAVA_DEFINE_UPCAST(LavaContext)
 
 LavaContext* LavaContext::create(Config config) noexcept {
     LavaLoader::init();
@@ -172,7 +172,8 @@ void LavaContextImpl::killDevice() noexcept {
 
     vkDestroyFence(mDevice, mSwap[0].fence, VKALLOC);
     vkDestroyFence(mDevice, mSwap[1].fence, VKALLOC);
-    mSwap[0].fence = mSwap[1].fence = VK_NULL_HANDLE;
+    vkDestroyFence(mDevice, mWorkFence, VKALLOC);
+    mSwap[0].fence = mSwap[1].fence = mWorkFence = VK_NULL_HANDLE;
 
     vkDestroySemaphore(mDevice, mImageAvailable, VKALLOC);
     vkDestroySemaphore(mDevice, mDrawFinished, VKALLOC);
@@ -185,9 +186,9 @@ void LavaContextImpl::killDevice() noexcept {
     vkDestroySwapchainKHR(mDevice, mSwapchain, VKALLOC);
     mSwapchain = VK_NULL_HANDLE;
 
-    vkFreeCommandBuffers(mDevice, mCommandPool, 1, &mSwap[0].cmd);
-    vkFreeCommandBuffers(mDevice, mCommandPool, 1, &mSwap[1].cmd);
-    mSwap[0].cmd = mSwap[1].cmd = VK_NULL_HANDLE;
+    VkCommandBuffer cmds[] = { mSwap[0].cmd, mSwap[1].cmd, mWorkCmd };
+    vkFreeCommandBuffers(mDevice, mCommandPool, 3, cmds);
+    mSwap[0].cmd = mSwap[1].cmd = mWorkCmd = VK_NULL_HANDLE;
 
     vkDestroyCommandPool(mDevice, mCommandPool, VKALLOC);
     mCommandPool = VK_NULL_HANDLE;
@@ -291,13 +292,14 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .commandPool = mCommandPool,
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = 2,
+        .commandBufferCount = 3,
     };
-    VkCommandBuffer bufs[2];
+    VkCommandBuffer bufs[3];
     error = vkAllocateCommandBuffers(mDevice, &bufinfo, bufs);
     LOG_CHECK(not error, "Unable to allocate command buffers.");
     mSwap[0].cmd = bufs[0];
     mSwap[1].cmd = bufs[1];
+    mWorkCmd = bufs[2];
 
     // Check the surface capabilities and formats.
     VkSurfaceCapabilitiesKHR surfCapabilities;
@@ -460,6 +462,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     };
     vkCreateFence(mDevice, &fenceInfo, VKALLOC, &mSwap[0].fence);
     vkCreateFence(mDevice, &fenceInfo, VKALLOC, &mSwap[1].fence);
+    vkCreateFence(mDevice, &fenceInfo, VKALLOC, &mWorkFence);
 
     VkSemaphoreCreateInfo semaphoreInfo { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
     vkCreateSemaphore(mDevice, &semaphoreInfo, VKALLOC, &mImageAvailable);
@@ -647,6 +650,33 @@ void LavaContext::waitFrame() noexcept {
     auto impl = upcast(this);
     const VkFence fences[] = {impl->mSwap[0].fence, impl->mSwap[1].fence};
     vkWaitForFences(impl->mDevice, 2, fences, VK_TRUE, ~0ull);
+}
+
+VkCommandBuffer LavaContext::beginWork() noexcept {
+    auto impl = upcast(this);
+    vkWaitForFences(impl->mDevice, 1, &impl->mWorkFence, VK_TRUE, ~0ull);
+    vkResetFences(impl->mDevice, 1, &impl->mWorkFence);
+    VkCommandBuffer cmdbuffer = impl->mWorkCmd;
+    VkCommandBufferBeginInfo beginInfo { .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+    vkResetCommandBuffer(cmdbuffer, 0);
+    vkBeginCommandBuffer(cmdbuffer, &beginInfo);
+    return cmdbuffer;
+}
+
+void LavaContext::endWork() noexcept {
+    auto impl = upcast(this);
+    VkSubmitInfo submitInfo {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &impl->mWorkCmd,
+    };
+    vkEndCommandBuffer(impl->mWorkCmd);
+    vkQueueSubmit(impl->mQueue, 1, &submitInfo, impl->mWorkFence);
+}
+
+void LavaContext::waitWork() noexcept {
+    auto impl = upcast(this);
+    vkWaitForFences(impl->mDevice, 1, &impl->mWorkFence, VK_TRUE, ~0ull);
 }
 
 static bool isExtensionSupported(string_view ext) noexcept {

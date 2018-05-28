@@ -9,7 +9,7 @@
 
 #define VKALLOC nullptr
 
-#define LAVA_IMPL_CLASS(CLASS) \
+#define LAVA_DEFINE_UPCAST(CLASS) \
 inline CLASS##Impl& upcast(CLASS& that) noexcept { \
     return static_cast<CLASS##Impl &>(that); \
 } \

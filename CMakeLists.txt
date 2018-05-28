@@ -35,6 +35,7 @@ file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
 
 set(DEMO_NAMES
     triangle_shared
+    triangle_staged
     shader_test)
 
 foreach(DEMO ${DEMO_NAMES})

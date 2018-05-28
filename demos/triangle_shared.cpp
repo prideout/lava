@@ -109,7 +109,7 @@ int main(const int argc, const char *argv[]) {
                 .stride = 12,
             } }
         },
-        .layouts = {},
+        .descriptorLayouts = {},
         .vshader = vshader,
         .fshader = fshader,
         .renderPass = renderPass

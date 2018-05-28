@@ -138,10 +138,11 @@ LavaPipeCache* LavaPipeCache::create(Config config) noexcept {
         .fshader = config.fshader,
         .renderPass = config.renderPass
     };
+    auto& layouts = config.descriptorLayouts;
     VkPipelineLayoutCreateInfo info {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = (uint32_t) config.layouts.size(),
-        .pSetLayouts = config.layouts.empty() ? nullptr : config.layouts.data()
+        .setLayoutCount = (uint32_t) layouts.size(),
+        .pSetLayouts = layouts.empty() ? nullptr : layouts.data()
     };
     vkCreatePipelineLayout(impl->device, &info, VKALLOC, &impl->pipelineLayout);
     return impl;

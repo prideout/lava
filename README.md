@@ -4,11 +4,9 @@ the application must invoke `vkCmdDraw` on its own, but it can use lava to creat
 `VkDevice` and `VkQueue`. The API consists of the following classes:
 
 - [**LavaContext**](include/par/LavaContext.h)
-  manages an instance, device, swap chain, and command queue.
+  creates an instance, device, swap chain, and command queue.
 - [**LavaLoader**](include/par/LavaLoader.h)
   loads all Vulkan entry points (include this instead of `vulkan.h`)
-- [**LavaProgram**](include/par/LavaProgram.h)
-  consumes GLSL or SPIRV and wraps a pair of `VkShaderModule` handles.
 - [**LavaPipeCache**](include/par/LavaPipeCache.h)
   manages a set of pipelines for a given pipeline layout.
 - [**LavaCpuBuffer**](include/par/LavaCpuBuffer.h)
@@ -17,27 +15,92 @@ the application must invoke `vkCmdDraw` on its own, but it can use lava to creat
   is a fast device-only buffer used for vertex buffers and index buffers.
 - **LavaBinder**
   creates a descriptor set layout amd manages a set of corollary descriptor sets.
-- **LavaFramebuffer**
-  is an abstraction of an off-screen rendering surface.
+- **LavaTexture**
+- **LavaSamplerCache**
+- **LavaUniformBuffer**
 
-Textures, UniformBlocks?
+## Usage
 
-Each Lava class is independent of every other Lava class. For example, `LavaBinder` takes
-`VkShaderModule` rather than `LavaProgram`. This allows applications to select which subset of lava
-functionality they wish to use.
+Each Lava class is completely independent of other Lava classes. Each class lives in the `par`
+namespace, and is instanced using a static `create` method.
+ 
+Use `LavaContext` to create the standard litany of init-time Vulkan objects: an instance, a device,
+a couple command buffers, etc.  For example:
 
-In the name of simplicity, Lava is intentionally constrained and opinionated. For example,
-**LavaBinder** always creates 4 descriptor sets.
+```cpp
+auto context = par::LavaContext::create({
+    .depthBuffer = false,
+    .validation = true,
+    .createSurface = [window] (VkInstance instance) {
+        VkSurfaceKHR surface;
+        glfwCreateWindowSurface(instance, window, nullptr, &surface);
+        return surface;
+    }
+});
+const VkDevice device = context->getDevice();
+const VkExtent2D extent = context->getSize();
+// Do stuff here...
+par::LavaContext::destroy(&context);
+```
 
-## Philosophy and style
+You can also use `LavaContext` as an aid for submitting command buffers and presenting the swap
+chain:
 
-By design, lava does not include a materials system, or a scene graph, or an asset loader, or any
+```cpp
+VkCommandBuffer cmdbuffer = context->beginFrame();
+vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
+vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
+vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
+vkCmdEndRenderPass(cmdbuffer);
+context->endFrame();
+```
+
+Another Lava component is `LavaPipeCache`, which makes it easy to create pipeline objects on the
+fly, as well as modifying rasterization state:
+
+```cpp
+auto pipelines = par::LavaPipeCache::create({
+    .device = device,
+    .vertex = {
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .attributes = { {
+            .binding = 0u,
+            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .location = 0u,
+            .offset = 0u,
+        } },
+        .buffers = { {
+            .binding = 0u,
+            .stride = 12,
+        } }
+    },
+    .descriptorLayouts = {},
+    .vshader = vertexShaderModule,
+    .fshader = fragmentShaderModule,
+    .renderPass = renderPass
+});
+VkPipeline pipeline = pipelines->getPipeline();
+// Do stuff here...
+pipelines->setRenderPass(newRenderPass);
+pipelines->setRasterState(newRasterState);
+pipeline = pipelines->getPipeline();
+// Do stuff here...
+par::LavaPipeCache::destroy(&pipelines);
+```
+
+## Scope
+
+By design, lava does not include a materials system, a scene graph, an asset loader, or any
 platform-specific functionality like windowing and events.
 
 lava is written in a subset of C++14 that forbids RTTI, exceptions, and the use
 of `<iostream>`.
 
 The public API is an even narrower subset of C++ whereby classes contain nothing but public methods.
+
+The core library has dependencies on any third-party libraries other than the single-header
+[vk_mem_alloc.h](src/vk_mem_alloc.h), which is directly included in the repo for convenience.
 
 ## Supported platforms
 
@@ -78,7 +141,7 @@ export PATH="$VULKAN_SDK/macOS/bin:$PATH"
 ## Internal code style
 
 The code is vertically compact, but no single line should be longer than 100 characters. All
-public-facing Lava types live in the `par` namespace and there are no nested namespaces.
+public-facing Lava types live in the `par` namespace.
 
 For `#include`, always use angle brackets unless including a private header that lives in the same
 directory. Includes are arranged in blocks, where each block is an alphabetized list of headers. The

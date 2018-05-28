@@ -30,7 +30,7 @@ public:
     struct Config {
         VkDevice device;
         VertexState vertex;
-        std::vector<VkDescriptorSetLayout> layouts;
+        std::vector<VkDescriptorSetLayout> descriptorLayouts;
         VkShaderModule vshader;
         VkShaderModule fshader;
         VkRenderPass renderPass;

@@ -1,7 +1,7 @@
 
-**lava** is a small set of Vulkan utilities that never adds to the command buffer. For example,
+**Lava** is a small set of Vulkan utilities that never adds to the command buffer. For example,
 the application must invoke `vkCmdDraw` on its own, but it can use lava to create the
-`VkDevice` and `VkQueue`. The API consists of the following classes:
+`VkDevice` and `VkQueue`. Lava consists of the following components:
 
 - [**LavaContext**](include/par/LavaContext.h)
   creates an instance, device, swap chain, and command queue.
@@ -13,16 +13,15 @@ the application must invoke `vkCmdDraw` on its own, but it can use lava to creat
   is a shared CPU-GPU buffer, useful for staging or uniform buffers.
 - [**LavaGpuBuffer**](include/par/LavaGpuBuffer.h)
   is a fast device-only buffer used for vertex buffers and index buffers.
-- **LavaBinder**
-  creates a descriptor set layout amd manages a set of corollary descriptor sets.
+- [**LavaDescCache**](include/par/LavaDescCache.h)
+  creates a descriptor set layout and manages a set of corollary descriptor sets.
 - **LavaTexture**
-- **LavaSamplerCache**
 - **LavaUniformBuffer**
 
 ## Usage
 
-Each Lava class is completely independent of other Lava classes. Each class lives in the `par`
-namespace, and is instanced using a static `create` method.
+All Lava classes are completely independent of every other class. Every Lava type lives in the `par`
+namespace, and every class is instanced using a static `create` method.
  
 Use `LavaContext` to create the standard litany of init-time Vulkan objects: an instance, a device,
 a couple command buffers, etc.  For example:
@@ -99,8 +98,8 @@ of `<iostream>`.
 
 The public API is an even narrower subset of C++ whereby classes contain nothing but public methods.
 
-The core library has dependencies on any third-party libraries other than the single-header
-[vk_mem_alloc.h](src/vk_mem_alloc.h), which is directly included in the repo for convenience.
+The core library has no dependencies on any third-party libraries other than the single-file
+[vk_mem_alloc.h](src/vk_mem_alloc.h) library, which is included in the repo for convenience.
 
 ## Supported platforms
 
@@ -121,7 +120,7 @@ rm -rf * ; cmake .. -G Ninja
 ninja && ./vtriangle
 ```
 
-You should now see a Cornell Box that looks like this:
+You should now see a Klein Bottle that looks like this:
 
 [placeholder]
 
@@ -137,29 +136,3 @@ export VK_LAYER_PATH=$VULKAN_SDK/macOS/etc/vulkan/explicit_layers.d
 export VK_ICD_FILENAMES=$VULKAN_SDK/macOS/etc/vulkan/icd.d/MoltenVK_icd.json
 export PATH="$VULKAN_SDK/macOS/bin:$PATH"
 ```
-
-## Internal code style
-
-The code is vertically compact, but no single line should be longer than 100 characters. All
-public-facing Lava types live in the `par` namespace.
-
-For `#include`, always use angle brackets unless including a private header that lives in the same
-directory. Includes are arranged in blocks, where each block is an alphabetized list of headers. The
-first block is composed of `par` headers, followed by a sorted list of blocks for each `extern/`
-library, followed by a block of C++ STL headers, followed by the block of standard C headers,
-followed by the block of private headers. For example:
-
-```C++
-#include <par/LavaContext.h>
-#include <par/LavaLog.h>
-
-#include <SPIRV/GlslangToSpv.h>
-
-#include <string_view>
-#include <vector>
-
-#include "LavaInternal.h"
-```
-
-Methods and functions should have comments that are descriptive ("Opens the file") rather than
-imperative ("Open the file").

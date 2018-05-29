@@ -12,7 +12,6 @@
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/extras/glfw/include",
                 "${workspaceFolder}/extras/glfw/deps",
-                "${workspaceFolder}/extras/spdlog/include",
                 "${workspaceFolder}/extras/glslang"
             ],
             "defines": [],

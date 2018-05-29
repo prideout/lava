@@ -303,7 +303,7 @@ void LavaPipeCache::setRenderPass(VkRenderPass renderPass) noexcept {
     }
 }
 
-void LavaPipeCache::releaseUnused(uint64_t milliseconds) {
+void LavaPipeCache::releaseUnused(uint64_t milliseconds) noexcept {
     LavaPipeCacheImpl* impl = upcast(this);
     const uint64_t expiration = getCurrentTime() - milliseconds;
     Cache cache;

@@ -51,8 +51,8 @@ public:
     void setShaderModule(VkShaderStageFlagBits stage, VkShaderModule module) noexcept;
     void setRenderPass(VkRenderPass renderPass) noexcept;
 
-    // Evicts unused pipeline objects that were last used more than N milliseconds ago.
-    void releaseUnused(uint64_t milliseconds);
+    // Evicts pipeline objects that were last used more than N milliseconds ago.
+    void releaseUnused(uint64_t milliseconds) noexcept;
 protected:
     // par::heaponly
     LavaPipeCache() noexcept = default;

@@ -5,6 +5,7 @@
 #include <par/LavaContext.h>
 #include <par/LavaCpuBuffer.h>
 #include <par/LavaPipeCache.h>
+#include <par/LavaDescCache.h>
 #include <par/AmberProgram.h>
 
 #include <GLFW/glfw3.h>
@@ -21,8 +22,9 @@ static const std::string vertShaderGLSL = R"GLSL(#version 450
 layout(location=0) in vec2 position;
 layout(location=1) in vec4 color;
 layout(location=0) out vec4 vert_color;
+layout(binding=0) mat4 transform;
 void main() {
-    gl_Position = vec4(position, 0, 1);
+    gl_Position = transform * vec4(position, 0, 1);
     vert_color = color;
 })GLSL";
 
@@ -46,22 +48,24 @@ static const Vertex TRIANGLE_VERTICES[] {
 
 int main(const int argc, const char *argv[]) {
     // Initialize GLFW and create the window.
-    glfwInit();
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    glfwWindowHint(GLFW_DECORATED, GL_FALSE);
-    glfwWindowHint(GLFW_SAMPLES, 4);
-    auto* window = glfwCreateWindow(DEMO_WIDTH, DEMO_HEIGHT, "triangle", 0, 0);
-    glfwSetKeyCallback(window, [] (GLFWwindow* window, int key, int, int action, int) {
-        if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-        }
-    });
+    GLFWwindow* window;
+    {
+        glfwInit();
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+        glfwWindowHint(GLFW_DECORATED, GL_FALSE);
+        glfwWindowHint(GLFW_SAMPLES, 4);
+        window = glfwCreateWindow(DEMO_WIDTH, DEMO_HEIGHT, "triangle", 0, 0);
+        glfwSetKeyCallback(window, [] (GLFWwindow* window, int key, int, int action, int) {
+            if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
+                glfwSetWindowShouldClose(window, GLFW_TRUE);
+            }
+        });
+    }
 
     // Create the VkInstance, VkDevice, etc.
-    LavaContext* context = LavaContext::create({
-        .depthBuffer = false,
-        .validation = true,
+    auto context = LavaContext::create({
+        .depthBuffer = false, .validation = true,
         .createSurface = [window] (VkInstance instance) {
             VkSurfaceKHR surface;
             glfwCreateWindowSurface(instance, window, nullptr, &surface);
@@ -74,9 +78,8 @@ int main(const int argc, const char *argv[]) {
     const VkExtent2D extent = context->getSize();
 
     // Fill in a shared CPU-GPU vertex buffer.
-    LavaCpuBuffer* vertexBuffer = LavaCpuBuffer::create({
-        .device = device,
-        .gpu = gpu,
+    auto vertexBuffer = LavaCpuBuffer::create({
+        .device = device, .gpu = gpu,
         .size = sizeof(TRIANGLE_VERTICES),
         .source = TRIANGLE_VERTICES,
         .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
@@ -87,9 +90,31 @@ int main(const int argc, const char *argv[]) {
     VkShaderModule vshader = program->getVertexShader(device);
     VkShaderModule fshader = program->getFragmentShader(device);
 
+    // Create the UBO.
+    float matrix[16] = {
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1,
+    };
+    auto ubo = LavaCpuBuffer::create({
+        .device = device, .gpu = gpu,
+        .size = sizeof(matrix),
+        .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+    });    
+
+    // Create the descriptor set.
+    auto descriptors = LavaDescCache::create({
+        .device = device,
+        .uniformBuffers = { ubo->getBuffer() },
+        .imageSamplers = {}
+    });
+    const VkDescriptorSet dset = descriptors->getDescriptorSet();
+    const VkDescriptorSetLayout layout = descriptors->getLayout();
+
     // Create the pipeline.
     static_assert(sizeof(Vertex) == 12, "Unexpected vertex size.");
-    LavaPipeCache* pipelines = LavaPipeCache::create({
+    auto pipelines = LavaPipeCache::create({
         .device = device,
         .vertex = {
             .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
@@ -109,7 +134,7 @@ int main(const int argc, const char *argv[]) {
                 .stride = 12,
             } }
         },
-        .descriptorLayouts = {},
+        .descriptorLayouts = { /* layout */ },
         .vshader = vshader,
         .fshader = fshader,
         .renderPass = renderPass
@@ -156,6 +181,8 @@ int main(const int argc, const char *argv[]) {
     context->waitFrame();
 
     // Cleanup.
+    LavaDescCache::destroy(&descriptors);
+    LavaCpuBuffer::destroy(&ubo);
     LavaCpuBuffer::destroy(&vertexBuffer);
     AmberProgram::destroy(&program, device);
     LavaPipeCache::destroy(&pipelines);

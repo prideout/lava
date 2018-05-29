@@ -1,12 +1,6 @@
 
-lavacore
-    AmberProgram
-    LavaCompiler
-
-Add a Dependencies section to the README to discuss spdlog.
-
-Uniforms and DescriptorCache (not Binder)
-    spin_shared and spin_recorded
+Uniforms
+    spinny
 
 Textures
 

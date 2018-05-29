@@ -5,7 +5,7 @@
 #include <par/LavaContext.h>
 #include <par/LavaLog.h>
 
-#include <string_view>
+#include <string>
 
 #include "LavaInternal.h"
 
@@ -111,7 +111,7 @@ void LavaContext::destroy(LavaContext** that) noexcept {
     *that = nullptr;
 }
 
-static bool isExtensionSupported(string_view ext) noexcept;
+static bool isExtensionSupported(const string& ext) noexcept;
 static bool areAllLayersSupported(const LavaVector<VkLayerProperties>& props,
     const LavaVector<const char*>& layerNames) noexcept;
 
@@ -775,7 +775,7 @@ void LavaContext::waitRecording(LavaRecording* recording) noexcept {
     vkWaitForFences(impl->mDevice, 2, recording->fence, VK_TRUE, ~0ull);
 }
 
-static bool isExtensionSupported(string_view ext) noexcept {
+static bool isExtensionSupported(const string& ext) noexcept {
     LavaVector<VkExtensionProperties> props;
     vkEnumerateInstanceExtensionProperties(nullptr, &props.size, nullptr);
     VkResult error = vkEnumerateInstanceExtensionProperties(nullptr, &props.size, props.alloc());

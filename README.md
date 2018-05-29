@@ -108,6 +108,18 @@ but it should work on other platforms with just a bit of tweaking to the CMake f
 
 ## How to build and run the demos
 
+On Linux, do this first:
+
+```bash
+sudo apt-get install libx11-dev libxinerama-dev libxcursor-dev
+cd <path to repo>
+cd cmake-debug ; cd cmake-debug
+rm -rf * ; cmake .. -G Ninja \
+  -DCMAKE_C_COMPILER=/usr/bin/clang-3.9 \
+  -DCMAKE_CXX_COMPILER=/usr/bin/clang++-3.9
+```
+
+
 1. Clone this repo with `--recursive` to get the submodules.
 1. Install the LunarG Vulkan SDK for macOS (see below).
 1. Use brew to install cmake and ninja.

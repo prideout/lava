@@ -17,7 +17,7 @@ static int ninstances = 0;
 struct AmberCompilerImpl : AmberCompiler {
     AmberCompilerImpl() noexcept;
     ~AmberCompilerImpl() noexcept;
-    bool compile(Stage stage, string_view glsl, vector<uint32_t>* spirv) const noexcept;
+    bool compile(Stage stage, const string& glsl, vector<uint32_t>* spirv) const noexcept;
 };
 
 LAVA_DEFINE_UPCAST(AmberCompiler)
@@ -45,7 +45,7 @@ AmberCompilerImpl::~AmberCompilerImpl() noexcept {
     }
 }
 
-bool AmberCompilerImpl::compile(Stage stage, string_view glsl,
+bool AmberCompilerImpl::compile(Stage stage, const string& glsl,
         vector<uint32_t>* spirv) const noexcept {
     // Create the glslang shader object.
     EShLanguage lang;
@@ -97,7 +97,8 @@ bool AmberCompilerImpl::compile(Stage stage, string_view glsl,
     return true;
 }
 
-bool AmberCompiler::compile(Stage stage, string_view glsl, vector<uint32_t>* spirv) const noexcept {
+bool AmberCompiler::compile(Stage stage, const string& glsl,
+        vector<uint32_t>* spirv) const noexcept {
     return upcast(this)->compile(stage, glsl, spirv);
 }
 

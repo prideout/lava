@@ -3,13 +3,13 @@
 
 #pragma once
 
-#include <string_view>
+#include <string>
 
 namespace par {
 
 class AmberProgram {
 public:
-    static AmberProgram* create(std::string_view vshader, std::string_view fshader) noexcept;
+    static AmberProgram* create(const std::string& vshader, const std::string& fshader) noexcept;
     static void destroy(AmberProgram**, VkDevice device) noexcept;
     VkShaderModule getVertexShader(VkDevice device) noexcept;
     VkShaderModule getFragmentShader(VkDevice device) noexcept;

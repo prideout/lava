@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <string_view>
+#include <string>
 #include <vector>
 
 namespace par {
@@ -13,7 +13,7 @@ public:
     static AmberCompiler* create() noexcept;
     static void destroy(AmberCompiler**) noexcept;
     enum Stage { VERTEX, FRAGMENT, COMPUTE };
-    bool compile(Stage stage, std::string_view glsl, std::vector<uint32_t>* spirv) const noexcept;
+    bool compile(Stage stage, const std::string& glsl, std::vector<uint32_t>* spirv) const noexcept;
 protected:
     // par::heaponly
     AmberCompiler() noexcept = default;

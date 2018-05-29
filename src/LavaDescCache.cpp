@@ -14,6 +14,9 @@ namespace par {
 
 namespace {
 
+// Maximum number of descriptor sets that can be allocated in each descriptor pool.
+constexpr uint32_t MAX_NUM_DESCRIPTORS = 1000;
+
 struct CacheKey {
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDescriptorImageInfo> imageSamplers;
@@ -64,6 +67,7 @@ struct LavaDescCacheImpl : LavaDescCache {
     CacheKey currentState;
     uint8_t dirtyFlags = 0xf;
     VkDescriptorSetLayout layout;
+    VkDescriptorPool descriptorPool;
     uint32_t numUniformBuffers;
     uint32_t numImageSamplers;
 };
@@ -115,7 +119,7 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
     VkDescriptorPoolCreateInfo poolInfo {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         .poolSizeCount = 2,
-        .pPoolSizes = &poolSizes[0],
+        .pPoolSizes = poolSizes,
         .maxSets = MAX_NUM_DESCRIPTORS,
         .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT
     };
@@ -123,7 +127,7 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
     poolSizes[0].descriptorCount = poolInfo.maxSets * impl->numUniformBuffers;
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     poolSizes[1].descriptorCount = poolInfo.maxSets * impl->numImageSamplers;
-    vkCreateDescriptorPool(mDevice, &poolInfo, VKALLOC, &impl->descriptorPool);
+    vkCreateDescriptorPool(impl->device, &poolInfo, VKALLOC, &impl->descriptorPool);
 
     return impl;
 }

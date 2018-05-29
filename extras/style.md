@@ -15,7 +15,7 @@ followed by the block of private headers. For example:
 
 #include <SPIRV/GlslangToSpv.h>
 
-#include <string_view>
+#include <string>
 #include <vector>
 
 #include "LavaInternal.h"

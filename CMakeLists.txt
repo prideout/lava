@@ -13,21 +13,23 @@ endif()
 # set(EXTRA_SANITIZE_OPTIONS "-fsanitize=address")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_SANITIZE_OPTIONS}")
 
+set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
+
 add_subdirectory(extras/glfw)
 add_subdirectory(extras/glslang)
 
-link_libraries(
-    $ENV{VULKAN_SDK}/macOS/lib/libvulkan.1.dylib
-    glfw
-    glslang
-    SPIRV)
+set(LIBS glfw glslang SPIRV)
+
+if (APPLE)
+    list(APPEND LIBS $ENV{VULKAN_SDK}/macOS/lib/libvulkan.1.dylib)
+endif()
+
+link_libraries(${LIBS})
 
 include_directories(${DEMO} PRIVATE
     ${VULKAN_INCLUDE_DIR}
     extras/glslang
     include)
-
-set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
 
 file(GLOB_RECURSE LAVA_SOURCE
     "src/Amber*.cpp"

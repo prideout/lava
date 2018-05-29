@@ -4,7 +4,10 @@
 #include <par/LavaLoader.h>
 
 #include <dlfcn.h>
+
+#ifdef __APPLE__
 #include <mach-o/dyld.h>
+#endif
 
 #include <string>
 
@@ -19,7 +22,12 @@ static void loadDeviceFunctions(void* context, PFN_vkVoidFunction (*loadcb)(void
 static PFN_vkVoidFunction vkGetInstanceProcAddrWrapper(void* context, const char* name);
 static PFN_vkVoidFunction vkGetDeviceProcAddrWrapper(void* context, const char* name);
 
+#ifdef __APPLE__
 static const char* VKLIBRARY_PATH = "libvulkan.1.dylib";
+#else
+static const char* VKLIBRARY_PATH = "libvulkan.so.1";
+#endif
+
 
 bool LavaLoader::init() {
     const std::string dylibPath = VKLIBRARY_PATH;

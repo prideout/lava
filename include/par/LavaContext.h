@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <functional>
+
 namespace par {
 
 struct LavaRecording;

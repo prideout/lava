@@ -12,20 +12,20 @@ using namespace par;
 using namespace std;
 
 struct AmberProgramImpl : AmberProgram {
-    AmberProgramImpl(string_view vshader, string_view fshader) noexcept;
+    AmberProgramImpl(const string& vshader, const string& fshader) noexcept;
     ~AmberProgramImpl() noexcept;
     VkShaderModule getVertexShader(VkDevice device) noexcept;
     VkShaderModule getFragmentShader(VkDevice device) noexcept;
     AmberCompiler* mCompiler;
-    string_view mVertShader;
-    string_view mFragShader;
+    string mVertShader;
+    string mFragShader;
     VkShaderModule mVertModule = VK_NULL_HANDLE;
     VkShaderModule mFragModule = VK_NULL_HANDLE;
 };
 
 LAVA_DEFINE_UPCAST(AmberProgram)
 
-AmberProgram* AmberProgram::create(string_view vshader, string_view fshader) noexcept {
+AmberProgram* AmberProgram::create(const string& vshader, const string& fshader) noexcept {
     return new AmberProgramImpl(vshader, fshader);
 }
 
@@ -37,7 +37,7 @@ void AmberProgram::destroy(AmberProgram** that, VkDevice device) noexcept {
     *that = nullptr;
 }
 
-AmberProgramImpl::AmberProgramImpl(string_view vshader, string_view fshader) noexcept :
+AmberProgramImpl::AmberProgramImpl(const string& vshader, const string& fshader) noexcept :
         mCompiler(AmberCompiler::create()), mVertShader(vshader), mFragShader(fshader) {}
 
 AmberProgramImpl::~AmberProgramImpl() noexcept {

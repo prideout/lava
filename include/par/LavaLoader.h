@@ -557,5 +557,4 @@ std::ostream& operator<<(std::ostream& out, const VkSwapchainCreateFlagBitsKHR& 
 std::ostream& operator<<(std::ostream& out, const VkSubpassDescriptionFlagBits& value);
 std::ostream& operator<<(std::ostream& out, const VkDebugUtilsMessageSeverityFlagBitsEXT& value);
 std::ostream& operator<<(std::ostream& out, const VkDebugUtilsMessageTypeFlagBitsEXT& value);
-std::ostream& operator<<(std::ostream& out, const VkDescriptorBindingFlagBitsEXT& value);
 #endif

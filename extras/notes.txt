@@ -1,7 +1,7 @@
 
 lavacore
-    LavaxProgram
-    LavaxCompiler
+    AmberProgram
+    LavaCompiler
 
 Add a Dependencies section to the README to discuss spdlog.
 

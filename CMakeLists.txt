@@ -29,7 +29,9 @@ include_directories(${DEMO} PRIVATE
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
 
-file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
+file(GLOB_RECURSE LAVA_SOURCE
+    "src/Amber*.cpp"
+    "src/Lava*.cpp")
 
 set(DEMO_NAMES
     triangle_shared

@@ -2,9 +2,9 @@
 // Copyright (c) 2018 Philip Rideout
 
 #include <par/LavaLoader.h>
-#include <par/LavaProgram.h>
 #include <par/LavaContext.h>
 #include <par/LavaLog.h>
+#include <par/AmberProgram.h>
 
 #include <GLFW/glfw3.h>
 
@@ -72,7 +72,7 @@ int main(const int argc, const char *argv[]) {
     VkDevice device = context->getDevice();
 
     // Compile shaders.
-    auto program = LavaProgram::create(vertShaderGLSL, fragShaderGLSL);
+    auto program = AmberProgram::create(vertShaderGLSL, fragShaderGLSL);
     program->getVertexShader(device);
     program->getFragmentShader(device);
 
@@ -103,7 +103,7 @@ int main(const int argc, const char *argv[]) {
     }
 
     // Cleanup.
-    LavaProgram::destroy(&program, device);
+    AmberProgram::destroy(&program, device);
     LavaContext::destroy(&context);
     return 0;
 }

@@ -5,7 +5,7 @@
 #include <par/LavaContext.h>
 #include <par/LavaCpuBuffer.h>
 #include <par/LavaPipeCache.h>
-#include <par/LavaProgram.h>
+#include <par/AmberProgram.h>
 
 #include <GLFW/glfw3.h>
 
@@ -83,7 +83,7 @@ int main(const int argc, const char *argv[]) {
     });
 
     // Compile shaders.
-    auto program = LavaProgram::create(vertShaderGLSL, fragShaderGLSL);
+    auto program = AmberProgram::create(vertShaderGLSL, fragShaderGLSL);
     VkShaderModule vshader = program->getVertexShader(device);
     VkShaderModule fshader = program->getFragmentShader(device);
 
@@ -157,7 +157,7 @@ int main(const int argc, const char *argv[]) {
 
     // Cleanup.
     LavaCpuBuffer::destroy(&vertexBuffer);
-    LavaProgram::destroy(&program, device);
+    AmberProgram::destroy(&program, device);
     LavaPipeCache::destroy(&pipelines);
     LavaContext::destroy(&context);
     return 0;

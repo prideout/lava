@@ -1,7 +1,7 @@
 // The MIT License
 // Copyright (c) 2018 Philip Rideout
 
-#include <par/LavaCompiler.h>
+#include <par/AmberCompiler.h>
 #include <par/LavaLog.h>
 
 #include <SPIRV/GlslangToSpv.h>
@@ -14,38 +14,38 @@ using namespace spdlog;
 
 static int ninstances = 0;
 
-struct LavaCompilerImpl : LavaCompiler {
-    LavaCompilerImpl() noexcept;
-    ~LavaCompilerImpl() noexcept;
+struct AmberCompilerImpl : AmberCompiler {
+    AmberCompilerImpl() noexcept;
+    ~AmberCompilerImpl() noexcept;
     bool compile(Stage stage, string_view glsl, vector<uint32_t>* spirv) const noexcept;
 };
 
-LAVA_DEFINE_UPCAST(LavaCompiler)
+LAVA_DEFINE_UPCAST(AmberCompiler)
 
 extern const TBuiltInResource DefaultTBuiltInResource;
 
-LavaCompiler* LavaCompiler::create() noexcept {
-    return new LavaCompilerImpl();
+AmberCompiler* AmberCompiler::create() noexcept {
+    return new AmberCompilerImpl();
 }
 
-void LavaCompiler::destroy(LavaCompiler** that) noexcept {
+void AmberCompiler::destroy(AmberCompiler** that) noexcept {
     delete upcast(*that);
     *that = nullptr;
 }
 
-LavaCompilerImpl::LavaCompilerImpl() noexcept {
+AmberCompilerImpl::AmberCompilerImpl() noexcept {
     if (ninstances++ == 0) {
         glslang::InitializeProcess();
     }
 }
 
-LavaCompilerImpl::~LavaCompilerImpl() noexcept {
+AmberCompilerImpl::~AmberCompilerImpl() noexcept {
     if (--ninstances == 0) {
         glslang::FinalizeProcess();
     }
 }
 
-bool LavaCompilerImpl::compile(Stage stage, string_view glsl,
+bool AmberCompilerImpl::compile(Stage stage, string_view glsl,
         vector<uint32_t>* spirv) const noexcept {
     // Create the glslang shader object.
     EShLanguage lang;
@@ -97,7 +97,7 @@ bool LavaCompilerImpl::compile(Stage stage, string_view glsl,
     return true;
 }
 
-bool LavaCompiler::compile(Stage stage, string_view glsl, vector<uint32_t>* spirv) const noexcept {
+bool AmberCompiler::compile(Stage stage, string_view glsl, vector<uint32_t>* spirv) const noexcept {
     return upcast(this)->compile(stage, glsl, spirv);
 }
 

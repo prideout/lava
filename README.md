@@ -103,8 +103,7 @@ The core library has no dependencies on any third-party libraries other than the
 
 ## Supported platforms
 
-At the time of this writing, the only Vulkan implementation that we're testing against is MoltenVK,
-but it should work on other platforms with just a bit of tweaking to the CMake file.
+At the time of this writing, we're testing against Linux and MoltenVK on MacOS.
 
 ## How to build and run the demos
 
@@ -140,7 +139,7 @@ You should now see a Klein Bottle that looks like this:
 
 * Download the tarball from their website.
 * Copy its contents to `~/Vulkan`
-* Add this to your `.profile`
+* Add this to your `.bashrc`, replacing `macOS` as needed.
 
 ```bash
 export VULKAN_SDK=$HOME/Vulkan

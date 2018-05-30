@@ -23,7 +23,11 @@ using namespace std;
 
 static LavaVector<const char *> kRequiredExtensions {
     "VK_KHR_surface",
+#if defined(__APPLE__)
     "VK_MVK_macos_surface",
+#elif defined(__linux__)
+    "VK_KHR_xcb_surface",
+#endif
 };
 
 static LavaVector<const char *> kValidationLayers1 {
@@ -87,6 +91,7 @@ struct LavaContextImpl : LavaContext {
     VkFence mWorkFence;
     uint32_t mCurrentSwapIndex = ~0u;
     LavaRecording* mCurrentRecording = nullptr;
+    VkDebugReportCallbackEXT mDebugCallback = nullptr;
 };
 
 namespace LavaLoader {
@@ -203,6 +208,10 @@ void LavaContextImpl::killDevice() noexcept {
     vkDestroyCommandPool(mDevice, mCommandPool, VKALLOC);
     mCommandPool = VK_NULL_HANDLE;
 
+    if (mDebugCallback) {
+        vkDestroyDebugReportCallbackEXT(mInstance, mDebugCallback, VKALLOC);
+    }
+
     vkDestroyDevice(mDevice, VKALLOC);
     mDevice = VK_NULL_HANDLE;
 }
@@ -274,6 +283,25 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     LOG_CHECK(not error, "Unable to create Vulkan device.");
     vkGetPhysicalDeviceMemoryProperties(mGpu, &mMemoryProperties);
     vkGetDeviceQueue(mDevice, graphicsQueueNodeIndex, 0, &mQueue);
+
+    // Debug callbacks.
+    if (vkCreateDebugReportCallbackEXT) {
+        VkDebugReportCallbackCreateInfoEXT cbinfo {
+            .sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
+            .flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT,
+            .pfnCallback = [](VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT, uint64_t,
+                    size_t, int32_t, const char* pLayerPrefix, const char* pMessage,
+                    void*) -> VkBool32 {
+                if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) {
+                    llog.error("VULKAN: ({}) {}", pLayerPrefix, pMessage);
+                } else {
+                    llog.warn("VULKAN: ({}) {}", pLayerPrefix, pMessage);
+                }
+                return VK_FALSE;
+            }
+        };
+        vkCreateDebugReportCallbackEXT(mInstance, &cbinfo, VKALLOC, &mDebugCallback);
+    }
 
     // Create the GPU memory allocator.
     createVma(mDevice, mGpu);

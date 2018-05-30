@@ -24,6 +24,11 @@ struct CacheKey {
 struct CacheVal {
     VkPipeline handle;
     uint64_t timestamp;
+    // move-only (disallow copy) to allow keeping a pointer to a value in the map.
+    CacheVal(CacheVal const&) = delete;
+    CacheVal& operator=(CacheVal const&) = delete;
+    CacheVal(CacheVal &&) = default;
+    CacheVal& operator=(CacheVal &&) = default;
 };
 
 struct IsEqual {
@@ -150,7 +155,7 @@ LavaPipeCache* LavaPipeCache::create(Config config) noexcept {
 
 void LavaPipeCache::destroy(LavaPipeCache** that) noexcept {
     LavaPipeCacheImpl* impl = upcast(*that);
-    for (auto pair : impl->cache) {
+    for (auto& pair : impl->cache) {
         vkDestroyPipeline(impl->device, pair.second.handle, VKALLOC);
     }
     vkDestroyPipelineLayout(impl->device, impl->pipelineLayout, VKALLOC);
@@ -292,7 +297,6 @@ void LavaPipeCache::setShaderModule(VkShaderStageFlagBits stage, VkShaderModule 
         *pmodule = module;
         impl->dirtyFlags |= DirtyFlag::SHADER;
     }
-
 }
 
 void LavaPipeCache::setRenderPass(VkRenderPass renderPass) noexcept {
@@ -306,11 +310,12 @@ void LavaPipeCache::setRenderPass(VkRenderPass renderPass) noexcept {
 void LavaPipeCache::releaseUnused(uint64_t milliseconds) noexcept {
     LavaPipeCacheImpl* impl = upcast(this);
     const uint64_t expiration = getCurrentTime() - milliseconds;
-    Cache cache;
-    cache.swap(impl->cache);
-    for (auto pair : impl->cache) {
-        if (pair.second.timestamp >= expiration) {
-            impl->cache.emplace(pair);
+    auto& cache = impl->cache;
+    for (decltype(impl->cache)::const_iterator iter = cache.begin(); iter != cache.end();) {
+        if (iter->second.timestamp < expiration) {
+            iter = cache.erase(iter);
+        } else {
+            ++iter;
         }
     }
 }

@@ -24,9 +24,7 @@ protected:
     ~LavaCpuBuffer() noexcept = default;
     // par::noncopyable
     LavaCpuBuffer(LavaCpuBuffer const&) = delete;
-    LavaCpuBuffer(LavaCpuBuffer&&) = delete;
     LavaCpuBuffer& operator=(LavaCpuBuffer const&) = delete;
-    LavaCpuBuffer& operator=(LavaCpuBuffer&&) = delete;
 };
 
 }

@@ -67,9 +67,7 @@ protected:
     ~LavaContext() noexcept = default;
     // par::noncopyable
     LavaContext(LavaContext const&) = delete;
-    LavaContext(LavaContext&&) = delete;
     LavaContext& operator=(LavaContext const&) = delete;
-    LavaContext& operator=(LavaContext&&) = delete;
 };
 
 }

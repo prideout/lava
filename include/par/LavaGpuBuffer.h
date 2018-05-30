@@ -22,9 +22,7 @@ protected:
     ~LavaGpuBuffer() noexcept = default;
     // par::noncopyable
     LavaGpuBuffer(LavaGpuBuffer const&) = delete;
-    LavaGpuBuffer(LavaGpuBuffer&&) = delete;
     LavaGpuBuffer& operator=(LavaGpuBuffer const&) = delete;
-    LavaGpuBuffer& operator=(LavaGpuBuffer&&) = delete;
 };
 
 }

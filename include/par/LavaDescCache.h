@@ -26,13 +26,13 @@ public:
     static LavaDescCache* create(Config config) noexcept;
     static void destroy(LavaDescCache**) noexcept;
 
+    // Fetches the descriptor set layout that was created at construction.
+    VkDescriptorSetLayout getLayout() const noexcept;
+
     // Fetches or creates a VkDescriptorSet corresponding to the layout that was established
     // during construction. Immediately calls vkUpdateDescriptorSets if a new descriptor set was
     // constructed. The caller is responsible for calling vkCmdBindDescriptorSet.
     VkDescriptorSet getDescriptorSet() noexcept;
-
-    // Fetches the descriptor set layout that was created at construction.
-    VkDescriptorSetLayout getLayout() const noexcept;
 
     // Fetches or creates a VkDescriptorSet corresponding to the layout that was established
     // during construction. Returns true if the client should call vkCmdBindDescriptorSet.
@@ -54,9 +54,7 @@ protected:
     ~LavaDescCache() noexcept = default;
     // par::noncopyable
     LavaDescCache(LavaDescCache const&) = delete;
-    LavaDescCache(LavaDescCache&&) = delete;
     LavaDescCache& operator=(LavaDescCache const&) = delete;
-    LavaDescCache& operator=(LavaDescCache&&) = delete;
 };
 
 }

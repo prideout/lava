@@ -59,9 +59,7 @@ protected:
     ~LavaPipeCache() noexcept = default;
     // par::noncopyable
     LavaPipeCache(LavaPipeCache const&) = delete;
-    LavaPipeCache(LavaPipeCache&&) = delete;
     LavaPipeCache& operator=(LavaPipeCache const&) = delete;
-    LavaPipeCache& operator=(LavaPipeCache&&) = delete;
 };
 
 }

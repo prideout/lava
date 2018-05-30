@@ -25,6 +25,11 @@ struct CacheKey {
 struct CacheVal {
     VkDescriptorSet handle;
     uint64_t timestamp;
+    // move-only (disallow copy) to allow keeping a pointer to a value in the map.
+    CacheVal(CacheVal const&) = delete;
+    CacheVal& operator=(CacheVal const&) = delete;
+    CacheVal(CacheVal &&) = default;
+    CacheVal& operator=(CacheVal &&) = default;
 };
 
 struct IsEqual {
@@ -134,7 +139,7 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
 
 void LavaDescCache::destroy(LavaDescCache** that) noexcept {
     LavaDescCacheImpl* impl = upcast(*that);
-    for (auto pair : impl->cache) {
+    for (auto& pair : impl->cache) {
         // vkFreeDescriptorSet(impl->device, pair.second.handle, VKALLOC);
     }
     // vkDestroyPool
@@ -146,11 +151,12 @@ void LavaDescCache::destroy(LavaDescCache** that) noexcept {
 void LavaDescCache::releaseUnused(uint64_t milliseconds) noexcept {
     LavaDescCacheImpl* impl = upcast(this);
     const uint64_t expiration = getCurrentTime() - milliseconds;
-    Cache cache;
-    cache.swap(impl->cache);
-    for (auto pair : impl->cache) {
-        if (pair.second.timestamp >= expiration) {
-            impl->cache.emplace(pair);
+    auto& cache = impl->cache;
+    for (decltype(impl->cache)::const_iterator iter = cache.begin(); iter != cache.end();) {
+        if (iter->second.timestamp < expiration) {
+            iter = cache.erase(iter);
+        } else {
+            ++iter;
         }
     }
 }

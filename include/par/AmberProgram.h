@@ -19,9 +19,7 @@ protected:
     ~AmberProgram() noexcept = default;
     // par::noncopyable
     AmberProgram(AmberProgram const&) = delete;
-    AmberProgram(AmberProgram&&) = delete;
     AmberProgram& operator=(AmberProgram const&) = delete;
-    AmberProgram& operator=(AmberProgram&&) = delete;
 };
 
 }

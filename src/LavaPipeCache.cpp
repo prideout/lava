@@ -9,6 +9,8 @@
 
 #include "LavaInternal.h"
 
+using namespace std;
+
 namespace par {
 
 namespace {
@@ -74,7 +76,7 @@ struct IsEqual {
     }
 };
 
-using Cache = std::unordered_map<CacheKey, CacheVal, MurmurHashFn<CacheKey>, IsEqual>;
+using Cache = unordered_map<CacheKey, CacheVal, MurmurHashFn<CacheKey>, IsEqual>;
 
 namespace DirtyFlag {
     static constexpr uint8_t RASTER = 1 << 0; 
@@ -161,6 +163,10 @@ void LavaPipeCache::destroy(LavaPipeCache** that) noexcept {
     vkDestroyPipelineLayout(impl->device, impl->pipelineLayout, VKALLOC);
     delete upcast(impl);
     *that = nullptr;
+}
+
+VkPipelineLayout LavaPipeCache::getLayout() const noexcept {
+    return upcast(this)->pipelineLayout;
 }
 
 VkPipeline LavaPipeCache::getPipeline() noexcept {
@@ -254,7 +260,7 @@ bool LavaPipeCache::getPipeline(VkPipeline* pipeline) noexcept {
     vkCreateGraphicsPipelines(impl->device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VKALLOC, &pipe);
     *pipeline = pipe;
 
-    iter = impl->cache.emplace(std::make_pair(impl->currentState, CacheVal {
+    iter = impl->cache.emplace(make_pair(impl->currentState, CacheVal {
         .timestamp = getCurrentTime(),
         .handle = pipe
     })).first;

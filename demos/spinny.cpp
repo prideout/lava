@@ -19,18 +19,20 @@ static constexpr int DEMO_HEIGHT = 512;
 static constexpr float PI = 3.1415926535;
 
 static const std::string vertShaderGLSL = R"GLSL(#version 450
-layout(location=0) in vec2 position;
-layout(location=1) in vec4 color;
-layout(location=0) out vec4 vert_color;
-layout(binding=0) mat4 transform;
+layout(location = 0) in vec2 position;
+layout(location = 1) in vec4 color;
+layout(location = 0) out vec4 vert_color;
+layout(binding = 0) uniform MatrixBlock {
+  mat4 transform;
+};
 void main() {
     gl_Position = transform * vec4(position, 0, 1);
     vert_color = color;
 })GLSL";
 
 static const std::string fragShaderGLSL = R"GLSL(#version 450
-layout(location=0) out vec4 frag_color;
-layout(location=0) in vec4 vert_color;
+layout(location = 0) out vec4 frag_color;
+layout(location = 0) in vec4 vert_color;
 void main() {
     frag_color = vert_color;
 })GLSL";
@@ -100,6 +102,7 @@ int main(const int argc, const char *argv[]) {
     auto ubo = LavaCpuBuffer::create({
         .device = device, .gpu = gpu,
         .size = sizeof(matrix),
+        .source = matrix,
         .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
     });    
 
@@ -110,7 +113,7 @@ int main(const int argc, const char *argv[]) {
         .imageSamplers = {}
     });
     const VkDescriptorSet dset = descriptors->getDescriptorSet();
-    const VkDescriptorSetLayout layout = descriptors->getLayout();
+    const VkDescriptorSetLayout dlayout = descriptors->getLayout();
 
     // Create the pipeline.
     static_assert(sizeof(Vertex) == 12, "Unexpected vertex size.");
@@ -134,12 +137,13 @@ int main(const int argc, const char *argv[]) {
                 .stride = 12,
             } }
         },
-        .descriptorLayouts = { /* layout */ },
+        .descriptorLayouts = { dlayout },
         .vshader = vshader,
         .fshader = fshader,
         .renderPass = renderPass
     });
     VkPipeline pipeline = pipelines->getPipeline();
+    VkPipelineLayout playout = pipelines->getLayout();
 
     // Main game loop.
     while (!glfwWindowShouldClose(window)) {
@@ -165,6 +169,8 @@ int main(const int argc, const char *argv[]) {
         vkCmdSetScissor(cmdbuffer, 0, 1, &scissor);
 
         vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+        vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1, &dset, 0, 0);
 
         VkBuffer buffer[] = { vertexBuffer->getBuffer() };
         VkDeviceSize offsets[] = { 0 };

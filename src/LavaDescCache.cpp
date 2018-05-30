@@ -10,6 +10,8 @@
 
 #include "LavaInternal.h"
 
+using namespace std;
+
 namespace par {
 
 namespace {
@@ -18,8 +20,8 @@ namespace {
 constexpr uint32_t MAX_NUM_DESCRIPTORS = 1000;
 
 struct CacheKey {
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDescriptorImageInfo> imageSamplers;
+    vector<VkBuffer> uniformBuffers;
+    vector<VkDescriptorImageInfo> imageSamplers;
 };
 
 struct CacheVal {
@@ -58,7 +60,7 @@ struct IsEqual {
     }
 };
 
-using Cache = std::unordered_map<CacheKey, CacheVal, MurmurHashFn<CacheKey>, IsEqual>;
+using Cache = unordered_map<CacheKey, CacheVal, MurmurHashFn<CacheKey>, IsEqual>;
 
 namespace DirtyFlag {
     static constexpr uint8_t UNIFORM_BUFFER = 1 << 0; 
@@ -75,6 +77,9 @@ struct LavaDescCacheImpl : LavaDescCache {
     VkDescriptorPool descriptorPool;
     uint32_t numUniformBuffers;
     uint32_t numImageSamplers;
+    std::vector<VkWriteDescriptorSet> writes;
+    std::vector<VkDescriptorBufferInfo> bufferWrites;
+    std::vector<VkDescriptorImageInfo> imageWrites;
 };
 
 LAVA_DEFINE_UPCAST(LavaDescCache)
@@ -91,10 +96,12 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
     };
     impl->numUniformBuffers = (uint32_t) config.uniformBuffers.size();
     impl->numImageSamplers = (uint32_t) config.imageSamplers.size();
-    uint32_t numImageSamplerBindings;
+    impl->writes.resize(impl->numUniformBuffers + impl->numImageSamplers);
+    impl->bufferWrites.resize(impl->numUniformBuffers);
+    impl->imageWrites.resize(impl->numImageSamplers);
 
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-    bindings.reserve(impl->numUniformBuffers + impl->numImageSamplers);
+    vector<VkDescriptorSetLayoutBinding> bindings;
+    bindings.reserve(impl->writes.size());
     uint32_t binding = 0;
     for (auto u : config.uniformBuffers) {
         bindings.emplace_back(VkDescriptorSetLayoutBinding {
@@ -123,15 +130,20 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
     VkDescriptorPoolSize poolSizes[2] = {};
     VkDescriptorPoolCreateInfo poolInfo {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .poolSizeCount = 2,
         .pPoolSizes = poolSizes,
         .maxSets = MAX_NUM_DESCRIPTORS,
         .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT
     };
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = poolInfo.maxSets * impl->numUniformBuffers;
-    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = poolInfo.maxSets * impl->numImageSamplers;
+    if (impl->numUniformBuffers > 0) {
+        VkDescriptorPoolSize* size = &poolSizes[poolInfo.poolSizeCount++];
+        size->type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        size->descriptorCount = poolInfo.maxSets * impl->numUniformBuffers;
+    }
+    if (impl->numImageSamplers > 0) {
+        VkDescriptorPoolSize* size = &poolSizes[poolInfo.poolSizeCount++];
+        size->type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        size->descriptorCount = poolInfo.maxSets * impl->numImageSamplers;
+    }
     vkCreateDescriptorPool(impl->device, &poolInfo, VKALLOC, &impl->descriptorPool);
 
     return impl;
@@ -142,10 +154,110 @@ void LavaDescCache::destroy(LavaDescCache** that) noexcept {
     for (auto& pair : impl->cache) {
         // vkFreeDescriptorSet(impl->device, pair.second.handle, VKALLOC);
     }
-    // vkDestroyPool
+    vkDestroyDescriptorPool(impl->device, impl->descriptorPool, VKALLOC);
     vkDestroyDescriptorSetLayout(impl->device, impl->layout, VKALLOC);
     delete upcast(impl);
     *that = nullptr;
+}
+
+VkDescriptorSetLayout LavaDescCache::getLayout() const noexcept {
+    return upcast(this)->layout;
+}
+
+bool LavaDescCache::getDescriptorSet(VkDescriptorSet* descriptorSet,
+        vector<VkWriteDescriptorSet>* writes) noexcept {
+    LavaDescCacheImpl& impl = *upcast(this);
+    if (!impl.dirtyFlags) {
+        impl.currentDescriptor->timestamp = getCurrentTime();
+        *descriptorSet = impl.currentDescriptor->handle;
+        return false;
+    }
+    impl.dirtyFlags = 0;
+    auto iter = impl.cache.find(impl.currentState);
+    if (iter != impl.cache.end()) {
+        impl.currentDescriptor = &(iter->second);
+        impl.currentDescriptor->timestamp = getCurrentTime();
+        *descriptorSet = impl.currentDescriptor->handle;
+        return true;
+    }
+
+    VkDescriptorSetAllocateInfo allocInfo {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool = impl.descriptorPool,
+        .descriptorSetCount = 1,
+        .pSetLayouts = &impl.layout
+    };
+    vkAllocateDescriptorSets(impl.device, &allocInfo, descriptorSet);
+
+    auto& key = impl.currentState;
+    uint32_t i = 0;
+    for (VkBuffer buffer : key.uniformBuffers) {
+        impl.writes[i] = {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = *descriptorSet,
+            .dstBinding = i,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pBufferInfo = impl.bufferWrites.data() + i
+        };
+        impl.bufferWrites[i] = {
+            .buffer = buffer,
+            .offset = 0,
+            .range = VK_WHOLE_SIZE
+        };
+        ++i;
+    }
+    uint32_t j = 0;
+    for (VkDescriptorImageInfo info : key.imageSamplers) {
+        impl.writes[i] = {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = *descriptorSet,
+            .dstBinding = i,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = impl.imageWrites.data() + j
+        };
+        impl.imageWrites[j] = info;
+        ++i;
+        ++j;
+    }
+
+    if (writes) {
+        *writes = impl.writes;
+    } else {
+        vkUpdateDescriptorSets(impl.device, i, impl.writes.data(), 0, nullptr);
+    }
+
+    iter = impl.cache.emplace(make_pair(impl.currentState, CacheVal {
+        *descriptorSet, getCurrentTime() })).first;
+    impl.currentDescriptor = &(iter->second);
+    return true;
+}
+
+VkDescriptorSet LavaDescCache::getDescriptorSet() noexcept {
+    VkDescriptorSet handle;
+    getDescriptorSet(&handle, nullptr);
+    return handle;
+}
+
+void LavaDescCache::setUniformBuffer(uint32_t bindingIndex, VkBuffer uniformBuffer) noexcept {
+    LavaDescCacheImpl* impl = upcast(this);
+    auto& buffers = impl->currentState.uniformBuffers;
+    assert(bindingIndex < buffers.size());
+    if (buffers[bindingIndex] != uniformBuffer) {
+        impl->dirtyFlags |= DirtyFlag::UNIFORM_BUFFER;
+        buffers[bindingIndex] = uniformBuffer;
+    }
+}
+
+void LavaDescCache::setImageSampler(uint32_t bindingIndex, VkDescriptorImageInfo binding) noexcept {
+    LavaDescCacheImpl* impl = upcast(this);
+    auto& imageSamplers = impl->currentState.imageSamplers;
+    assert(bindingIndex < imageSamplers.size());
+    if (!IsEqual()(imageSamplers[bindingIndex], binding)) {
+        impl->dirtyFlags |= DirtyFlag::IMAGE_SAMPLER;
+        imageSamplers[bindingIndex] = binding;
+    }
 }
 
 void LavaDescCache::releaseUnused(uint64_t milliseconds) noexcept {

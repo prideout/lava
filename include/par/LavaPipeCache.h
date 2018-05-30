@@ -38,6 +38,9 @@ public:
     static LavaPipeCache* create(Config config) noexcept;
     static void destroy(LavaPipeCache**) noexcept;
 
+    // Fetches the pipeline layout that was created at construction.
+    VkPipelineLayout getLayout() const noexcept;
+
     // Fetches or creates a VkPipeline object corresponding to the layout that was established
     // during construction, as well as the current state (see setRasterState et al).
     VkPipeline getPipeline() noexcept;

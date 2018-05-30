@@ -39,7 +39,7 @@ set(DEMO_NAMES
     triangle_shared
     triangle_recorded
     triangle_staged
-    spinny
+    spinny_double
     shader_test)
 
 foreach(DEMO ${DEMO_NAMES})

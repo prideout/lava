@@ -57,7 +57,7 @@ int main(const int argc, const char *argv[]) {
         glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
         glfwWindowHint(GLFW_DECORATED, GL_FALSE);
         glfwWindowHint(GLFW_SAMPLES, 4);
-        window = glfwCreateWindow(DEMO_WIDTH, DEMO_HEIGHT, "triangle", 0, 0);
+        window = glfwCreateWindow(DEMO_WIDTH, DEMO_HEIGHT, "spinny", 0, 0);
         glfwSetKeyCallback(window, [] (GLFWwindow* window, int key, int, int action, int) {
             if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
                 glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -170,7 +170,8 @@ int main(const int argc, const char *argv[]) {
 
         vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-        vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1, &dset, 0, 0);
+        vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
+                &dset, 0, 0);
 
         VkBuffer buffer[] = { vertexBuffer->getBuffer() };
         VkDeviceSize offsets[] = { 0 };

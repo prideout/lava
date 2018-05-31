@@ -117,17 +117,22 @@ rm -rf * ; cmake .. -G Ninja \
   -DCMAKE_CXX_COMPILER=/usr/bin/clang++-3.9
 ```
 
+On macOS, you first need clang (which comes with Xcode) and homebrew, then do this:
 
-1. Clone this repo with `--recursive` to get the submodules.
-1. Install the LunarG Vulkan SDK for macOS (see below).
-1. Use brew to install cmake and ninja.
+```
+brew install cmake ninja
+```
+
+Then, for any platform, do this:
+
+1. Clone this repo with `--recursive` to get the submodules, or do `git submodule update --init` after cloning.
+1. Install the LunarG Vulkan SDK.
 1. Invoke the following commands in your terminal.
 
 ```bash
 cd <path to repo>
-mkdir cmake-debug ; cd cmake-debug
-rm -rf * ; cmake .. -G Ninja
-ninja && ./vtriangle
+mkdir cmake-debug ; cd cmake-debug ; cmake .. -G Ninja
+ninja && ./spinny_double
 ```
 
 You should now see a Klein Bottle that looks like this:
@@ -137,7 +142,8 @@ You should now see a Klein Bottle that looks like this:
 ## LunarG SDK Instructions
 
 * Download the tarball from their website.
-* Copy its contents to `~/Vulkan`
+* Copy or move its contents to `~/Vulkan`.  For example:
+    `mv ~/Downloads/vulkansdk-macos-1.1.73.0 ~/Vulkan`
 * Add this to your `.bashrc`, replacing `macOS` as needed.
 
 ```bash

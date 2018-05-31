@@ -16,7 +16,6 @@ the application must invoke `vkCmdDraw` on its own, but it can use lava to creat
 - [**LavaDescCache**](include/par/LavaDescCache.h)
   creates a descriptor set layout and manages a set of corollary descriptor sets.
 - **LavaTexture**
-- **LavaUniformBuffer**
 
 ## Usage
 

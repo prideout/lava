@@ -5,20 +5,17 @@ Rename all demos to have a prefix.
 
 Textures
 
-Resize Windows capability
-
-Imgui
-
 par_shapes
 
 unprivatize
 
-markdeep documentation: https://morgan3d.github.io/include.js/
-    consider netlify
-
 travis
 
 ---------------------
+
+markdeep documentation: https://morgan3d.github.io/include.js/
+    consider netlify
+
                                
 demos
     demos/klein     3Dlabs demo nostalgia (par_shapes and stencil draw-twice reflection)
@@ -30,6 +27,7 @@ demos
     demos/skinning  Cesium Skinning and glTF and rapidjson
     https://github.com/prideout/recipes
     http://xeogl.org/examples/#materials_metallic_fireHydrant
+    https://github.com/syoyo/tinygltf
 
 ---------------------
 

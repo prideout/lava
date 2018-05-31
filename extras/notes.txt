@@ -1,7 +1,7 @@
 
-Uniforms
-    mathfu
-    spinny
+spinny_staged
+
+Rename all demos to have a prefix.
 
 Textures
 
@@ -35,6 +35,8 @@ demos
 
 Vulkan Compute Path Tracer
     https://github.com/prideout/aobaker
+        https://github.com/RobotLocomotion/homebrew-director/blob/master/Formula/embree.rb
+        https://embree.github.io/data/embree-siggraph-2017-final.pdf
     https://github.com/aras-p/ToyPathTracer
     https://github.com/lighttransport/nanort
     http://aantron.github.io/better-enums/ (overkill)

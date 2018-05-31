@@ -26,8 +26,10 @@ public:
     // Submits the command buffer and presents the most recently rendered image.
     void endFrame() noexcept;
 
-    // Waits for the most recently submitted frame to finish.
-    void waitFrame() noexcept;
+    // Waits for one or two of the most recently submitted command buffers to finish.
+    // Callers can invoke this outside a beginFrame / endFrame. Pass the default argument of -1
+    // to wait on both command buffers in the swap chain.
+    void waitFrame(int n = -1) noexcept;
 
     // Similar to beginFrame/endFrame/waitFrame for non-presentation work.
     VkCommandBuffer beginWork() noexcept;

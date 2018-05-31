@@ -60,7 +60,25 @@ struct IsEqual {
     }
 };
 
-using Cache = unordered_map<CacheKey, CacheVal, MurmurHashFn<CacheKey>, IsEqual>;
+struct HashFn {
+    uint64_t operator()(const CacheKey& key) const {
+        uint64_t ubhash = 0;
+        if (key.uniformBuffers.size()) {
+            size_t ubsize = key.uniformBuffers.size() * sizeof(key.uniformBuffers[0]);
+            assert(0 == (ubsize & 3) && "Hashing requires a size that is a multiple of 4.");
+            ubhash = murmurHash((uint32_t*) key.uniformBuffers.data(), ubsize / 4, 0u);
+        }
+        uint64_t ishash = 0;
+        if (key.imageSamplers.size()) {
+            size_t issize = key.imageSamplers.size() * sizeof(key.imageSamplers[0]);
+            assert(0 == (issize & 3) && "Hashing requires a size that is a multiple of 4.");
+            ishash = murmurHash((uint32_t*) key.imageSamplers.data(), issize / 4, 0u);
+        }
+        return ubhash | (ishash << 32);
+    }
+};
+
+using Cache = unordered_map<CacheKey, CacheVal, HashFn, IsEqual>;
 
 namespace DirtyFlag {
     static constexpr uint8_t UNIFORM_BUFFER = 1 << 0; 
@@ -150,13 +168,13 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
 }
 
 void LavaDescCache::destroy(LavaDescCache** that) noexcept {
-    LavaDescCacheImpl* impl = upcast(*that);
-    for (auto& pair : impl->cache) {
-        // vkFreeDescriptorSet(impl->device, pair.second.handle, VKALLOC);
+    LavaDescCacheImpl& impl = *upcast(*that);
+    for (auto& pair : impl.cache) {
+        vkFreeDescriptorSets(impl.device, impl.descriptorPool, 1, &pair.second.handle);
     }
-    vkDestroyDescriptorPool(impl->device, impl->descriptorPool, VKALLOC);
-    vkDestroyDescriptorSetLayout(impl->device, impl->layout, VKALLOC);
-    delete upcast(impl);
+    vkDestroyDescriptorPool(impl.device, impl.descriptorPool, VKALLOC);
+    vkDestroyDescriptorSetLayout(impl.device, impl.layout, VKALLOC);
+    delete upcast(*that);
     *that = nullptr;
 }
 
@@ -266,6 +284,7 @@ void LavaDescCache::releaseUnused(uint64_t milliseconds) noexcept {
     auto& cache = impl->cache;
     for (decltype(impl->cache)::const_iterator iter = cache.begin(); iter != cache.end();) {
         if (iter->second.timestamp < expiration) {
+            printf("erasing\n");
             iter = cache.erase(iter);
         } else {
             ++iter;

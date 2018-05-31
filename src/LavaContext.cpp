@@ -508,7 +508,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
 }
 
 VkCommandBuffer LavaContextImpl::beginFrame() noexcept {
-    // Wait for the previous frame's command buffer to finish executing.
+    // Wait for the previous submission of this command buffer to finish executing.
     vkWaitForFences(mDevice, 1, &mSwap[0].fence, VK_TRUE, ~0ull);
     vkResetFences(mDevice, 1, &mSwap[0].fence);
     // The given CPU fence and GPU semaphore will both be signaled when the presentation engine
@@ -680,10 +680,14 @@ VkFramebuffer LavaContext::getFramebuffer(uint32_t i) const noexcept {
     return upcast(this)->mSwap[i].framebuffer;
 }
 
-void LavaContext::waitFrame() noexcept {
+void LavaContext::waitFrame(int n) noexcept {
     auto impl = upcast(this);
-    const VkFence fences[] = {impl->mSwap[0].fence, impl->mSwap[1].fence};
-    vkWaitForFences(impl->mDevice, 2, fences, VK_TRUE, ~0ull);
+    if (n < 0) {
+        const VkFence fences[] = {impl->mSwap[0].fence, impl->mSwap[1].fence};
+        vkWaitForFences(impl->mDevice, 2, fences, VK_TRUE, ~0ull);
+    } else {
+        vkWaitForFences(impl->mDevice, 1, &impl->mSwap[n].fence, VK_TRUE, ~0ull);
+    }
 }
 
 VkCommandBuffer LavaContext::beginWork() noexcept {

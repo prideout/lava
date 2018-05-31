@@ -28,6 +28,7 @@ link_libraries(${LIBS})
 
 include_directories(${DEMO} PRIVATE
     ${VULKAN_INCLUDE_DIR}
+    extras
     extras/glslang
     include)
 

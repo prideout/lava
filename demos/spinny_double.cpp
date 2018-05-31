@@ -10,7 +10,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include <math.h>
+#include "vmath.h"
 
 using namespace par;
 
@@ -92,27 +92,21 @@ int main(const int argc, const char *argv[]) {
     VkShaderModule vshader = program->getVertexShader(device);
     VkShaderModule fshader = program->getFragmentShader(device);
 
-    // Create the UBO.
-    float matrix[16] = {
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1,
-    };
-    auto ubo = LavaCpuBuffer::create({
-        .device = device, .gpu = gpu,
-        .size = sizeof(matrix),
-        .source = matrix,
-        .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
-    });    
+    // Create the double-buffered UBO.
+    LavaCpuBuffer* ubo[2];
+    for (int i = 0; i < 2; i++) {
+        ubo[i] = LavaCpuBuffer::create({
+            .device = device, .gpu = gpu, .size = sizeof(Matrix4),
+            .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+        });
+    }
 
     // Create the descriptor set.
     auto descriptors = LavaDescCache::create({
         .device = device,
-        .uniformBuffers = { ubo->getBuffer() },
+        .uniformBuffers = { 0 },
         .imageSamplers = {}
     });
-    const VkDescriptorSet dset = descriptors->getDescriptorSet();
     const VkDescriptorSetLayout dlayout = descriptors->getLayout();
 
     // Create the pipeline.
@@ -145,41 +139,45 @@ int main(const int argc, const char *argv[]) {
     VkPipeline pipeline = pipelines->getPipeline();
     VkPipelineLayout playout = pipelines->getLayout();
 
+    // Prepare for the draw loop.
+    VkBuffer buffer[] = { vertexBuffer->getBuffer() };
+    VkDeviceSize offsets[] = { 0 };
+    VkViewport viewport = { .width = (float) extent.width, .height = (float) extent.height };
+    VkRect2D scissor { .extent = extent };
+    VkClearValue clearValue = { .color.float32 = {0.1, 0.2, 0.4, 1.0} };
+    VkRenderPassBeginInfo rpbi {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = renderPass,
+        .renderArea.extent = extent,
+        .pClearValues = &clearValue,
+        .clearValueCount = 1
+    };
+
     // Main game loop.
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
         // Start the command buffer and begin the render pass.
         VkCommandBuffer cmdbuffer = context->beginFrame();
-        const VkClearValue clearValue = { .color.float32 = {0.1, 0.2, 0.4, 1.0} };
-        const VkRenderPassBeginInfo rpbi {
-            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .framebuffer = context->getFramebuffer(),
-            .renderPass = renderPass,
-            .renderArea.extent = extent,
-            .pClearValues = &clearValue,
-            .clearValueCount = 1
-        };
+        rpbi.framebuffer = context->getFramebuffer();
         vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
-
-        VkViewport viewport = { .width = (float) extent.width, .height = (float) extent.height };
         vkCmdSetViewport(cmdbuffer, 0, 1, &viewport);
-
-        VkRect2D scissor { .extent = extent };
         vkCmdSetScissor(cmdbuffer, 0, 1, &scissor);
-
         vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
 
+        // We know that ubo[1] is no longer being consumed by the GPU, so write over it and bind
+        // a descriptor set that points to it.
+        Matrix4 matrix = M4MakeRotationZ(glfwGetTime());
+        ubo[1]->setData(&matrix, sizeof(matrix));
+        std::swap(ubo[0], ubo[1]);
+        descriptors->setUniformBuffer(0, ubo[0]->getBuffer());
+        VkDescriptorSet dset = descriptors->getDescriptorSet();
         vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
                 &dset, 0, 0);
 
-        VkBuffer buffer[] = { vertexBuffer->getBuffer() };
-        VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
-
+        // Make the draw call and end the render pass.
         vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
-
-        // End the render pass, flush the command buffer, and present the backbuffer.
         vkCmdEndRenderPass(cmdbuffer);
         context->endFrame();
     }
@@ -189,7 +187,8 @@ int main(const int argc, const char *argv[]) {
 
     // Cleanup.
     LavaDescCache::destroy(&descriptors);
-    LavaCpuBuffer::destroy(&ubo);
+    LavaCpuBuffer::destroy(&ubo[0]);
+    LavaCpuBuffer::destroy(&ubo[1]);
     LavaCpuBuffer::destroy(&vertexBuffer);
     AmberProgram::destroy(&program, device);
     LavaPipeCache::destroy(&pipelines);

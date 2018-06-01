@@ -1,6 +1,4 @@
 
-spinny_staged
-
 Rename all demos to have a prefix.
 
 Textures

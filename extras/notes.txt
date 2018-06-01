@@ -1,6 +1,3 @@
-
-Rename all demos to have a prefix.
-
 Textures
 
 par_shapes

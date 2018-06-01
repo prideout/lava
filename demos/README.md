@@ -5,7 +5,7 @@ This folder contains a series of simple independent Lava demos that use
 Note that the core Lava library does not have dependencies on GLFW or glslang. **AmberProgram** and
 **AmberCompiler** depend on glslang but they live outside the core Lava library.
 
-- [01_shader_test](shader_test.cpp)
+- [01_clear_screen](clear_screen.cpp)
   is the simplest demo and does not draw any geometry.
   Demonstrates **LavaContext** and **AmberProgram**.
 - [02_triangle_shared](triangle_shared.cpp)

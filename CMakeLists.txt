@@ -37,12 +37,12 @@ file(GLOB_RECURSE LAVA_SOURCE
     "src/Lava*.cpp")
 
 set(DEMO_NAMES
-    triangle_shared
-    triangle_recorded
-    triangle_staged
-    spinny_double
-    spinny_staged
-    shader_test)
+    01_clear_screen
+    02_triangle_shared
+    03_triangle_staged
+    04_triangle_recorded
+    05_spinny_double
+    06_spinny_staged)
 
 foreach(DEMO ${DEMO_NAMES})
     add_executable(${DEMO} demos/${DEMO}.cpp ${LAVA_SOURCE})

@@ -13,7 +13,6 @@
 #include <math.h>
 
 namespace {
-
     constexpr int DEMO_WIDTH = 512;
     constexpr int DEMO_HEIGHT = 512;
     constexpr float PI = 3.1415926535;
@@ -39,12 +38,11 @@ namespace {
         uint32_t color;
     };
 
-    static const Vertex TRIANGLE_VERTICES[] {
+    const Vertex TRIANGLE_VERTICES[] {
         {{1, 0}, 0xffff0000u},
         {{cosf(PI * 2 / 3), sinf(PI * 2 / 3)}, 0xff00ff00u},
         {{cosf(PI * 4 / 3), sinf(PI * 4 / 3)}, 0xff0000ffu},
     };
-
 }
 
 int main(const int argc, const char *argv[]) {

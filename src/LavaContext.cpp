@@ -50,9 +50,9 @@ struct SwapchainBundle {
 };
 
 struct DepthBundle {
-    VkImage image;
-    VkImageView view;
-    VkDeviceMemory mem;
+    VkImage image = 0;
+    VkImageView view = 0;
+    VkDeviceMemory mem = 0;
     VkFormat format = VK_FORMAT_D16_UNORM;
 };
 
@@ -83,7 +83,7 @@ struct LavaContextImpl : LavaContext {
     VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
     SwapchainBundle mSwap[2] {};
     VkExtent2D mExtent;
-    DepthBundle mDepth {};
+    DepthBundle mDepth;
     VkSurfaceKHR mSurface;
     VkSemaphore mImageAvailable;
     VkSemaphore mDrawFinished;
@@ -175,12 +175,16 @@ void LavaContextImpl::killDevice() noexcept {
     vkDestroyImageView(mDevice, mSwap[1].view, VKALLOC);
     mSwap[0].view = mSwap[1].view = VK_NULL_HANDLE;
 
-    vkDestroyImageView(mDevice, mDepth.view, VKALLOC);
-    vkDestroyImage(mDevice, mDepth.image, VKALLOC);
-    vkFreeMemory(mDevice, mDepth.mem, VKALLOC);
-    mDepth.view = VK_NULL_HANDLE;
-    mDepth.image = VK_NULL_HANDLE;
-    mDepth.mem = VK_NULL_HANDLE;
+    // Technically the "if" is not needed because the Vulkan spec allows null here. However,
+    // MoltenVK segfaults...
+    if (mDepth.view) {
+        vkDestroyImageView(mDevice, mDepth.view, VKALLOC);
+        vkDestroyImage(mDevice, mDepth.image, VKALLOC);
+        vkFreeMemory(mDevice, mDepth.mem, VKALLOC);
+        mDepth.view = VK_NULL_HANDLE;
+        mDepth.image = VK_NULL_HANDLE;
+        mDepth.mem = VK_NULL_HANDLE;
+    }
 
     vkDestroyRenderPass(mDevice, mRenderPass, VKALLOC);
     mRenderPass = VK_NULL_HANDLE;

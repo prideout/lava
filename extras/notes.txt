@@ -15,8 +15,7 @@ travis
 
 markdeep documentation: https://morgan3d.github.io/include.js/
     consider netlify
-
-                               
+                          
 demos
     demos/klein     3Dlabs demo nostalgia (par_shapes and stencil draw-twice reflection)
         https://github.com/tiimgreen/github-cheat-sheet#imagesgifs

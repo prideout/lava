@@ -41,6 +41,7 @@ set(DEMO_NAMES
     triangle_recorded
     triangle_staged
     spinny_double
+    spinny_staged
     shader_test)
 
 foreach(DEMO ${DEMO_NAMES})

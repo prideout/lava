@@ -30,6 +30,8 @@ include_directories(${DEMO} PRIVATE
     ${VULKAN_INCLUDE_DIR}
     extras
     extras/glslang
+    extras/stb
+    extras/par
     include)
 
 file(GLOB_RECURSE LAVA_SOURCE

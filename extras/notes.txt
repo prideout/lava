@@ -1,4 +1,6 @@
 Textures
+  extras/assets/abstract.jpg
+  extras/stb/stb_image.h
 
 par_shapes
 

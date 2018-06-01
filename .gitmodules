@@ -4,3 +4,9 @@
 [submodule "extras/glslang"]
 	path = extras/glslang
 	url = https://github.com/KhronosGroup/glslang.git
+[submodule "extras/stb"]
+	path = extras/stb
+	url = https://github.com/nothings/stb.git
+[submodule "extras/par"]
+	path = extras/par
+	url = https://github.com/prideout/par

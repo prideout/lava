@@ -162,6 +162,7 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
         size->type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         size->descriptorCount = poolInfo.maxSets * impl->numImageSamplers;
     }
+    assert(poolInfo.poolSizeCount > 0);
     vkCreateDescriptorPool(impl->device, &poolInfo, VKALLOC, &impl->descriptorPool);
 
     return impl;
@@ -208,48 +209,57 @@ bool LavaDescCache::getDescriptorSet(VkDescriptorSet* descriptorSet,
     vkAllocateDescriptorSets(impl.device, &allocInfo, descriptorSet);
 
     auto& key = impl.currentState;
-    uint32_t i = 0;
+    VkWriteDescriptorSet* pWrite = impl.writes.data();
+    VkDescriptorBufferInfo* pBufferWrite = impl.bufferWrites.data();
+    uint32_t binding = 0;
     for (VkBuffer buffer : key.uniformBuffers) {
-        impl.writes[i] = {
+        if (buffer == VK_NULL_HANDLE) {
+            binding++;
+            continue;
+        }
+        *pWrite++ = {
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet = *descriptorSet,
-            .dstBinding = i,
+            .dstBinding = binding++,
             .descriptorCount = 1,
             .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .pBufferInfo = impl.bufferWrites.data() + i
+            .pBufferInfo = pBufferWrite
         };
-        impl.bufferWrites[i] = {
+        *pBufferWrite++ = {
             .buffer = buffer,
             .offset = 0,
             .range = VK_WHOLE_SIZE
         };
-        ++i;
     }
-    uint32_t j = 0;
+    VkDescriptorImageInfo* pInfoWrite = impl.imageWrites.data();
     for (VkDescriptorImageInfo info : key.imageSamplers) {
-        impl.writes[i] = {
+        if (info.sampler == VK_NULL_HANDLE) {
+            binding++;
+            continue;
+        }
+        *pWrite++ = {
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet = *descriptorSet,
-            .dstBinding = i,
+            .dstBinding = binding++,
             .descriptorCount = 1,
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = impl.imageWrites.data() + j
+            .pImageInfo = pInfoWrite
         };
-        impl.imageWrites[j] = info;
-        ++i;
-        ++j;
+        *pInfoWrite++ = info;
     }
 
+    const size_t nwrites = pWrite - impl.writes.data();
     if (writes) {
         *writes = impl.writes;
+        writes->resize(nwrites);
     } else {
-        vkUpdateDescriptorSets(impl.device, i, impl.writes.data(), 0, nullptr);
+        vkUpdateDescriptorSets(impl.device, nwrites, impl.writes.data(), 0, nullptr);
     }
 
     iter = impl.cache.emplace(make_pair(impl.currentState, CacheVal {
         *descriptorSet, getCurrentTime() })).first;
     impl.currentDescriptor = &(iter->second);
-    return true;
+    return nwrites > 0;
 }
 
 VkDescriptorSet LavaDescCache::getDescriptorSet() noexcept {

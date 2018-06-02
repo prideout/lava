@@ -1,21 +1,17 @@
-Textures
-  extras/assets/abstract.jpg
-  extras/stb/stb_image.h
-
+07_hello_texture
+    Create LavaTexture as a fork from CpuBuffer
+CpuBuffer, GpuBuffer, Texture should all have optional "name" fields.
 par_shapes
-
 unprivatize
-
 travis
+LavaSampCache
+CMake stuff to create dependency-free lava core library
+08_klein_bottle
+    https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
 
 ---------------------
 
-markdeep documentation: https://morgan3d.github.io/include.js/
-    consider netlify
-                          
 demos
-    demos/klein     3Dlabs demo nostalgia (par_shapes and stencil draw-twice reflection)
-        https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
     demos/circle    Fixed size 640x480 window, draws a filled-in circle with random sampling
     demos/gamma     https://www.shadertoy.com/view/llBGz1
     demos/smallpt   https://www.codeplay.com/portal/sycl-ing-the-smallpt-raytracer

@@ -44,7 +44,8 @@ set(DEMO_NAMES
     03_triangle_staged
     04_triangle_recorded
     05_spinny_double
-    06_spinny_staged)
+    06_spinny_staged
+    07_hello_texture)
 
 foreach(DEMO ${DEMO_NAMES})
     add_executable(${DEMO} demos/${DEMO}.cpp ${LAVA_SOURCE})

@@ -23,3 +23,5 @@ Note that the core Lava library does not have dependencies on GLFW or glslang. *
 - [06_spinny_staged](spinny_staged.cpp)
   draws a spinning triangle with a mat4 uniform representing rotation.
   Demonstrates **LavaGpuBuffer** for uniforms and **vkCmdCopyBuffer**.
+- [06_hello_texture](hello_texture.cpp)
+  Demonstrates **LavaTexture**.

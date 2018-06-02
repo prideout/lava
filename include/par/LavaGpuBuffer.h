@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <vulkan/vulkan.h>
+
 namespace par {
 
 class LavaGpuBuffer {

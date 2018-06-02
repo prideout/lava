@@ -17,76 +17,9 @@ the application must invoke `vkCmdDraw` on its own, but it can use lava to creat
   creates a descriptor set layout and manages a set of corollary descriptor sets.
 - **LavaTexture**
 
-## Usage
-
-All Lava classes are completely independent of every other class. Every Lava type lives in the `par`
-namespace, and every class is instanced using a static `create` method.
+Each Lava class is completely independent of every other class, so clients can choose a subset
+of functionality as needed.
  
-Use `LavaContext` to create the standard litany of init-time Vulkan objects: an instance, a device,
-a couple command buffers, etc.  For example:
-
-```cpp
-auto context = par::LavaContext::create({
-    .depthBuffer = false,
-    .validation = true,
-    .createSurface = [window] (VkInstance instance) {
-        VkSurfaceKHR surface;
-        glfwCreateWindowSurface(instance, window, nullptr, &surface);
-        return surface;
-    }
-});
-const VkDevice device = context->getDevice();
-const VkExtent2D extent = context->getSize();
-// Do stuff here...
-par::LavaContext::destroy(&context);
-```
-
-You can also use `LavaContext` as an aid for submitting command buffers and presenting the swap
-chain:
-
-```cpp
-VkCommandBuffer cmdbuffer = context->beginFrame();
-vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
-vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
-vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
-vkCmdEndRenderPass(cmdbuffer);
-context->endFrame();
-```
-
-Another Lava component is `LavaPipeCache`, which makes it easy to create pipeline objects on the
-fly, as well as modifying rasterization state:
-
-```cpp
-auto pipelines = par::LavaPipeCache::create({
-    .device = device,
-    .vertex = {
-        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-        .attributes = { {
-            .binding = 0u,
-            .format = VK_FORMAT_R32G32B32_SFLOAT,
-            .location = 0u,
-            .offset = 0u,
-        } },
-        .buffers = { {
-            .binding = 0u,
-            .stride = 12,
-        } }
-    },
-    .descriptorLayouts = {},
-    .vshader = vertexShaderModule,
-    .fshader = fragmentShaderModule,
-    .renderPass = renderPass
-});
-VkPipeline pipeline = pipelines->getPipeline();
-// Do stuff here...
-pipelines->setRenderPass(newRenderPass);
-pipelines->setRasterState(newRasterState);
-pipeline = pipelines->getPipeline();
-// Do stuff here...
-par::LavaPipeCache::destroy(&pipelines);
-```
-
 ## Scope
 
 By design, lava does not include a materials system, a scene graph, an asset loader, or any
@@ -98,57 +31,9 @@ of `<iostream>`.
 The public API is an even narrower subset of C++ whereby classes contain nothing but public methods.
 
 The core library has no dependencies on any third-party libraries other than the single-file
-[vk_mem_alloc.h](src/vk_mem_alloc.h) library, which is included in the repo for convenience.
+[vk_mem_alloc.h](src/vk_mem_alloc.h) library and [spdlog](https://github.com/gabime/spdlog), which
+are included in the repo for convenience.
 
 ## Supported platforms
 
 At the time of this writing, we're testing against Linux and MoltenVK on MacOS.
-
-## How to build and run the demos
-
-On Linux, do this first:
-
-```bash
-sudo apt-get install libx11-dev libxinerama-dev libxcursor-dev
-cd <path to repo>
-cd cmake-debug ; cd cmake-debug
-rm -rf * ; cmake .. -G Ninja \
-  -DCMAKE_C_COMPILER=/usr/bin/clang-3.9 \
-  -DCMAKE_CXX_COMPILER=/usr/bin/clang++-3.9
-```
-
-On macOS, you first need clang (which comes with Xcode) and homebrew, then do this:
-
-```
-brew install cmake ninja
-```
-
-Then, for any platform, do this:
-
-1. Clone this repo with `--recursive` to get the submodules, or do `git submodule update --init` after cloning.
-1. Install the LunarG Vulkan SDK.
-1. Invoke the following commands in your terminal.
-
-```bash
-cd <path to repo>
-mkdir cmake-debug ; cd cmake-debug ; cmake .. -G Ninja
-ninja && ./spinny_double
-```
-
-You should now see a Klein Bottle that looks like this:
-
-[placeholder]
-
-## LunarG SDK Instructions
-
-* Download the tarball from their website.
-* Copy or move its contents to `~/Vulkan`.  For example:
-    `mv ~/Downloads/vulkansdk-macos-1.1.73.0 ~/Vulkan`
-* Add this to your `.bashrc`, replacing `macOS` as needed.
-
-```bash
-export VULKAN_SDK=$HOME/Vulkan
-export VK_LAYER_PATH=$VULKAN_SDK/macOS/etc/vulkan/explicit_layers.d
-export VK_ICD_FILENAMES=$VULKAN_SDK/macOS/etc/vulkan/icd.d/MoltenVK_icd.json
-export PATH="$VULKAN_SDK/macOS/bin:$PATH"
-```

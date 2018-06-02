@@ -5,6 +5,8 @@
 
 #include <vector>
 
+#include <vulkan/vulkan.h>
+
 namespace par {
 
 // Manages a set of pipeline objects that all conform to a specific pipeline layout.

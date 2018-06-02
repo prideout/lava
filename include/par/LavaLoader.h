@@ -1,7 +1,7 @@
 #pragma once
 
 #if defined(VULKAN_H_) && !defined(VK_NO_PROTOTYPES)
-#error Please do not include vulkan.h when using LavaLoader
+#error Please do not include vulkan.h before LavaLoader
 #endif
 
 #ifndef VULKAN_H_

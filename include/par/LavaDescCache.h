@@ -5,6 +5,8 @@
 
 #include <vector>
 
+#include <vulkan/vulkan.h>
+
 namespace par {
 
 // Creates and stashes descriptor sets that conform to a specific layout.

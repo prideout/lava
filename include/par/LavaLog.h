@@ -5,7 +5,9 @@
 
 #include <memory>
 #include <csignal>
+
 #include <spdlog/spdlog.h>
+#include <vulkan/vulkan.h>
 
 #define LOG_CHECK(condition, msg) if (!(condition)) llog.fatal("{}:{} {}", __FILE__, __LINE__, msg);
 

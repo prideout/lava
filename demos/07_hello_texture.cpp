@@ -2,12 +2,14 @@
 // Copyright (c) 2018 Philip Rideout
 
 #include <par/LavaLoader.h>
-#include <par/LavaLog.h>
+
+#include <par/AmberProgram.h>
 #include <par/LavaContext.h>
 #include <par/LavaCpuBuffer.h>
-#include <par/LavaPipeCache.h>
 #include <par/LavaDescCache.h>
-#include <par/AmberProgram.h>
+#include <par/LavaLog.h>
+#include <par/LavaPipeCache.h>
+#include <par/LavaTexture.h>
 
 #define STBI_FAILURE_USERMSG
 #define STB_IMAGE_IMPLEMENTATION
@@ -105,7 +107,7 @@ int main(const int argc, const char *argv[]) {
     VkShaderModule fshader = program->getFragmentShader(device);
 
     // Create texture.
-    LavaCpuBuffer* texture;
+    LavaTexture* texture;
     {
         const char* TEXTURE_FILENAME = "../extras/assets/abstract.jpg";
         int w, h, nchan;
@@ -117,16 +119,24 @@ int main(const int argc, const char *argv[]) {
         llog.info("Loading texture {:4}x{:4} {}", w, h, TEXTURE_FILENAME);
         uint8_t* texels = stbi_load(TEXTURE_FILENAME, &w, &h, &nchan, 4);
         assert(texels);
-        texture = LavaCpuBuffer::create({
+        texture = LavaTexture::create({
             .device = device, .gpu = gpu,
             .size = (uint32_t) (w * h * 4),
             .source = texels,
-            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+            .info = {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .imageType = VK_IMAGE_TYPE_2D,
+                .extent = { (uint32_t) w, (uint32_t) h, 1 },
+                .format = VK_FORMAT_R8G8B8A8_UNORM,
+                .mipLevels = 1,
+                .arrayLayers = 1,
+                .usage = VK_IMAGE_USAGE_SAMPLED_BIT,
+                .samples = VK_SAMPLE_COUNT_1_BIT,
+            }
         });
         stbi_image_free(texels);
     }
-
-    VkImageView imageView = 0; // texture->getImageView()
+    const auto& textureProps = texture->getProperties();
 
     // Create the sampler.
     VkSampler sampler;
@@ -146,7 +156,7 @@ int main(const int argc, const char *argv[]) {
         .uniformBuffers = {},
         .imageSamplers = { {
             .sampler = sampler,
-            .imageView = imageView,
+            .imageView = textureProps.view,
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         } }
     });
@@ -222,6 +232,7 @@ int main(const int argc, const char *argv[]) {
 
     // Cleanup.
     vkDestroySampler(device, sampler, 0);
+    LavaTexture::destroy(&texture);
     LavaDescCache::destroy(&descriptors);
     LavaCpuBuffer::destroy(&vertexBuffer);
     AmberProgram::destroy(&program, device);

@@ -5,6 +5,8 @@
 
 #include <functional>
 
+#include <vulkan/vulkan.h>
+
 namespace par {
 
 struct LavaRecording;

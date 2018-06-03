@@ -89,9 +89,9 @@ Then, for any platform, do this:
     ```
 
 !!! WARNING
-    On Linux, you may need to add a few arguments to your cmake invocation to choose clang over gcc:
-    ```text
-    -DCMAKE_C_COMPILER=/usr/bin/clang-3.9 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-3.9
+    On Linux, you may need to do this first, to choose clang over gcc:
+    ```bash
+    export CC=clang CXX=clang++
     ```
 
 ### LunarG SDK Instructions

@@ -2,7 +2,10 @@ language: c
 addons:
   apt:
     packages:
-      - clang-3.9
+      - clang
+      - libx11-dev
+      - libxinerama-dev
+      - libxcursor-dev
 script:
   - export CC=clang CXX=clang++
   - cmake . -Bbuild

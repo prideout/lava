@@ -63,6 +63,7 @@ On Linux, do this first:
 
 ```bash
 sudo apt-get install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+export CC=clang CXX=clang++
 ```
 
 On macOS, you first need clang (which comes with Xcode) and homebrew, then do this:
@@ -86,12 +87,6 @@ Then, for any platform, do this:
     cd [path to repo]
     mkdir .debug ; cd .debug ; cmake .. -G Ninja
     ninja && ./spinny_double
-    ```
-
-!!! WARNING
-    On Linux, you may need to do this first, to choose clang over gcc:
-    ```bash
-    export CC=clang CXX=clang++
     ```
 
 ### LunarG SDK Instructions
@@ -158,16 +153,29 @@ vkCmdEndRenderPass(cmdbuffer);
 context->endFrame();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The `beginFrame` method provides a double-buffered command buffer and automatically waits
-for the previous buffer submission to finish executing. The `endFrame` method submits
-the command buffer and presents the backbuffer.
+The `beginFrame` method provides a double-buffered command buffer and waits for the previous buffer
+submission to finish executing. The `endFrame` method submits the command buffer and presents the
+backbuffer.
 
 In addition to `beginFrame` and `endFrame`, the context provides a `waitFrame` method, which allows
 clients to wait until the most recently rendered frame presents itself.
 
 #### Work API
 
-TBD
+Similar to the beginFrame / endFrame API, there exists a "work" API, the main difference being that
+it does not automatically perform presentation or swapping.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+class LavaContext {
+    // ...
+    VkCommandBuffer beginWork() noexcept;
+    void endWork() noexcept;
+    void waitWork() noexcept;
+};
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The work API is especially useful for invoking vkCmdCopy* since it can be done at initialization
+time, before drawing a frame.
 
 #### Recording API
 

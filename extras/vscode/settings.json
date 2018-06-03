@@ -2,5 +2,16 @@
     "files.defaultLanguage": "cpp",
     "files.associations": {
         "*.html": "markdown"
+    },
+    "files.exclude": {
+        "include/spdlog": true,
+        "extras": true,
+        ".debug": true,
+        ".release": true,
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true
     }
 }

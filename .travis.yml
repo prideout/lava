@@ -1,6 +1,7 @@
 language: c
 compiler: clang
-submodules: false
+git:
+  submodules: false
 dist: trusty
 addons:
   apt:

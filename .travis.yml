@@ -1,5 +1,6 @@
 language: c
 compiler: clang
+# submodules: false
 dist: trusty
 addons:
   apt:
@@ -8,8 +9,6 @@ addons:
       - libxinerama-dev
       - libxcursor-dev
       - libxi-dev
-      - mesa-vulkan-drivers 
-      - vulkan-utils
 script:
-  - cmake . -Bbuild
-  - cmake --build build
+  - cmake . -B.debug
+  - cmake --build .debug

@@ -138,6 +138,9 @@ const VkDevice device = context->getDevice();
 const VkExtent2D extent = context->getSize();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+To see all the getter methods and Config fields, take a look at
+[LavaContext.h](https://github.com/prideout/lava/blob/master/include/par/LavaContext.h).
+
 #### Frame API
 
 You can use LavaContext as an aid for submitting command buffers and presenting the swap chain.
@@ -162,8 +165,8 @@ clients to wait until the most recently rendered frame presents itself.
 
 #### Work API
 
-The work API in LavaContext is Similar to the beginFrame / endFrame API, the main difference being
-that it does not automatically perform presentation or swapping.
+The work API in LavaContext is similar to beginFrame / endFrame, the main difference being that it
+does not automatically perform presentation or swapping.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
 class LavaContext {
@@ -179,7 +182,7 @@ time, before drawing a frame.
 
 #### Recording API
 
-Another way to obtain a `VkCommandBuffer` from LavaContext is via the reocrding API:
+Another way to obtain a `VkCommandBuffer` from LavaContext is via the recording API:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
 class LavaContext {
@@ -262,7 +265,7 @@ public-facing Lava types live in the `par` namespace.
 
 For `#include`, always use angle brackets unless including a private header that lives in the same
 directory. Includes are arranged in blocks, where each block is an alphabetized list of headers. The
-first block is composed of `par` headers, followed by a sorted list of blocks for each `extern/`
+first block is composed of `par` headers, followed by a sorted list of blocks for each `extras/`
 library, followed by a block of C++ STL headers, followed by the block of standard C headers,
 followed by the block of private headers. For example:
 

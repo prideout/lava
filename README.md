@@ -2,7 +2,7 @@
 
 **Lava** is a toy C++ library composed of classes that make it easy to create and manage Vulkan
 objects.  Each Lava class is defined by a single header with no dependencies on anything other than
-STL and `vulkan.h`.
+`vulkan.h` and the STL.
 
 For more information, see the [documentation](http://github.prideout.net/lava/index.html).
 

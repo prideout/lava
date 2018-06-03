@@ -15,15 +15,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_SANITIZE_OPTIONS}")
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
 
-if(APPLE)
-    set(VULKAN_INCLUDE_DIR "$ENV{VULKAN_SDK}/macOS/include")
-else()
-    set(VULKAN_INCLUDE_DIR "extras/glfw/deps")
-endif()
-
-include_directories(
-    "${VULKAN_INCLUDE_DIR}"
-    "include")
+include_directories(include)
 
 file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
 

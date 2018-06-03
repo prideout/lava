@@ -13,7 +13,6 @@ endif()
 link_libraries(${DEMO_LIBS})
 
 include_directories(
-    ${VULKAN_INCLUDE_DIR}
     ../extras
     ../extras/glslang
     ../extras/stb

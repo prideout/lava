@@ -162,8 +162,8 @@ clients to wait until the most recently rendered frame presents itself.
 
 #### Work API
 
-Similar to the beginFrame / endFrame API, there exists a "work" API, the main difference being that
-it does not automatically perform presentation or swapping.
+The work API in LavaContext is Similar to the beginFrame / endFrame API, the main difference being
+that it does not automatically perform presentation or swapping.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
 class LavaContext {
@@ -174,12 +174,29 @@ class LavaContext {
 };
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The work API is especially useful for invoking vkCmdCopy* since it can be done at initialization
+The work API is especially useful for invoking `vkCmdCopy*` since it can be done at initialization
 time, before drawing a frame.
 
 #### Recording API
 
-TBD
+Another way to obtain a `VkCommandBuffer` from LavaContext is via the reocrding API:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+class LavaContext {
+    // ...
+    LavaRecording* createRecording() noexcept;
+    VkCommandBuffer beginRecording(LavaRecording*, uint32_t i) noexcept;
+    void endRecording() noexcept;
+    void presentRecording(LavaRecording*) noexcept;
+    void freeRecording(LavaRecording*) noexcept;
+    void waitRecording(LavaRecording*) noexcept;
+};
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Unlike `endFrame` and `endWork`, the `endRecording` method does not immediately submit the command
+buffer. For a usage example, see the
+[04_triangle_recorded](https://github.com/prideout/lava/blob/master/demos/04_triangle_recorded.cpp)
+demo.
 
 ### LavaDescCache
 

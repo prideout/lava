@@ -6,6 +6,7 @@ addons:
       - libx11-dev
       - libxinerama-dev
       - libxcursor-dev
+      - libxrandr-dev
 script:
   - export CC=clang CXX=clang++
   - cmake . -Bbuild

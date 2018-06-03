@@ -15,38 +15,22 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_SANITIZE_OPTIONS}")
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
 
-add_subdirectory(extras/glfw)
-add_subdirectory(extras/glslang)
-
-set(LIBS glfw glslang SPIRV)
-
-if (APPLE)
-    list(APPEND LIBS $ENV{VULKAN_SDK}/macOS/lib/libvulkan.1.dylib)
+if(APPLE)
+    set(VULKAN_INCLUDE_DIR "$ENV{VULKAN_SDK}/macOS/include")
 endif()
 
-link_libraries(${LIBS})
+include_directories(
+    "${VULKAN_INCLUDE_DIR}"
+    "include")
 
-include_directories(${DEMO} PRIVATE
-    ${VULKAN_INCLUDE_DIR}
-    extras
-    extras/glslang
-    extras/stb
-    extras/par
-    include)
+file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
 
-file(GLOB_RECURSE LAVA_SOURCE
-    "src/Amber*.cpp"
-    "src/Lava*.cpp")
+# Build the core library (zero dependencies).
+add_library(lava SHARED ${LAVA_SOURCE})
 
-set(DEMO_NAMES
-    01_clear_screen
-    02_triangle_shared
-    03_triangle_staged
-    04_triangle_recorded
-    05_spinny_double
-    06_spinny_staged
-    07_hello_texture)
-
-foreach(DEMO ${DEMO_NAMES})
-    add_executable(${DEMO} demos/${DEMO}.cpp ${LAVA_SOURCE})
-endforeach()
+# If submodules have been initialized, then build demos too.
+if(EXISTS "${CMAKE_SOURCE_DIR}/extras/glfw/CMakeLists.txt")
+    add_subdirectory(extras/glfw)
+    add_subdirectory(extras/glslang)
+    add_subdirectory(demos)
+endif()

@@ -16,8 +16,8 @@ objects. It is open sourced under the MIT license, available at https://github.c
 Select one of the classes below to see further documentation and usage examples.
 
 - [LavaContext](#LavaContext)
-  creates a **VkInstance**, **VkDevice**, **VkPhysicalDevice**, **VkSwapChain**, as well as
-  several command buffers and related objects.
+  creates a **VkInstance**, **VkDevice**, **VkSwapChain**, as well as several command buffers and
+  related objects.
 - [LavaDescCache](#LavaDescCache)
   creates a descriptor set layout and manages a set of corollary descriptors.
 - [LavaPipeCache](#LavaPipeCache)
@@ -28,9 +28,10 @@ Select one of the classes below to see further documentation and usage examples.
   is a fast device-only buffer, useful for vertex buffers and index buffers.
 - [LavaTexture](#LavaTexture) encapsulates a **VkImage**, a **VkImageView**, and a **VkBuffer**
   staging area.
-- [LavaLoader](#LavaLoader)
+
+<!-- - [LavaLoader](#LavaLoader)
   loads all Vulkan entry points. To use this feature, clients should include `LavaLoader.h` before
-  (or instead of) including `vulkan/vulkan.h`.
+  (or instead of) including `vulkan/vulkan.h`. -->
 
 Each Lava class is completely independent of every other class, so clients can choose a subset
 of functionality as needed.
@@ -108,7 +109,7 @@ export PATH="$VULKAN_SDK/macOS/bin:$PATH"
 ### LavaContext
 
 Use this class to create the standard litany of init-time Vulkan objects: an instance, a
-device, a couple command buffers, etc. It requires a callback function that will create the window's
+device, a couple command buffers, etc. It requires a callback function that will create the window
 surface, which can easily be provided with a small lambda function.
 
 !!! WARNING
@@ -203,6 +204,59 @@ demo.
 
 ### LavaDescCache
 
+Upon construction, this consumes a count of uniform buffers and samplers, and immediately creates a
+**VkDescriptorSetLayout** and **VkDescriptorPool**. Over its lifetime, it creates and evicts
+**VkDescriptorSet** on the fly, according to the bindings that you push to it.
+
+For example, let's say you need only one binding for uniform buffers, and up to two textures. You
+can create the layout and a descriptor like this:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+VkDevice device = ...;
+VkBuffer ubo = ...;
+
+auto descriptors = LavaDescCache::create({
+    .device = device,
+    .uniformBuffers = { ubo }, // If you don't have a UBO yet, just say: { 0 }
+    .imageSamplers = { 0, 0 }  // Declare two image samplers (not known yet)
+});
+const VkDescriptorSetLayout dlayout = descriptors->getLayout();
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can generate new descriptors by changing the bindings with `setUniformBuffer` and
+`setImageSampler`. For example:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+descriptors->setUniformBuffer(0, buf1);
+vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
+        descriptors->getDescPointer(), 0, 0);
+// draw here...
+
+descriptors->setUniformBuffer(0, buf2);
+descriptors->setImageSampler(1, myTexture);
+vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
+        descriptors->getDescPointer(), 0, 0);
+// draw here...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can periodically evict unused descriptors by calling `releaseUnused`, which frees up descriptors
+that have been unused for a specified amount of time. For example:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+void MyRenderer::drawFrame() {
+    // ...
+    const uint64_t milliseconds = 1000;
+    mDescCache->releaseUnused(milliseconds);
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To see the complete API, take a look at
+[LavaDescCache.h](https://github.com/prideout/lava/blob/master/include/par/LavaDescCache.h).
+
+!!! ERROR
+    To do:
+    - Add unsetUniformBuffer and unsetImageSampler
+
 ### LavaPipeCache
 
 This class makes it easy to create pipeline objects on the
@@ -241,11 +295,18 @@ LavaPipeCache::destroy(&pipelines);
 
 ### LavaCpuBuffer
 
+!!! ERROR
+    TBD
+
 ### LavaGpuBuffer
+
+!!! ERROR
+    TBD
 
 ### LavaTexture
 
-### LavaLoader
+!!! ERROR
+    TBD
 
 ## Internal Guidelines
 
@@ -286,4 +347,18 @@ imperative ("Open the file").
 
 <style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style>
 <script src="markdeep.min.js"></script>
-<script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
+<script>
+
+window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible");
+let hash = window.location.hash.substr(1).toLowerCase();
+if (hash) {
+    let sel = '[name=' + hash + ']';
+    window.setTimeout(function() {
+        let el = document.querySelector(sel);
+        if (el) {
+            document.body.scrollTop = el.offsetTop;
+        }
+    }, 100);
+}
+
+</script>

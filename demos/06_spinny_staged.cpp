@@ -157,7 +157,7 @@ int main(const int argc, const char *argv[]) {
         .clearValueCount = 1
     };
     descriptors->setUniformBuffer(0, ubo->getBuffer());
-    VkDescriptorSet dset = descriptors->getDescriptorSet();
+    VkDescriptorSet dset = descriptors->getDescriptor();
 
     // Main game loop.
     while (!glfwWindowShouldClose(window)) {

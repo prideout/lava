@@ -172,7 +172,7 @@ int main(const int argc, const char *argv[]) {
         ubo[1]->setData(&matrix, sizeof(matrix));
         std::swap(ubo[0], ubo[1]);
         descriptors->setUniformBuffer(0, ubo[0]->getBuffer());
-        VkDescriptorSet dset = descriptors->getDescriptorSet();
+        VkDescriptorSet dset = descriptors->getDescriptor();
         vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
                 &dset, 0, 0);
 

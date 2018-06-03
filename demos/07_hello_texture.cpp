@@ -161,7 +161,7 @@ int main(const int argc, const char *argv[]) {
         } }
     });
     const VkDescriptorSetLayout dlayout = descriptors->getLayout();
-    const VkDescriptorSet dset = descriptors->getDescriptorSet();
+    const VkDescriptorSet dset = descriptors->getDescriptor();
 
     static_assert(sizeof(Vertex) == 16, "Unexpected vertex size.");
     auto pipelines = LavaPipeCache::create({

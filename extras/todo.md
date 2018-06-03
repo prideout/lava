@@ -1,4 +1,4 @@
-- travis
+- flesh out docs
 - pin the repo
 - delete crufty remote branches
 - 08_klein_bottle

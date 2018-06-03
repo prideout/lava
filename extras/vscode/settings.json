@@ -5,7 +5,11 @@
     },
     "files.exclude": {
         "include/spdlog": true,
-        "extras": true,
+        "extras/glfw": true,
+        "extras/glslang": true,
+        "extras/stb": true,
+        "extras/tinyobjloader": true,
+        "extras/par": true,
         ".debug": true,
         ".release": true,
         "**/.git": true,

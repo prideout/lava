@@ -34,16 +34,16 @@ public:
     // Fetches or creates a VkDescriptorSet corresponding to the layout that was established
     // during construction. Immediately calls vkUpdateDescriptorSets if a new descriptor set was
     // constructed. The caller is responsible for calling vkCmdBindDescriptorSet.
-    VkDescriptorSet getDescriptorSet() noexcept;
+    VkDescriptorSet getDescriptor() noexcept;
+
+    // Similar to getDescriptor but returns a weak reference for convenience.
+    VkDescriptorSet* getDescPointer() noexcept;
 
     // Fetches or creates a VkDescriptorSet corresponding to the layout that was established
     // during construction. Returns true if the client should call vkCmdBindDescriptorSet.
     // Sets "writes" to a non-empty vector if the client should call vkUpdateDescriptorSets.
     bool getDescriptorSet(VkDescriptorSet* descriptorSet,
             std::vector<VkWriteDescriptorSet>* writes) noexcept;
-
-    // Fetches or creates a sampler corresponding to the given info.
-    VkSampler getSampler(const VkSamplerCreateInfo& info) noexcept;
 
     void setUniformBuffer(uint32_t bindingIndex, VkBuffer uniformBuffer) noexcept;
     void setImageSampler(uint32_t bindingIndex, VkDescriptorImageInfo binding) noexcept;

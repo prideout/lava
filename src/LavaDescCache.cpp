@@ -262,10 +262,17 @@ bool LavaDescCache::getDescriptorSet(VkDescriptorSet* descriptorSet,
     return nwrites > 0;
 }
 
-VkDescriptorSet LavaDescCache::getDescriptorSet() noexcept {
+VkDescriptorSet LavaDescCache::getDescriptor() noexcept {
     VkDescriptorSet handle;
     getDescriptorSet(&handle, nullptr);
     return handle;
+}
+
+VkDescriptorSet* LavaDescCache::getDescPointer() noexcept {
+    LavaDescCacheImpl* impl = upcast(this);
+    getDescriptor();
+    CacheVal* mapval = impl->currentDescriptor;
+    return mapval ? &mapval->handle : nullptr;
 }
 
 void LavaDescCache::setUniformBuffer(uint32_t bindingIndex, VkBuffer uniformBuffer) noexcept {

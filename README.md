@@ -4,7 +4,7 @@
 objects.  Each Lava class is defined by a single header with no dependencies on anything other than
 `vulkan.h` and the STL.
 
-For more information, see the [documentation](http://github.prideout.net/lava/index.html).
+For more information, see the [documentation](http://github.prideout.net/lava/).
 
 ## Scope
 
@@ -12,7 +12,7 @@ Lava does not include a materials system, a scene graph, an asset loader, or any
 platform-specific functionality like windowing and events.
 
 Lava is implemented with a subset of C++14 that forbids RTTI, exceptions, and the use of
-`<iostream>`. The public API is very narrow subset of C++ whereby classes contain nothing but
+`<iostream>`. The public API uses a very narrow subset of C++ whereby classes contain nothing but
 methods.
 
 The core library has no dependencies on any third-party libraries other than the single-file

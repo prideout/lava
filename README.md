@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/prideout/lava.svg?branch=master)](https://travis-ci.org/prideout/lava)
+
 **Lava** is a toy C++ library composed of classes that make it easy to create and manage Vulkan
 objects.  Each Lava class is defined by a single header with no dependencies on anything other than
 STL and `vulkan.h`.
@@ -9,9 +11,9 @@ For more information, see the [documentation](http://github.prideout.net/lava/in
 Lava does not include a materials system, a scene graph, an asset loader, or any
 platform-specific functionality like windowing and events.
 
-We use a subset of C++14 that forbids RTTI, exceptions, and the use of `<iostream>`.
-
-The public API is very narrow subset of C++ whereby classes contain nothing but public methods.
+Lava is implemented with a subset of C++14 that forbids RTTI, exceptions, and the use of
+`<iostream>`. The public API is very narrow subset of C++ whereby classes contain nothing but
+methods.
 
 The core library has no dependencies on any third-party libraries other than the single-file
 [vk_mem_alloc.h](src/vk_mem_alloc.h) library and [spdlog](https://github.com/gabime/spdlog), which
@@ -19,5 +21,5 @@ are included in the repo for convenience.
 
 ## Supported platforms
 
-Lava supports Linux, as well as MacOS via MoltenVK, and it should be easy to add additional
-platforms in the future.
+Lava supports Linux as well as MacOS (via MoltenVK). It should be easy to extend to other platforms
+in the future.

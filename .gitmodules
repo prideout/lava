@@ -10,3 +10,6 @@
 [submodule "extras/par"]
 	path = extras/par
 	url = https://github.com/prideout/par
+[submodule "extras/tinyobjloader"]
+	path = extras/tinyobjloader
+	url = https://github.com/syoyo/tinyobjloader

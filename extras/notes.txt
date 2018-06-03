@@ -1,19 +1,13 @@
-07_hello_texture
+CMake stuff to create dependency-free lava core library
 
 LavaTexture
     No need to provide the full VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO in the config
 
-    Constructor should call vmaCreateImage and vkCreateImageView
-    vmaCreateImage(allocator, &imageInfo, &allocCreateInfo, &image, &allocation, nullptr);
-       allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY
+unprivatize
 
 docs
     Make the class links go to the markdown
-    Move Usage to overview markdown
-    Move Build / Run / LunarG to overview markdown
 
-CMake stuff to create dependency-free lava core library
-unprivatize
 travis
 
 08_klein_bottle

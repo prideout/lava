@@ -125,7 +125,7 @@ LavaTextureImpl::LavaTextureImpl(Config config) noexcept : device(config.device)
     };
 
     // Clients should do:
-    //     vkCmdPipelineBarrier(mContext.cmdbuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+    //     vkCmdPipelineBarrier(cmdbuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
     //         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, props.barrier1);
     //     vkCmdCopyBufferToImage(cmdbuffer, props.stage, props.image,
     //         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, props.upload);

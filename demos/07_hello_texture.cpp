@@ -41,8 +41,10 @@ namespace {
     const std::string fragShaderGLSL = SHADER_PREFIX R"(
     layout(location = 0) out vec4 frag_color;
     layout(location = 0) in vec2 vert_uv;
+    layout(binding = 0) uniform sampler2D img;
     void main() {
-        frag_color = vec4(vert_uv, 0, 1);
+        // frag_color = vec4(vert_uv, 0, 1);
+        frag_color = texture(img, vert_uv);
     })";
 
     struct Vertex {
@@ -50,8 +52,8 @@ namespace {
         float uv[2];
     };
 
-    #define P +.8
-    #define N -.8
+    #define P +1
+    #define N -1
     const Vertex VERTICES[] {
         {{P, P}, {1,1}},
         {{N, P}, {0,1}},
@@ -130,11 +132,22 @@ int main(const int argc, const char *argv[]) {
                 .format = VK_FORMAT_R8G8B8A8_UNORM,
                 .mipLevels = 1,
                 .arrayLayers = 1,
-                .usage = VK_IMAGE_USAGE_SAMPLED_BIT,
+                .usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                 .samples = VK_SAMPLE_COUNT_1_BIT,
             }
         });
+        const auto& props = texture->getProperties();
         stbi_image_free(texels);
+        VkCommandBuffer cmdbuffer = context->beginWork();
+        vkCmdPipelineBarrier(cmdbuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, props.barrier1);
+        vkCmdCopyBufferToImage(cmdbuffer, props.stage, props.image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, props.upload);
+        vkCmdPipelineBarrier(cmdbuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, props.barrier2);
+        context->endWork();
+        context->waitWork();
+        texture->freeStage();
     }
     const auto& textureProps = texture->getProperties();
 
@@ -197,7 +210,7 @@ int main(const int argc, const char *argv[]) {
     VkDeviceSize offsets[] = { 0 };
     VkViewport viewport = { .width = (float) extent.width, .height = (float) extent.height };
     VkRect2D scissor { .extent = extent };
-    VkClearValue clearValue = { .color.float32 = {0.1, 0.2, 0.4, 1.0} };
+    VkClearValue clearValue = { .color.float32 = {} };
     VkRenderPassBeginInfo rpbi {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .renderPass = renderPass,

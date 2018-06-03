@@ -17,6 +17,8 @@ set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
 
 if(APPLE)
     set(VULKAN_INCLUDE_DIR "$ENV{VULKAN_SDK}/macOS/include")
+else()
+    set(VULKAN_INCLUDE_DIR "extras/glfw/deps")
 endif()
 
 include_directories(

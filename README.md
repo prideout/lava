@@ -3,7 +3,7 @@
 Each Lava class is completely independent of every other class, so clients can choose a subset
 of functionality as needed.
 
-For more information, see the [documentation]().
+For more information, see the [documentation](http://github.prideout.net/lava/).
 
 ## Scope
 

@@ -1,4 +1,5 @@
 - LavaTexture
+    - uploadStage
     - No need to provide the full VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO in the config
 - unprivatize
 - docs

@@ -26,7 +26,8 @@ public:
     };
     static LavaTexture* create(Config config) noexcept;
     static void destroy(LavaTexture**) noexcept;
-    void freeStage();
+    void uploadStage(VkCommandBuffer cmd) const noexcept;
+    void freeStage() noexcept;
     const Properties& getProperties() const noexcept;
 protected:
     // par::heaponly

@@ -1,0 +1,6 @@
+{
+    "files.defaultLanguage": "cpp",
+    "files.associations": {
+        "*.html": "markdown"
+    }
+}

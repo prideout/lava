@@ -138,13 +138,7 @@ int main(const int argc, const char *argv[]) {
         });
         const auto& props = texture->getProperties();
         stbi_image_free(texels);
-        VkCommandBuffer cmdbuffer = context->beginWork();
-        vkCmdPipelineBarrier(cmdbuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, props.barrier1);
-        vkCmdCopyBufferToImage(cmdbuffer, props.stage, props.image,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, props.upload);
-        vkCmdPipelineBarrier(cmdbuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, props.barrier2);
+        texture->uploadStage(context->beginWork());
         context->endWork();
         context->waitWork();
         texture->freeStage();

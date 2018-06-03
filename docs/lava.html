@@ -5,13 +5,13 @@
 
 ## Overview
 
-**Lava** is a small set of independent C++ classes that make it easy to create and manage Vulkan
+**Lava** is a toy C++ library composed of classes that make it easy to create and manage Vulkan
 objects. It is open sourced under the MIT license, available at https://github.com/prideout/lava.
 
 !!! Note
-    Lava only creates and destroys Vulkan objects; it never adds to the command buffer. For example,
-    the client application must invoke `vkCmdDraw` on its own, as well as any of the `VkCmdBind*`
-    functions.
+    Lava only creates and destroys Vulkan objects; it rarely adds to the command buffer. For
+    example, the client application must invoke `vkCmdDraw` on its own, as well as any of the
+    `VkCmdBind*` functions.
 
 Select one of the classes below to see further documentation and usage examples.
 
@@ -222,6 +222,43 @@ LavaPipeCache::destroy(&pipelines);
 ### LavaTexture
 
 ### LavaLoader
+
+## Internal Guidelines
+
+### Visual Studio Code
+
+You can do this to make intellisense work:
+
+```bash
+cd [path to repo]
+ln -s extras/vscode .vscode
+```
+
+### C++ Style
+
+The code is vertically compact, but no single line should be longer than 100 characters. All
+public-facing Lava types live in the `par` namespace.
+
+For `#include`, always use angle brackets unless including a private header that lives in the same
+directory. Includes are arranged in blocks, where each block is an alphabetized list of headers. The
+first block is composed of `par` headers, followed by a sorted list of blocks for each `extern/`
+library, followed by a block of C++ STL headers, followed by the block of standard C headers,
+followed by the block of private headers. For example:
+
+```cpp
+#include <par/LavaContext.h>
+#include <par/LavaLog.h>
+
+#include <SPIRV/GlslangToSpv.h>
+
+#include <string>
+#include <vector>
+
+#include "LavaInternal.h"
+```
+
+Methods and functions should have comments that are descriptive ("Opens the file") rather than
+imperative ("Open the file").
 
 <style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style>
 <script src="markdeep.min.js"></script>

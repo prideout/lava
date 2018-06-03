@@ -28,8 +28,9 @@ using namespace par;
 namespace {
     constexpr int DEMO_WIDTH = 512;
     constexpr int DEMO_HEIGHT = 512;
+    constexpr char const* TEXTURE_FILENAME = "../extras/assets/abstract.jpg";
 
-    const std::string vertShaderGLSL = SHADER_PREFIX R"(
+    constexpr char const* VSHADER_GLSL = SHADER_PREFIX R"(
     layout(location = 0) in vec2 position;
     layout(location = 1) in vec2 uv;
     layout(location = 0) out vec2 vert_uv;
@@ -38,7 +39,7 @@ namespace {
         vert_uv = uv;
     })";
 
-    const std::string fragShaderGLSL = SHADER_PREFIX R"(
+    constexpr char const* FSHADER_GLSL = SHADER_PREFIX R"(
     layout(location = 0) out vec4 frag_color;
     layout(location = 0) in vec2 vert_uv;
     layout(binding = 0) uniform sampler2D img;
@@ -104,46 +105,38 @@ int main(const int argc, const char *argv[]) {
     });
 
     // Compile shaders.
-    auto program = AmberProgram::create(vertShaderGLSL, fragShaderGLSL);
+    auto program = AmberProgram::create(VSHADER_GLSL, FSHADER_GLSL);
     VkShaderModule vshader = program->getVertexShader(device);
     VkShaderModule fshader = program->getFragmentShader(device);
 
     // Create texture.
+    // Note that STB does not provide a way to easily decode into a pre-allocated area, so we incur
+    // two copies: one into the staging area at construction, and one into the device-only memory.
     LavaTexture* texture;
     {
-        const char* TEXTURE_FILENAME = "../extras/assets/abstract.jpg";
-        int w, h, nchan;
-        int ok = stbi_info(TEXTURE_FILENAME, &w, &h, &nchan);
+        uint32_t width, height;
+        int ok = stbi_info(TEXTURE_FILENAME, (int*) &width, (int*) &height, 0);
         if (!ok) {
             llog.error("{}: {}.", TEXTURE_FILENAME, stbi_failure_reason());
             exit(1);
         }
-        llog.info("Loading texture {:4}x{:4} {}", w, h, TEXTURE_FILENAME);
-        uint8_t* texels = stbi_load(TEXTURE_FILENAME, &w, &h, &nchan, 4);
-        assert(texels);
+        llog.info("Loading texture {:4}x{:4} {}", width, height, TEXTURE_FILENAME);
+        uint8_t* texels = stbi_load(TEXTURE_FILENAME, (int*) &width, (int*) &height, 0, 4);
         texture = LavaTexture::create({
             .device = device, .gpu = gpu,
-            .size = (uint32_t) (w * h * 4),
+            .size = width * height * 4u,
             .source = texels,
-            .info = {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .imageType = VK_IMAGE_TYPE_2D,
-                .extent = { (uint32_t) w, (uint32_t) h, 1 },
-                .format = VK_FORMAT_R8G8B8A8_UNORM,
-                .mipLevels = 1,
-                .arrayLayers = 1,
-                .usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                .samples = VK_SAMPLE_COUNT_1_BIT,
-            }
+            .width = width,
+            .height = height,
+            .format = VK_FORMAT_R8G8B8A8_UNORM,
         });
-        const auto& props = texture->getProperties();
         stbi_image_free(texels);
-        texture->uploadStage(context->beginWork());
-        context->endWork();
-        context->waitWork();
-        texture->freeStage();
     }
-    const auto& textureProps = texture->getProperties();
+    texture->uploadStage(context->beginWork());
+    context->endWork();
+    context->waitWork();
+    texture->freeStage();
+    VkImageView imageView = texture->getImageView();
 
     // Create the sampler.
     VkSampler sampler;
@@ -163,7 +156,7 @@ int main(const int argc, const char *argv[]) {
         .uniformBuffers = {},
         .imageSamplers = { {
             .sampler = sampler,
-            .imageView = textureProps.view,
+            .imageView = imageView,
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         } }
     });

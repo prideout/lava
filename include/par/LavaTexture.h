@@ -14,21 +14,15 @@ public:
         VkPhysicalDevice gpu;
         uint32_t size;
         void const* source;
-        VkImageCreateInfo info;
-    };
-    struct Properties {
-        VkImageMemoryBarrier* barrier1;
-        VkBufferImageCopy* upload;
-        VkImageMemoryBarrier* barrier2;        
-        VkBuffer stage;
-        VkImage image;
-        VkImageView view;
+        uint32_t width;
+        uint32_t height;
+        VkFormat format;
     };
     static LavaTexture* create(Config config) noexcept;
     static void destroy(LavaTexture**) noexcept;
     void uploadStage(VkCommandBuffer cmd) const noexcept;
     void freeStage() noexcept;
-    const Properties& getProperties() const noexcept;
+    VkImageView getImageView() const noexcept;
 protected:
     // par::heaponly
     LavaTexture() noexcept = default;

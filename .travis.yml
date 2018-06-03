@@ -1,13 +1,15 @@
 language: c
+compiler: clang
+dist: trusty
 addons:
   apt:
     packages:
-      - clang
-      - libx11-dev
+      - libxrandr-dev
       - libxinerama-dev
       - libxcursor-dev
-      - libxrandr-dev
+      - libxi-dev
+      - mesa-vulkan-drivers 
+      - vulkan-utils
 script:
-  - export CC=clang CXX=clang++
   - cmake . -Bbuild
   - cmake --build build

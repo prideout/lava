@@ -1,10 +1,13 @@
-- docs
-  Make the class links in the README go to the markdown
 - travis
+- pin the repo
+- delete crufty remote branches
 - 08_klein_bottle
     - ../extras/assets/klein.obj
     - https://github.com/syoyo/tinyobjloader#example-code
     - https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
+- docs
+  Flesh out class docs
+
 - LavaTexture
     - Add miplevel support, test with stb_image_resize
 - embree / texture space caching

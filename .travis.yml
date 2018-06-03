@@ -1,6 +1,6 @@
 language: c
 compiler: clang
-# submodules: false
+submodules: false
 dist: trusty
 addons:
   apt:
@@ -10,5 +10,6 @@ addons:
       - libxcursor-dev
       - libxi-dev
 script:
-  - cmake . -B.debug
-  - cmake --build .debug
+  - cmake . -B.core && cmake --build .core
+  - git submodule update --init
+  - cmake . -B.demos && cmake --build .demos

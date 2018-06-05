@@ -1,281 +1,329 @@
-<meta charset="utf-8"><link rel="stylesheet" href="apidoc.css">
+<head><meta charset="UTF-8"><meta http-equiv="content-type" content="text/html;charset=UTF-8"><style>body{max-width:680px;margin:auto;padding:20px;text-align:justify;line-height:140%; -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;font-smoothing:antialiased;color:#222;font-family:Palatino,Georgia,"Times New Roman",serif}</style><style>body{counter-reset: h1 h2 h3 h4 h5 h6 paragraph}@page{margin:0;size:auto}.md code,pre{font-family:Menlo,Consolas,monospace;font-size:13.100000007873037px;line-height:140%}.md div.title{font-size:26px;font-weight:800;line-height:120%;text-align:center}.md div.afterTitles{height:10px}.md div.subtitle{text-align:center}.md .image{display:inline-block}.md div.imagecaption,.md div.tablecaption,.md div.listingcaption{margin:5px 5px 5px 5px;text-align: justify;font-style:italic}.md div.imagecaption{margin-bottom:0}.md img{max-width:100%;page-break-inside:avoid}.md li{text-align:left}.md pre.listing {tab-size:4;-moz-tab-size:4;-o-tab-size:4}.md div.tilde{margin:20px 0 -10px;text-align:center}.md blockquote.fancyquote{margin:25px 0 25px;text-align:left;line-height:160%}.md blockquote.fancyquote::before{content:"“";color:#DDD;font-family:Times New Roman;font-size:45px;line-height:0;margin-right:6px;vertical-align:-0.3em}.md span.fancyquote{font-size:118%;color:#777;font-style:italic}.md span.fancyquote::after{content:"”";font-style:normal;color:#DDD;font-family:Times New Roman;font-size:45px;line-height:0;margin-left:6px;vertical-align:-0.3em}.md blockquote.fancyquote .author{width:100%;margin-top:10px;display:inline-block;text-align:right}.md small{font-size:60%}.md div.title,contents,.md .tocHeader,h1,h2,h3,h4,h5,h6,.md .shortTOC,.md .mediumTOC,.nonumberh1,.nonumberh2,.nonumberh3,.nonumberh4,.nonumberh5,.nonumberh6{font-family:Verdana,Helvetica,Arial,sans-serif;margin:13.4px 0 13.4px;padding:15px 0 3px;border-top:none;clear:both}.md h1,.md h2,.md h3,.md h4,.md h5,.md h6,.md .nonumberh1,.md .nonumberh2,.md .nonumberh3,.md .nonumberh4,.md .nonumberh5,.md .nonumberh6{page-break-after:avoid;break-after:avoid}.md svg.diagram{display:block;font-family:Menlo,Consolas,monospace;font-size:13.100000007873037px;text-align:center;stroke-linecap:round;stroke-width:2px;page-break-inside:avoid;stroke:#000;fill:#000}.md svg.diagram .opendot{fill:#FFF}.md svg.diagram text{stroke:none}@media print{.md .pagebreak{page-break-after:always;visibility:hidden}}.md a{font-family:Georgia,Palatino,'Times New Roman'}.md h1,.md .tocHeader,.md .nonumberh1{border-bottom:3px solid;font-size:20px;font-weight:bold;}.md h1,.md .nonumberh1{counter-reset: h2 h3 h4 h5 h6}.md h2,.md .nonumberh2{counter-reset: h3 h4 h5 h6;border-bottom:2px solid #999;color:#555;font-weight:bold;font-size:18px;}.md h3,.md h4,.md h5,.md h6,.md .nonumberh3,.md .nonumberh4,.md .nonumberh5,.md .nonumberh6{font-family:Helvetica,Arial,sans-serif;color:#555;font-size:16px;}.md h3{counter-reset:h4 h5 h6}.md h4{counter-reset:h5 h6}.md h5{counter-reset:h6}.md div.table{margin:16px 0 16px 0}.md table{border-collapse:collapse;line-height:140%;page-break-inside:avoid}.md table.table{margin:auto}.md table.calendar{width:100%;margin:auto;font-size:11px;font-family:Helvetica,Arial,sans-serif}.md table.calendar th{font-size:16px}.md .today{background:#ECF8FA}.md .calendar .parenthesized{color:#999;font-style:italic}.md div.tablecaption{text-align:center}.md table.table th{color:#FFF;background-color:#AAA;border:1px solid #888;padding:8px 15px 8px 15px}.md table.table td{padding:5px 15px 5px 15px;border:1px solid #888}.md table.table tr:nth-child(even){background:#EEE}.md pre.tilde{border-top: 1px solid #CCC;border-bottom: 1px solid #CCC;padding: 5px 0 5px 20px;margin:0 0 0 0;background:#FCFCFC;page-break-inside:avoid}.md a.target{width:0px;height:0px;visibility:hidden;font-size:0px;display:inline-block}.md a:link, .md a:visited{color:#38A;text-decoration:none}.md a:link:hover{text-decoration:underline}.md dt{font-weight:700}.md dl>dd{margin-top:-8px; margin-bottom:8px}.md dl>table{margin:35px 0 30px}.md code{white-space:pre;page-break-inside:avoid}.md .endnote{font-size:13px;line-height:15px;padding-left:10px;text-indent:-10px}.md .bib{padding-left:80px;text-indent:-80px;text-align:left}.markdeepFooter{font-size:9px;text-align:right;padding-top:80px;color:#999}.md .mediumTOC{float:right;font-size:12px;line-height:15px;border-left:1px solid #CCC;padding-left:15px;margin:15px 0px 15px 25px}.md .mediumTOC .level1{font-weight:600}.md .longTOC .level1{font-weight:600;display:block;padding-top:12px;margin:0 0 -20px}.md .shortTOC{text-align:center;font-weight:bold;margin-top:15px;font-size:14px}.md .admonition{position:relative;margin:1em 0;padding:.4rem 1rem;border-radius:.2rem;border-left:2.5rem solid rgba(68,138,255,.4);background-color:rgba(68,138,255,.15);}.md .admonition-title{font-weight:bold;border-bottom:solid 1px rgba(68,138,255,.4);padding-bottom:4px;margin-bottom:4px;margin-left: -1rem;padding-left:1rem;margin-right:-1rem;border-color:rgba(68,138,255,.4)}.md .admonition.tip{border-left:2.5rem solid rgba(50,255,90,.4);background-color:rgba(50,255,90,.15)}.md .admonition.tip::before{content:"\24d8";font-weight:bold;font-size:150%;position:relative;top:3px;color:rgba(26,128,46,.8);left:-2.95rem;display:block;width:0;height:0}.md .admonition.tip>.admonition-title{border-color:rgba(50,255,90,.4)}.md .admonition.warn,.md .admonition.warning{border-left:2.5rem solid rgba(255,145,0,.4);background-color:rgba(255,145,0,.15)}.md .admonition.warn::before,.md .admonition.warning::before{content:"\26A0";font-weight:bold;font-size:150%;position:relative;top:2px;color:rgba(128,73,0,.8);left:-2.95rem;display:block;width:0;height:0}.md .admonition.warn>.admonition-title,.md .admonition.warning>.admonition-title{border-color:rgba(255,145,0,.4)}.md .admonition.error{border-left: 2.5rem solid rgba(255,23,68,.4);background-color:rgba(255,23,68,.15)}.md .admonition.error>.admonition-title{border-color:rgba(255,23,68,.4)}.md .admonition.error::before{content: "\2612";font-family:"Arial";font-size:200%;position:relative;color:rgba(128,12,34,.8);top:-2px;left:-3rem;display:block;width:0;height:0}.md .admonition p:last-child{margin-bottom:0}</style><style>.md h1::before {
+content:counter(h1) " ";
+counter-increment: h1;margin-right:10px}.md h2::before {
+content:counter(h1) "."counter(h2) " ";
+counter-increment: h2;margin-right:10px}.md h3::before {
+content:counter(h1) "."counter(h2) "."counter(h3) " ";
+counter-increment: h3;margin-right:10px}.md h4::before {
+content:counter(h1) "."counter(h2) "."counter(h3) "."counter(h4) " ";
+counter-increment: h4;margin-right:10px}.md h5::before {
+content:counter(h1) "."counter(h2) "."counter(h3) "."counter(h4) "."counter(h5) " ";
+counter-increment: h5;margin-right:10px}.md h6::before {
+content:counter(h1) "."counter(h2) "."counter(h3) "."counter(h4) "."counter(h5) "."counter(h6) " ";
+counter-increment: h6;margin-right:10px}</style><style>.hljs{display:block;overflow-x:auto;padding:0.5em;background:#fff;color:#000;-webkit-text-size-adjust:none}.hljs-comment{color:#006a00}.hljs-keyword{color:#02E}.hljs-literal,.nginx .hljs-title{color:#aa0d91}.method,.hljs-list .hljs-title,.hljs-tag .hljs-title,.setting .hljs-value,.hljs-winutils,.tex .hljs-command,.http .hljs-title,.hljs-request,.hljs-status,.hljs-name{color:#008}.hljs-envvar,.tex .hljs-special{color:#660}.hljs-string{color:#c41a16}.hljs-tag .hljs-value,.hljs-cdata,.hljs-filter .hljs-argument,.hljs-attr_selector,.apache .hljs-cbracket,.hljs-date,.hljs-regexp{color:#080}.hljs-sub .hljs-identifier,.hljs-pi,.hljs-tag,.hljs-tag .hljs-keyword,.hljs-decorator,.ini .hljs-title,.hljs-shebang,.hljs-prompt,.hljs-hexcolor,.hljs-rule .hljs-value,.hljs-symbol,.hljs-symbol .hljs-string,.hljs-number,.css .hljs-function,.hljs-function .hljs-title,.coffeescript .hljs-attribute{color:#A0C}.hljs-function .hljs-title{font-weight:bold;color:#000}.hljs-class .hljs-title,.smalltalk .hljs-class,.hljs-type,.hljs-typename,.hljs-tag .hljs-attribute,.hljs-doctype,.hljs-class .hljs-id,.hljs-built_in,.setting,.hljs-params,.clojure .hljs-attribute{color:#5c2699}.hljs-variable{color:#3f6e74}.css .hljs-tag,.hljs-rule .hljs-property,.hljs-pseudo,.hljs-subst{color:#000}.css .hljs-class,.css .hljs-id{color:#9b703f}.hljs-value .hljs-important{color:#ff7700;font-weight:bold}.hljs-rule .hljs-keyword{color:#c5af75}.hljs-annotation,.apache .hljs-sqbracket,.nginx .hljs-built_in{color:#9b859d}.hljs-preprocessor,.hljs-preprocessor *,.hljs-pragma{color:#643820}.tex .hljs-formula{background-color:#eee;font-style:italic}.diff .hljs-header,.hljs-chunk{color:#808080;font-weight:bold}.diff .hljs-change{background-color:#bccff9}.hljs-addition{background-color:#baeeba}.hljs-deletion{background-color:#ffc8bd}.hljs-comment .hljs-doctag{font-weight:bold}.method .hljs-id{color:#000}</style><style>div.title { padding-top: 40px; } div.afterTitles { height: 15px; }</style><meta charset="utf-8"><link rel="stylesheet" href="apidoc.css">
 <!-- http://casual-effects.com/markdeep/features.md.html -->
 
-**Lava Vulkan Utilities**
+</head><body style="visibility: visible;"><span class="md"><p><title>Lava Vulkan Utilities</title></p><div class="title"> Lava Vulkan Utilities </div>
 
-## Overview
+<div class="afterTitles"></div>
 
-**Lava** is a toy C++ library composed of classes that make it easy to create and manage Vulkan
-objects. It is open sourced under the MIT license, available at https://github.com/prideout/lava.
+<p></p><p>
 
-!!! Note
-    Lava only creates and destroys Vulkan objects; it rarely adds to the command buffer. For
-    example, the client application must invoke `vkCmdDraw` on its own, as well as any of the
-    `VkCmdBind*` functions.
+</p><ul>
+<li class="minus">Overview
+<ul>
+    <li class="minus"><a href="#buildingandrunningthedemos">Building and Running the Demos</a>
+</li>
+    <li class="minus"><a href="#lunargsdkinstructions">LunarG SDK Instructions</a>
+</li></ul>
+</li><li class="minus">Components
+<ul>
+    <li class="minus"><a href="#lavacontext">LavaContext</a> creates an instance, a device, a swap chain, and some command buffers.
+</li>
+    <li class="minus"><a href="#lavadesccache">LavaDescCache</a> creates a descriptor set layout and manages a set of corollary descriptors.
+</li>
+    <li class="minus"><a href="#lavapipecache">LavaPipeCache</a> manages a set of pipeline objects for a given layout.
+</li>
+    <li class="minus"><a href="#lavacpubuffer">LavaCpuBuffer</a> is a shared CPU-GPU buffer, useful for staging or uniform buffers.
+</li>
+    <li class="minus"><a href="#lavagpubuffer">LavaGpuBuffer</a> is a fast device-only buffer, useful for vertex buffers and index buffers.
+</li>
+    <li class="minus"><a href="#lavatexture">LavaTexture</a> encapsulates an image, an image view, and a buffer staging area.
+</li></ul>
+</li><li class="minus">Internal Guidelines
+<ul>
+    <li class="minus"><a href="#visualstudiocode">Visual Studio Code</a>
+</li>
+    <li class="minus"><a href="#c++style">C++ Style</a></li></ul></li></ul>
 
-Select one of the classes below to see further documentation and usage examples.
+<p></p>
+<a class="target" name="overview">&nbsp;</a><a class="target" name="toc0.1">&nbsp;</a><h2><a href="#overview"># </a>Overview<a href="#" class="gotop">Back to Top</a></h2>
+<p>
 
-- [LavaContext](#LavaContext)
-  creates a **VkInstance**, **VkDevice**, **VkSwapChain**, as well as several command buffers and
-  related objects.
-- [LavaDescCache](#LavaDescCache)
-  creates a descriptor set layout and manages a set of corollary descriptors.
-- [LavaPipeCache](#LavaPipeCache)
-  manages a set of **VkPipeline** for a given layout.
-- [LavaCpuBuffer](#LavaCpuBuffer)
-  is a shared CPU-GPU buffer, useful for staging or uniform buffers.
-- [LavaGpuBuffer](#LavaGpuBuffer)
-  is a fast device-only buffer, useful for vertex buffers and index buffers.
-- [LavaTexture](#LavaTexture) encapsulates a **VkImage**, a **VkImageView**, and a **VkBuffer**
-  staging area.
 
-<!-- - [LavaLoader](#LavaLoader)
-  loads all Vulkan entry points. To use this feature, clients should include `LavaLoader.h` before
-  (or instead of) including `vulkan/vulkan.h`. -->
+<strong class="asterisk">Lava</strong> is a toy C++ library composed of classes that make it easy to create and manage Vulkan
+objects. It is open sourced under the MIT license, available at <a href="https://github.com/prideout/lava" class="url">https://github.com/prideout/lava</a>.
+
+</p><p>
+
+</p><div class="admonition note">Lava only creates and destroys Vulkan objects; it rarely adds to the command buffer. For
+    example, the client application must invoke <code>vkCmdDraw</code> on its own, as well as any of the
+    <code>VkCmdBind*</code> functions.</div>
+
+<p></p><p>
 
 Each Lava class is completely independent of every other class, so clients can choose a subset
 of functionality as needed.
 
-Lava lives in the `par` namespace, and every class is instanced using a static `create`
-method. Most classes define a `Config` struct that gets passed into their constructor. We recommend
+</p><p>
+
+Lava lives in the <code>par</code> namespace, and every class is instanced using a static <code>create</code>
+method. Most classes define a <code>Config</code> struct that gets passed into their constructor. We recommend
 using initializer syntax to populate the config structure on the fly. For example:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
-#include &lt;par/LavaGpuBuffer.h&gt;
+</p><pre class="listing tilde"><code><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;par/LavaGpuBuffer.h&gt;</span></span>
 
-using namespace par;
+<span class="hljs-keyword">using</span> <span class="hljs-keyword">namespace</span> par;
 
-LavaGpuBuffer* lavabuffer = LavaGpuBuffer::create({ // pass in a Config struct
+LavaGpuBuffer* lavabuffer = LavaGpuBuffer::create({ <span class="hljs-comment">// pass in a Config struct</span>
     .device = device,
     .gpu = physicalDevice,
-    .size = sizeof(TRIANGLE_VERTICES),
+    .size = <span class="hljs-keyword">sizeof</span>(TRIANGLE_VERTICES),
     .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
 });
-const VkBuffer vkbuffer = lavabuffer->getBuffer();
+<span class="hljs-keyword">const</span> VkBuffer vkbuffer = lavabuffer-&gt;getBuffer();
 
-// do stuff with the VkBuffer here...
+<span class="hljs-comment">// do stuff with the VkBuffer here...</span>
 
-LavaGpuBuffer::destroy(&lavabuffer);
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+LavaGpuBuffer::destroy(&amp;lavabuffer);</code></pre>
+<a class="target" name="buildingandrunningthedemos">&nbsp;</a><a class="target" name="toc0.1.1">&nbsp;</a><h3><a href="#buildingandrunningthedemos"># </a>Building and Running the Demos<a href="#" class="gotop">Back to Top</a></h3>
+<p>
 
-### Building and Running the Demos
 
 On Linux, do this first:
 
-```bash
-sudo apt-get install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
-export CC=clang CXX=clang++
-```
+</p><pre class="listing backtick"><code>sudo apt-get install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+<span class="hljs-built_in">export</span> CC=clang CXX=clang++</code></pre><p>
 
 On macOS, you first need clang (which comes with Xcode) and homebrew, then do this:
 
-```
-brew install cmake ninja
-```
+</p><pre class="listing backtick"><code>brew install cmake ninja</code></pre><p>
 
-!!! Note
-    The demos require the contents of the
-    [extras](https://github.com/prideout/lava/tree/master/extras) folder (including submodules) but
-    the core Lava library has zero dependencies and can be built without fetching submodules.
+
+
+</p><div class="admonition note">The demos require the contents of the
+    <a href="https://github.com/prideout/lava/tree/master/extras">extras</a> folder (including submodules) but
+    the core Lava library has zero dependencies and can be built without fetching submodules.</div>
+
+<p></p><p>
 
 Then, for any platform, do this:
 
-1. Clone this repo with `--recursive` to get the submodules, or do `git submodule update --init`
+</p><p>
+
+</p><ol start="1">
+<li class="number">Clone this repo with <code>--recursive</code> to get the submodules, or do <code>git submodule update --init</code>
    after cloning.
-1. Install the LunarG Vulkan SDK.
-1. Invoke the following commands in your terminal.
-    ```bash
-    cd [path to repo]
-    mkdir .debug ; cd .debug ; cmake .. -G Ninja
-    ninja && ./spinny_double
-    ```
+</li>
+<li class="number">Install the LunarG Vulkan SDK.
+</li>
+<li class="number">Invoke the following commands in your terminal.
+    <p></p><pre class="listing backtick"><code><span class="hljs-built_in">cd</span> [path to repo]
+mkdir .debug ; <span class="hljs-built_in">cd</span> .debug ; cmake .. -G Ninja
+ninja &amp;&amp; ./spinny_double</code></pre><p></p></li></ol>
 
-### LunarG SDK Instructions
+<p></p>
+<a class="target" name="lunargsdkinstructions">&nbsp;</a><a class="target" name="toc0.1.2">&nbsp;</a><h3><a href="#lunargsdkinstructions"># </a>LunarG SDK Instructions<a href="#" class="gotop">Back to Top</a></h3>
+<p>
 
-1. Download the tarball from their website.
-1. Copy or move its contents to `~/Vulkan`.  For example:
-    `mv ~/Downloads/vulkansdk-macos-1.1.73.0 ~/Vulkan`
-1. Add this to your `.bashrc`, replacing `macOS` as needed.
 
-```bash
-export VULKAN_SDK=$HOME/Vulkan
-export VK_LAYER_PATH=$VULKAN_SDK/macOS/etc/vulkan/explicit_layers.d
-export VK_ICD_FILENAMES=$VULKAN_SDK/macOS/etc/vulkan/icd.d/MoltenVK_icd.json
-export PATH="$VULKAN_SDK/macOS/bin:$PATH"
-```
 
-## Components
+</p><ol start="1">
+<li class="number">Download the tarball from their website.
+</li>
+<li class="number">Copy or move its contents to <code>~/Vulkan</code>.  For example:
+    <code>mv ~/Downloads/vulkansdk-macos-1.1.73.0 ~/Vulkan</code>
+</li>
+<li class="number">Add this to your <code>.bashrc</code>, replacing <code>macOS</code> as needed.</li></ol>
 
-### LavaContext
+<p></p><pre class="listing backtick"><code><span class="hljs-built_in">export</span> VULKAN_SDK=<span class="hljs-variable">$HOME</span>/Vulkan
+<span class="hljs-built_in">export</span> VK_LAYER_PATH=<span class="hljs-variable">$VULKAN_SDK</span>/macOS/etc/vulkan/explicit_layers.d
+<span class="hljs-built_in">export</span> VK_ICD_FILENAMES=<span class="hljs-variable">$VULKAN_SDK</span>/macOS/etc/vulkan/icd.d/MoltenVK_icd.json
+<span class="hljs-built_in">export</span> PATH=<span class="hljs-string">"<span class="hljs-variable">$VULKAN_SDK</span>/macOS/bin:<span class="hljs-variable">$PATH</span>"</span></code></pre>
+<a class="target" name="components">&nbsp;</a><a class="target" name="toc0.2">&nbsp;</a><h2><a href="#components"># </a>Components<a href="#" class="gotop">Back to Top</a></h2>
+
+<a class="target" name="lavacontext">&nbsp;</a><a class="target" name="toc0.2.1">&nbsp;</a><h3><a href="#lavacontext"># </a>LavaContext<a href="#" class="gotop">Back to Top</a></h3>
+<p>
+
 
 Use this class to create the standard litany of init-time Vulkan objects: an instance, a
 device, a couple command buffers, etc. It requires a callback function that will create the window
 surface, which can easily be provided with a small lambda function.
 
-!!! WARNING
-    Lava does not contain platform-specific code so it cannot know about the windowing system. The
-    app must provide a callback to create the **VkSurfaceKHR**.
+</p><p>
 
-For example, if your app uses  [GLFW](http://www.glfw.org/), you could initialize LavaContext like
+</p><div class="admonition warning">Lava does not contain platform-specific code so it cannot know about the windowing system. The
+    app must provide a callback to create the <strong class="asterisk">VkSurfaceKHR</strong>.</div>
+
+<p></p><p>
+
+For example, if your app uses  <a href="http://www.glfw.org/">GLFW</a>, you could initialize LavaContext like
 so:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
-auto context = LavaContext::create({
-    .depthBuffer = false,
-    .validation = true,
+</p><pre class="listing tilde"><code><span class="hljs-keyword">auto</span> context = LavaContext::create({
+    .depthBuffer = <span class="hljs-literal">false</span>,
+    .validation = <span class="hljs-literal">true</span>,
     .createSurface = [window] (VkInstance instance) {
         VkSurfaceKHR surface;
-        glfwCreateWindowSurface(instance, window, nullptr, &surface);
-        return surface;
+        glfwCreateWindowSurface(instance, window, <span class="hljs-literal">nullptr</span>, &amp;surface);
+        <span class="hljs-keyword">return</span> surface;
     }
-});
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+});</code></pre><p>
 
 After constructing the context, you can immediately extract the objects you need, such as the device
 and backbuffer resolution:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
-const VkDevice device = context->getDevice();
-const VkExtent2D extent = context->getSize();
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+</p><pre class="listing tilde"><code><span class="hljs-keyword">const</span> VkDevice device = context-&gt;getDevice();
+<span class="hljs-keyword">const</span> VkExtent2D extent = context-&gt;getSize();</code></pre><p>
 
 To see all the getter methods and Config fields, take a look at
-[LavaContext.h](https://github.com/prideout/lava/blob/master/include/par/LavaContext.h).
+<a href="https://github.com/prideout/lava/blob/master/include/par/LavaContext.h">LavaContext.h</a>.
 
-#### Frame API
+</p>
+<a class="target" name="frameapi">&nbsp;</a><a class="target" name="toc0.2.1.1">&nbsp;</a><h4><a href="#frameapi"># </a>Frame API<a href="#" class="gotop">Back to Top</a></h4>
+<p>
+
 
 You can use LavaContext as an aid for submitting command buffers and presenting the swap chain.
-Simply wrap your command sequence in `beginFrame` / `endFrame` like this:
+Simply wrap your command sequence in <code>beginFrame</code> / <code>endFrame</code> like this:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
-VkCommandBuffer cmdbuffer = context->beginFrame();
-vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
+</p><pre class="listing tilde"><code>VkCommandBuffer cmdbuffer = context-&gt;beginFrame();
+vkCmdBeginRenderPass(cmdbuffer, &amp;rpbi, VK_SUBPASS_CONTENTS_INLINE);
 vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
 vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
 vkCmdEndRenderPass(cmdbuffer);
-context->endFrame();
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+context-&gt;endFrame();</code></pre><p>
 
-The `beginFrame` method provides a double-buffered command buffer and waits for the previous buffer
-submission to finish executing. The `endFrame` method submits the command buffer and presents the
+The <code>beginFrame</code> method provides a double-buffered command buffer and waits for the previous buffer
+submission to finish executing. The <code>endFrame</code> method submits the command buffer and presents the
 backbuffer.
 
-In addition to `beginFrame` and `endFrame`, the context provides a `waitFrame` method, which allows
+</p><p>
+
+In addition to <code>beginFrame</code> and <code>endFrame</code>, the context provides a <code>waitFrame</code> method, which allows
 clients to wait until the most recently rendered frame presents itself.
 
-#### Work API
+</p>
+<a class="target" name="workapi">&nbsp;</a><a class="target" name="toc0.2.1.2">&nbsp;</a><h4><a href="#workapi"># </a>Work API<a href="#" class="gotop">Back to Top</a></h4>
+<p>
+
 
 The work API in LavaContext is similar to beginFrame / endFrame, the main difference being that it
 does not automatically perform presentation or swapping.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
-class LavaContext {
-    // ...
-    VkCommandBuffer beginWork() noexcept;
-    void endWork() noexcept;
-    void waitWork() noexcept;
-};
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+</p><pre class="listing tilde"><code><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">LavaContext</span> {</span>
+    <span class="hljs-comment">// ...</span>
+    <span class="hljs-function">VkCommandBuffer <span class="hljs-title">beginWork</span><span class="hljs-params">()</span> <span class="hljs-keyword">noexcept</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">endWork</span><span class="hljs-params">()</span> <span class="hljs-keyword">noexcept</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">waitWork</span><span class="hljs-params">()</span> <span class="hljs-keyword">noexcept</span></span>;
+};</code></pre><p>
 
-The work API is especially useful for invoking `vkCmdCopy*` since it can be done at initialization
+The work API is especially useful for invoking <code>vkCmdCopy*</code> since it can be done at initialization
 time, before drawing a frame.
 
-#### Recording API
+</p>
+<a class="target" name="recordingapi">&nbsp;</a><a class="target" name="toc0.2.1.3">&nbsp;</a><h4><a href="#recordingapi"># </a>Recording API<a href="#" class="gotop">Back to Top</a></h4>
+<p>
 
-Another way to obtain a `VkCommandBuffer` from LavaContext is via the recording API:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
-class LavaContext {
-    // ...
-    LavaRecording* createRecording() noexcept;
-    VkCommandBuffer beginRecording(LavaRecording*, uint32_t i) noexcept;
-    void endRecording() noexcept;
-    void presentRecording(LavaRecording*) noexcept;
-    void freeRecording(LavaRecording*) noexcept;
-    void waitRecording(LavaRecording*) noexcept;
-};
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Another way to obtain a <code>VkCommandBuffer</code> from LavaContext is via the recording API:
 
-Unlike `endFrame` and `endWork`, the `endRecording` method does not immediately submit the command
+</p><pre class="listing tilde"><code><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">LavaContext</span> {</span>
+    <span class="hljs-comment">// ...</span>
+    <span class="hljs-function">LavaRecording* <span class="hljs-title">createRecording</span><span class="hljs-params">()</span> <span class="hljs-keyword">noexcept</span></span>;
+    <span class="hljs-function">VkCommandBuffer <span class="hljs-title">beginRecording</span><span class="hljs-params">(LavaRecording*, <span class="hljs-keyword">uint32_t</span> i)</span> <span class="hljs-keyword">noexcept</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">endRecording</span><span class="hljs-params">()</span> <span class="hljs-keyword">noexcept</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">presentRecording</span><span class="hljs-params">(LavaRecording*)</span> <span class="hljs-keyword">noexcept</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">freeRecording</span><span class="hljs-params">(LavaRecording*)</span> <span class="hljs-keyword">noexcept</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">waitRecording</span><span class="hljs-params">(LavaRecording*)</span> <span class="hljs-keyword">noexcept</span></span>;
+};</code></pre><p>
+
+Unlike <code>endFrame</code> and <code>endWork</code>, the <code>endRecording</code> method does not immediately submit the command
 buffer. For a usage example, see the
-[04_triangle_recorded](https://github.com/prideout/lava/blob/master/demos/04_triangle_recorded.cpp)
+<a href="https://github.com/prideout/lava/blob/master/demos/04_triangle_recorded.cpp">04_triangle_recorded</a>
 demo.
 
-### LavaDescCache
+</p>
+<a class="target" name="lavadesccache">&nbsp;</a><a class="target" name="toc0.2.2">&nbsp;</a><h3><a href="#lavadesccache"># </a>LavaDescCache<a href="#" class="gotop">Back to Top</a></h3>
+<p>
+
 
 Upon construction, this consumes a count of uniform buffers and samplers, and immediately creates a
-**VkDescriptorSetLayout** and **VkDescriptorPool**. Over its lifetime, it creates and evicts
-**VkDescriptorSet** on the fly, according to the bindings that you push to it.
+<strong class="asterisk">VkDescriptorSetLayout</strong> and <strong class="asterisk">VkDescriptorPool</strong>. Over its lifetime, it creates and evicts
+<strong class="asterisk">VkDescriptorSet</strong> on the fly, according to the bindings that you push to it.
+
+</p><p>
 
 For example, let's say you need only one binding for uniform buffers, and up to two textures. You
 can create the layout and a descriptor like this:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
-VkDevice device = ...;
+</p><pre class="listing tilde"><code>VkDevice device = ...;
 VkBuffer ubo = ...;
 
-auto descriptors = LavaDescCache::create({
+<span class="hljs-keyword">auto</span> descriptors = LavaDescCache::create({
     .device = device,
-    .uniformBuffers = { ubo }, // If you don't have a UBO yet, just say: { 0 }
-    .imageSamplers = { 0, 0 }  // Declare two image samplers (not known yet)
+    .uniformBuffers = { ubo }, <span class="hljs-comment">// If you don't have a UBO yet, just say: { 0 }</span>
+    .imageSamplers = { <span class="hljs-number">0</span>, <span class="hljs-number">0</span> }  <span class="hljs-comment">// Declare two image samplers (not known yet)</span>
 });
-const VkDescriptorSetLayout dlayout = descriptors->getLayout();
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<span class="hljs-keyword">const</span> VkDescriptorSetLayout dlayout = descriptors-&gt;getLayout();</code></pre><p>
 
-You can generate new descriptors by changing the bindings with `setUniformBuffer` and
-`setImageSampler`. For example:
+You can generate new descriptors by changing the bindings with <code>setUniformBuffer</code> and
+<code>setImageSampler</code>. For example:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
-descriptors->setUniformBuffer(0, buf1);
-vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
-        descriptors->getDescPointer(), 0, 0);
-// draw here...
+</p><pre class="listing tilde"><code>descriptors-&gt;setUniformBuffer(<span class="hljs-number">0</span>, buf1);
+vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>,
+        descriptors-&gt;getDescPointer(), <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
+<span class="hljs-comment">// draw here...</span>
 
-descriptors->setUniformBuffer(0, buf2);
-descriptors->setImageSampler(1, myTexture);
-vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
-        descriptors->getDescPointer(), 0, 0);
-// draw here...
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+descriptors-&gt;setUniformBuffer(<span class="hljs-number">0</span>, buf2);
+descriptors-&gt;setImageSampler(<span class="hljs-number">1</span>, myTexture);
+vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>,
+        descriptors-&gt;getDescPointer(), <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
+<span class="hljs-comment">// draw here...</span></code></pre><p>
 
-You can periodically evict unused descriptors by calling `releaseUnused`, which frees up descriptors
+You can periodically evict unused descriptors by calling <code>releaseUnused</code>, which frees up descriptors
 that have been unused for a specified amount of time. For example:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
-void MyRenderer::drawFrame() {
-    // ...
-    const uint64_t milliseconds = 1000;
-    mDescCache->releaseUnused(milliseconds);
-}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+</p><pre class="listing tilde"><code><span class="hljs-keyword">void</span> MyRenderer::drawFrame() {
+    <span class="hljs-comment">// ...</span>
+    <span class="hljs-keyword">const</span> <span class="hljs-keyword">uint64_t</span> milliseconds = <span class="hljs-number">1000</span>;
+    mDescCache-&gt;releaseUnused(milliseconds);
+}</code></pre><p>
 
 To see the complete API, take a look at
-[LavaDescCache.h](https://github.com/prideout/lava/blob/master/include/par/LavaDescCache.h).
+<a href="https://github.com/prideout/lava/blob/master/include/par/LavaDescCache.h">LavaDescCache.h</a>.
 
-!!! ERROR
-    To do:
-    - Add unsetUniformBuffer and unsetImageSampler
+</p><p>
 
-### LavaPipeCache
+</p><div class="admonition error">To do:
+
+<p></p><p>
+
+</p><ul>
+    <li class="minus">Add unsetUniformBuffer and unsetImageSampler</li></ul></div>
+
+<p></p>
+<a class="target" name="lavapipecache">&nbsp;</a><a class="target" name="toc0.2.3">&nbsp;</a><h3><a href="#lavapipecache"># </a>LavaPipeCache<a href="#" class="gotop">Back to Top</a></h3>
+<p>
+
 
 This class makes it easy to create pipeline objects on the
 fly, as well as modifying rasterization state:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
-LavaPipeCache* pipelines = LavaPipeCache::create({
+</p><pre class="listing tilde"><code>LavaPipeCache* pipelines = LavaPipeCache::create({
     .device = device,
     .vertex = {
         .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
         .attributes = { {
-            .binding = 0u,
+            .binding = <span class="hljs-number">0u</span>,
             .format = VK_FORMAT_R32G32B32_SFLOAT,
-            .location = 0u,
-            .offset = 0u,
+            .location = <span class="hljs-number">0u</span>,
+            .offset = <span class="hljs-number">0u</span>,
         } },
         .buffers = { {
-            .binding = 0u,
-            .stride = 12,
+            .binding = <span class="hljs-number">0u</span>,
+            .stride = <span class="hljs-number">12</span>,
         } }
     },
     .descriptorLayouts = {},
@@ -283,82 +331,123 @@ LavaPipeCache* pipelines = LavaPipeCache::create({
     .fshader = fragmentShaderModule,
     .renderPass = renderPass
 });
-VkPipeline pipeline = pipelines->getPipeline();
-// Do stuff here...
-pipelines->setRenderPass(newRenderPass);
-pipelines->setRasterState(newRasterState);
-pipeline = pipelines->getPipeline();
-// Do stuff here...
-LavaPipeCache::destroy(&pipelines);
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+VkPipeline pipeline = pipelines-&gt;getPipeline();
+<span class="hljs-comment">// Do stuff here...</span>
+pipelines-&gt;setRenderPass(newRenderPass);
+pipelines-&gt;setRasterState(newRasterState);
+pipeline = pipelines-&gt;getPipeline();
+<span class="hljs-comment">// Do stuff here...</span>
+LavaPipeCache::destroy(&amp;pipelines);</code></pre>
+<a class="target" name="lavacpubuffer">&nbsp;</a><a class="target" name="toc0.2.4">&nbsp;</a><h3><a href="#lavacpubuffer"># </a>LavaCpuBuffer<a href="#" class="gotop">Back to Top</a></h3>
+<p>
 
 
-### LavaCpuBuffer
 
-!!! ERROR
-    TBD
 
-### LavaGpuBuffer
+</p><div class="admonition error">TBD</div>
 
-!!! ERROR
-    TBD
+<p></p>
+<a class="target" name="lavagpubuffer">&nbsp;</a><a class="target" name="toc0.2.5">&nbsp;</a><h3><a href="#lavagpubuffer"># </a>LavaGpuBuffer<a href="#" class="gotop">Back to Top</a></h3>
+<p>
 
-### LavaTexture
 
-!!! ERROR
-    TBD
 
-## Internal Guidelines
 
-### Visual Studio Code
+</p><div class="admonition error">TBD</div>
+
+<p></p>
+<a class="target" name="lavatexture">&nbsp;</a><a class="target" name="toc0.2.6">&nbsp;</a><h3><a href="#lavatexture"># </a>LavaTexture<a href="#" class="gotop">Back to Top</a></h3>
+<p>
+
+
+
+
+</p><div class="admonition error">TBD</div>
+
+<p></p>
+<a class="target" name="internalguidelines">&nbsp;</a><a class="target" name="toc0.3">&nbsp;</a><h2><a href="#internalguidelines"># </a>Internal Guidelines<a href="#" class="gotop">Back to Top</a></h2>
+
+<a class="target" name="visualstudiocode">&nbsp;</a><a class="target" name="toc0.3.1">&nbsp;</a><h3><a href="#visualstudiocode"># </a>Visual Studio Code<a href="#" class="gotop">Back to Top</a></h3>
+<p>
+
 
 Do this to enable intellisense and markdown highlighting:
 
-```bash
-cd [path to repo]
-ln -s extras/vscode .vscode
-```
+</p><pre class="listing backtick"><code><span class="hljs-built_in">cd</span> [path to repo]
+ln -s extras/vscode .vscode</code></pre>
+<a class="target" name="c++style">&nbsp;</a><a class="target" name="toc0.3.2">&nbsp;</a><h3><a href="#c++style"># </a>C++ Style<a href="#" class="gotop">Back to Top</a></h3>
+<p>
 
-### C++ Style
 
 The code is vertically compact, but no single line should be longer than 100 characters. All
-public-facing Lava types live in the `par` namespace.
+public-facing Lava types live in the <code>par</code> namespace.
 
-For `#include`, always use angle brackets unless including a private header that lives in the same
+</p><p>
+
+For <code>#include</code>, always use angle brackets unless including a private header that lives in the same
 directory. Includes are arranged in blocks, where each block is an alphabetized list of headers. The
-first block is composed of `par` headers, followed by a sorted list of blocks for each `extras/`
+first block is composed of <code>par</code> headers, followed by a sorted list of blocks for each <code>extras/</code>
 library, followed by a block of C++ STL headers, followed by the block of standard C headers,
 followed by the block of private headers. For example:
 
-```cpp
-#include &lt;par/LavaContext.h&gt;
-#include &lt;par/LavaLog.h&gt;
+</p><pre class="listing backtick"><code><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;par/LavaContext.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;par/LavaLog.h&gt;</span></span>
 
-#include &lt;SPIRV/GlslangToSpv.h&gt;
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;SPIRV/GlslangToSpv.h&gt;</span></span>
 
-#include &lt;string&gt;
-#include &lt;vector&gt;
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;string&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;vector&gt;</span></span>
 
-#include "LavaInternal.h"
-```
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">"LavaInternal.h"</span></span></code></pre><p>
 
-Methods and functions should have comments that are descriptive ("Opens the file") rather than
-imperative ("Open the file").
+Methods and functions should have comments that are descriptive (“Opens the file”) rather than
+imperative (“Open the file”).
 
-<style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style>
-<script src="markdeep.min.js"></script>
+</p><p>
+
+<script>window.markdeepOptions = {tocStyle: 'none'};</script> 
+
+</p><p>
+
 <script>
 
-window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible");
-let hash = window.location.hash.substr(1).toLowerCase();
-if (hash) {
-    let sel = '[name=' + hash + ']';
-    window.setTimeout(function() {
-        let el = document.querySelector(sel);
-        if (el) {
-            document.body.scrollTop = el.offsetTop;
-        }
-    }, 100);
-}
+</p><p>
 
-</script>
+window.setTimeout(function() {
+
+</p><p>
+
+    let headers = document.querySelectorAll('.md h1, .md h2, .md h3, .md h4');
+    for (let header of headers) {
+        let targetAnchor1 = header.previousSibling;
+        let targetAnchor2 = targetAnchor1.previousSibling;
+
+</p><p>
+
+        let anchor = document.createElement(&ldquo;a&rdquo;); 
+        anchor.appendChild(document.createTextNode("# "));  
+        anchor.setAttribute('href', '#' + targetAnchor2.name);
+        header.insertBefore(anchor, header.childNodes[0]);
+
+</p><p>
+
+        let gotop = document.createElement(&ldquo;a&rdquo;); 
+        gotop.appendChild(document.createTextNode(&ldquo;Back to Top&rdquo;));  
+        gotop.setAttribute('href', '#');
+        gotop.classList.add('gotop');
+        header.appendChild(gotop);
+    }
+
+</p><p>
+
+    let txt = document.querySelector('html').innerHTML;
+    let anchor = document.createElement(&ldquo;a&rdquo;); 
+    anchor.appendChild(document.createTextNode(&ldquo;export DOM&rdquo;));  
+    anchor.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(txt));
+    anchor.setAttribute('download', 'lavadoc.html');
+    document.body.insertBefore(anchor, document.querySelector('span')); 
+}, 100);
+
+</p><p>
+
+</script></p></span><div class="markdeepFooter"><i>formatted by <a href="http://casual-effects.com/markdeep" style="color:#999">Markdeep&nbsp;1.01&nbsp;&nbsp;</a></i><div style="display:inline-block;font-size:13px;font-family:'Times New Roman',serif;vertical-align:middle;transform:translate(-3px,-1px)rotate(135deg);">✒</div></div></body>

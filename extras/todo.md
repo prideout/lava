@@ -1,5 +1,5 @@
 - flesh out docs
-- pin the repo
+- doc style: Linux scroll bar
 - delete crufty remote branches
 - 08_klein_bottle
     - ../extras/assets/klein.obj
@@ -30,6 +30,7 @@ demos
 
 Path Tracer
 
+    https://developer.apple.com/documentation/metalperformanceshaders/metal_for_accelerating_ray_tracing
     https://github.com/prideout/aobaker
         https://github.com/RobotLocomotion/homebrew-director/blob/master/Formula/embree.rb
         https://embree.github.io/data/embree-siggraph-2017-final.pdf

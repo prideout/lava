@@ -20,7 +20,8 @@ body {
 
 .md .gotop {
     font-size: 10px;
-    margin-left: 20px;
+    float: right;
+    line-height: 50px;
     color: #99a3d8 !important;
 }
 

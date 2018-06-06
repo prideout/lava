@@ -13,7 +13,6 @@
 using namespace std;
 
 namespace par {
-
 namespace {
 
 // Maximum number of descriptor sets that can be allocated in each descriptor pool.
@@ -301,10 +300,29 @@ void LavaDescCache::releaseUnused(uint64_t milliseconds) noexcept {
     auto& cache = impl->cache;
     for (decltype(impl->cache)::const_iterator iter = cache.begin(); iter != cache.end();) {
         if (iter->second.timestamp < expiration) {
-            printf("erasing\n");
             iter = cache.erase(iter);
         } else {
             ++iter;
+        }
+    }
+}
+
+void LavaDescCache::unsetUniformBuffer(VkBuffer uniformBuffer) noexcept {
+    LavaDescCacheImpl* impl = upcast(this);
+    for (auto& el : impl->currentState.uniformBuffers) {
+        if (el == uniformBuffer) {
+            impl->dirtyFlags |= DirtyFlag::UNIFORM_BUFFER;
+            el = VK_NULL_HANDLE;
+        }
+    }
+}
+
+void LavaDescCache::unsetImageSampler(VkDescriptorImageInfo binding) noexcept {
+    LavaDescCacheImpl* impl = upcast(this);
+    for (auto& el : impl->currentState.imageSamplers) {
+        if (IsEqual()(el, binding)) {
+            impl->dirtyFlags |= DirtyFlag::IMAGE_SAMPLER;
+            el = {};
         }
     }
 }

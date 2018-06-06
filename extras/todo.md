@@ -1,21 +1,27 @@
-- flesh out docs
-- doc style: Linux scroll bar
-- delete crufty remote branches
-- 08_klein_bottle
-    - ../extras/assets/klein.obj
-    - https://github.com/syoyo/tinyobjloader#example-code
-    - https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
-- docs
-  Flesh out class docs
+# flesh out docs
 
-- LavaTexture
-    - Add miplevel support, test with stb_image_resize
-- embree / texture space caching
-    - https://software.intel.com/sites/default/files/managed/b4/a0/author_preprint_texture-space-caching-and-reconstruction-for-ray-tracing.pdf
+# 08_klein_bottle
 
----------------------
+    ../extras/assets/klein.obj
+    https://github.com/syoyo/tinyobjloader#example-code
+    https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
 
-demos
+# lavaray
+
+    Lava as a submodule
+    RadeonRays as a submodule, in OpenCL mode for now.
+    Emulate their cornell box example (non shadowed)
+    Emulate their shadowed cornell box example (including OpenGL kernel)
+
+# LavaTexture
+
+    Add miplevel support, test with stb_image_resize
+
+# Texture space caching
+
+    https://software.intel.com/sites/default/files/managed/b4/a0/author_preprint_texture-space-caching-and-reconstruction-for-ray-tracing.pdf
+
+# demo ideas
 
     demos/circle    draws filled-in circle with random sampling
     demos/gamma     https://www.shadertoy.com/view/llBGz1
@@ -26,9 +32,7 @@ demos
     http://xeogl.org/examples/#materials_metallic_fireHydrant
     https://github.com/syoyo/tinygltf
 
----------------------
-
-Path Tracer
+# Path Tracer Notes
 
     https://developer.apple.com/documentation/metalperformanceshaders/metal_for_accelerating_ray_tracing
     https://github.com/prideout/aobaker

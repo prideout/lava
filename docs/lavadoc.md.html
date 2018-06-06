@@ -249,8 +249,9 @@ To see the complete API, take a look at
 
 ### LavaPipeCache
 
-This class makes it easy to create pipeline objects on the
-fly, as well as modifying rasterization state:
+This class makes it easy to create pipeline objects and modify rasterization state. Its construction
+config structure includes the vertex topology, descriptor set layouts (if any), render pass, and
+shaders. For example:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
 LavaPipeCache* pipelines = LavaPipeCache::create({
@@ -273,15 +274,25 @@ LavaPipeCache* pipelines = LavaPipeCache::create({
     .fshader = fragmentShaderModule,
     .renderPass = renderPass
 });
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can push changes to any of the above properties except the device and descriptor set layouts.
+After pushing a change, the subsequent call to `getPipeline()` will either create a new pipeline
+object, or return one from the cache. For example:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
 VkPipeline pipeline = pipelines->getPipeline();
-// Do stuff here...
+// Draw stuff here...
+
 pipelines->setRenderPass(newRenderPass);
 pipelines->setRasterState(newRasterState);
 pipeline = pipelines->getPipeline();
-// Do stuff here...
-LavaPipeCache::destroy(&pipelines);
+// Draw stuff here...
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Similar to **LavaDescCache**, unused descriptors can be evicted by calling `releaseUnused`. To see
+the complete API, take a look at
+[LavaPipeCache.h](https://github.com/prideout/lava/blob/master/include/par/LavaPipeCache.h).
 
 ### LavaCpuBuffer
 

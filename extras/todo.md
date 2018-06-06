@@ -1,3 +1,5 @@
+# Remove destruct methods.
+
 # 08_klein_bottle
 
     ../extras/assets/klein.obj

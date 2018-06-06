@@ -12,9 +12,10 @@ namespace par {
 class AmberProgram {
 public:
     static AmberProgram* create(const std::string& vshader, const std::string& fshader) noexcept;
-    static void destroy(AmberProgram**, VkDevice device) noexcept;
-    VkShaderModule getVertexShader(VkDevice device) noexcept;
-    VkShaderModule getFragmentShader(VkDevice device) noexcept;
+    static void destroy(AmberProgram**) noexcept;
+    bool compile(VkDevice device) noexcept;
+    VkShaderModule getVertexShader() const noexcept;
+    VkShaderModule getFragmentShader() const noexcept;
 protected:
     // par::heaponly
     AmberProgram() noexcept = default;
@@ -23,5 +24,9 @@ protected:
     AmberProgram(AmberProgram const&) = delete;
     AmberProgram& operator=(AmberProgram const&) = delete;
 };
+
+#define AMBER_STRINGIFY(x) #x
+#define AMBER_STRINGIFY_(x) AMBER_STRINGIFY(x)
+#define AMBER_PREFIX_450 "#version 450\n#line " AMBER_STRINGIFY_(__LINE__) "\n"
 
 }

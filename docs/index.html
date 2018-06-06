@@ -26,7 +26,7 @@ counter-increment: h6;margin-right:10px}</style><style>.hljs{display:block;overf
 </li>
     <li class="minus"><a href="#lunargsdkinstructions">LunarG SDK Instructions</a>
 </li></ul>
-</li><li class="minus">Components
+</li><li class="minus">Lava Components
 <ul>
     <li class="minus"><a href="#lavacontext">LavaContext</a> creates an instance, a device, a swap chain, and some command buffers.
 </li>
@@ -39,6 +39,12 @@ counter-increment: h6;margin-right:10px}</style><style>.hljs{display:block;overf
     <li class="minus"><a href="#lavagpubuffer">LavaGpuBuffer</a> is a fast device-only buffer, useful for vertex buffers and index buffers.
 </li>
     <li class="minus"><a href="#lavatexture">LavaTexture</a> encapsulates an image, an image view, and a buffer staging area.
+</li></ul>
+</li><li class="minus">Amber Components
+<ul>
+    <li class="minus"><a href="#ambercomponents">AmberCompiler</a>
+</li>
+    <li class="minus"><a href="#ambercomponents">AmberProgram</a>
 </li></ul>
 </li><li class="minus">Internal Guidelines
 <ul>
@@ -122,7 +128,11 @@ Then, for any platform, do this:
 mkdir .debug ; <span class="hljs-built_in">cd</span> .debug ; cmake .. -G Ninja
 ninja &amp;&amp; ./spinny_double</code></pre><p></p></li></ol>
 
-<p></p>
+<p></p><p>
+
+If you want to run every demo in sequence, do:
+
+</p><pre class="listing backtick"><code>find 0* -<span class="hljs-built_in">exec</span> ./{} \;</code></pre>
 <a class="target" name="lunargsdkinstructions">&nbsp;</a><a class="target" name="toc0.1.2">&nbsp;</a><h3><a href="#lunargsdkinstructions"># </a>LunarG SDK Instructions<a href="#" class="gotop">Back to Top</a></h3>
 <p>
 
@@ -140,7 +150,7 @@ ninja &amp;&amp; ./spinny_double</code></pre><p></p></li></ol>
 <span class="hljs-built_in">export</span> VK_LAYER_PATH=<span class="hljs-variable">$VULKAN_SDK</span>/macOS/etc/vulkan/explicit_layers.d
 <span class="hljs-built_in">export</span> VK_ICD_FILENAMES=<span class="hljs-variable">$VULKAN_SDK</span>/macOS/etc/vulkan/icd.d/MoltenVK_icd.json
 <span class="hljs-built_in">export</span> PATH=<span class="hljs-string">"<span class="hljs-variable">$VULKAN_SDK</span>/macOS/bin:<span class="hljs-variable">$PATH</span>"</span></code></pre>
-<a class="target" name="components">&nbsp;</a><a class="target" name="toc0.2">&nbsp;</a><h2><a href="#components"># </a>Components<a href="#" class="gotop">Back to Top</a></h2>
+<a class="target" name="lavacomponents">&nbsp;</a><a class="target" name="toc0.2">&nbsp;</a><h2><a href="#lavacomponents"># </a>Lava Components<a href="#" class="gotop">Back to Top</a></h2>
 
 <a class="target" name="lavacontext">&nbsp;</a><a class="target" name="toc0.2.1">&nbsp;</a><h3><a href="#lavacontext"># </a>LavaContext<a href="#" class="gotop">Back to Top</a></h3>
 <p>
@@ -411,9 +421,25 @@ texture-&gt;freeStage();
 <span class="hljs-comment">// Extract the Vulkan objects we need to set up a sampler:</span>
 VkImageView imageView = texture-&gt;getImageView();
 VkImage image = texture-&gt;getImage();</code></pre>
-<a class="target" name="internalguidelines">&nbsp;</a><a class="target" name="toc0.3">&nbsp;</a><h2><a href="#internalguidelines"># </a>Internal Guidelines<a href="#" class="gotop">Back to Top</a></h2>
+<a class="target" name="ambercomponents">&nbsp;</a><a class="target" name="toc0.3">&nbsp;</a><h2><a href="#ambercomponents"># </a>Amber Components<a href="#" class="gotop">Back to Top</a></h2>
+<p>
 
-<a class="target" name="visualstudiocode">&nbsp;</a><a class="target" name="toc0.3.1">&nbsp;</a><h3><a href="#visualstudiocode"># </a>Visual Studio Code<a href="#" class="gotop">Back to Top</a></h3>
+
+The Lava core has very few dependencies, so we also have an <strong class="asterisk">Amber</strong> utility layer which is allowed
+to depend on outside repositories such as <a href="https://github.com/KhronosGroup/glslang">glslang</a>. For
+now, the only Amber classes are:
+
+</p><p>
+
+</p><ul>
+<li class="asterisk"><a href="https://github.com/prideout/lava/blob/master/include/par/AmberProgram.h">AmberProgram</a>
+</li>
+<li class="asterisk"><a href="https://github.com/prideout/lava/blob/master/include/par/AmberCompiler.h">AmberCompiler</a></li></ul>
+
+<p></p>
+<a class="target" name="internalguidelines">&nbsp;</a><a class="target" name="toc0.4">&nbsp;</a><h2><a href="#internalguidelines"># </a>Internal Guidelines<a href="#" class="gotop">Back to Top</a></h2>
+
+<a class="target" name="visualstudiocode">&nbsp;</a><a class="target" name="toc0.4.1">&nbsp;</a><h3><a href="#visualstudiocode"># </a>Visual Studio Code<a href="#" class="gotop">Back to Top</a></h3>
 <p>
 
 
@@ -421,7 +447,7 @@ Do this to enable intellisense and markdown highlighting:
 
 </p><pre class="listing backtick"><code><span class="hljs-built_in">cd</span> [path to repo]
 ln -s extras/vscode .vscode</code></pre>
-<a class="target" name="c++style">&nbsp;</a><a class="target" name="toc0.3.2">&nbsp;</a><h3><a href="#c++style"># </a>C++ Style<a href="#" class="gotop">Back to Top</a></h3>
+<a class="target" name="c++style">&nbsp;</a><a class="target" name="toc0.4.2">&nbsp;</a><h3><a href="#c++style"># </a>C++ Style<a href="#" class="gotop">Back to Top</a></h3>
 <p>
 
 

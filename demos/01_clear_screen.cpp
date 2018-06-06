@@ -13,8 +13,7 @@ using namespace par;
 static constexpr int DEMO_WIDTH = 640;
 static constexpr int DEMO_HEIGHT = 480;
 
-static const std::string vertShaderGLSL = R"GLSL(
-#version 450
+static const std::string vertShaderGLSL = AMBER_PREFIX_450 R"GLSL(
 layout(location=0) in vec4 position;
 layout(location=1) in vec2 uv;
 layout(location=0) out vec2 TexCoord;
@@ -24,8 +23,7 @@ void main() {
 }
 )GLSL";
 
-static const std::string fragShaderGLSL = R"GLSL(
-#version 450
+static const std::string fragShaderGLSL = AMBER_PREFIX_450 R"GLSL(
 layout(location=0) out vec4 Color;
 layout(location=0) in vec2 uv;
 layout(binding=0, set=0) uniform sampler2D tex;
@@ -73,8 +71,7 @@ int main(const int argc, const char *argv[]) {
 
     // Compile shaders.
     auto program = AmberProgram::create(vertShaderGLSL, fragShaderGLSL);
-    program->getVertexShader(device);
-    program->getFragmentShader(device);
+    program->compile(device);
 
     // Main game loop.
     while (!glfwWindowShouldClose(window)) {
@@ -103,7 +100,7 @@ int main(const int argc, const char *argv[]) {
     }
 
     // Cleanup.
-    AmberProgram::destroy(&program, device);
+    AmberProgram::destroy(&program);
     LavaContext::destroy(&context);
     return 0;
 }

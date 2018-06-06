@@ -14,13 +14,14 @@ using namespace std;
 struct AmberProgramImpl : AmberProgram {
     AmberProgramImpl(const string& vshader, const string& fshader) noexcept;
     ~AmberProgramImpl() noexcept;
-    VkShaderModule getVertexShader(VkDevice device) noexcept;
-    VkShaderModule getFragmentShader(VkDevice device) noexcept;
+    VkShaderModule compileVertexShader(VkDevice device) noexcept;
+    VkShaderModule compileFragmentShader(VkDevice device) noexcept;
     AmberCompiler* mCompiler;
     string mVertShader;
     string mFragShader;
     VkShaderModule mVertModule = VK_NULL_HANDLE;
     VkShaderModule mFragModule = VK_NULL_HANDLE;
+    VkDevice mDevice = VK_NULL_HANDLE;
 };
 
 LAVA_DEFINE_UPCAST(AmberProgram)
@@ -29,10 +30,13 @@ AmberProgram* AmberProgram::create(const string& vshader, const string& fshader)
     return new AmberProgramImpl(vshader, fshader);
 }
 
-void AmberProgram::destroy(AmberProgram** that, VkDevice device) noexcept {
+void AmberProgram::destroy(AmberProgram** that) noexcept {
     AmberProgramImpl* impl = upcast(*that);
-    vkDestroyShaderModule(device, impl->mVertModule, VKALLOC);
-    vkDestroyShaderModule(device, impl->mFragModule, VKALLOC);
+    VkDevice device = impl->mDevice;
+    if (device) {
+        vkDestroyShaderModule(device, impl->mVertModule, VKALLOC);
+        vkDestroyShaderModule(device, impl->mFragModule, VKALLOC);
+    }
     delete upcast(impl);
     *that = nullptr;
 }
@@ -44,7 +48,7 @@ AmberProgramImpl::~AmberProgramImpl() noexcept {
     AmberCompiler::destroy(&mCompiler);
 }
 
-VkShaderModule AmberProgramImpl::getVertexShader(VkDevice device) noexcept {
+VkShaderModule AmberProgramImpl::compileVertexShader(VkDevice device) noexcept {
     if (mVertModule) {
         return mVertModule;
     }
@@ -61,7 +65,7 @@ VkShaderModule AmberProgramImpl::getVertexShader(VkDevice device) noexcept {
     return mVertModule;
 }
 
-VkShaderModule AmberProgramImpl::getFragmentShader(VkDevice device) noexcept {
+VkShaderModule AmberProgramImpl::compileFragmentShader(VkDevice device) noexcept {
     if (mFragModule) {
         return mFragModule;
     }
@@ -78,10 +82,18 @@ VkShaderModule AmberProgramImpl::getFragmentShader(VkDevice device) noexcept {
     return mFragModule;
 }
 
-VkShaderModule AmberProgram::getVertexShader(VkDevice device) noexcept {
-    return upcast(this)->getVertexShader(device);
+bool AmberProgram::compile(VkDevice device) noexcept {
+    AmberProgramImpl& impl = *upcast(this);
+    impl.compileVertexShader(device);
+    impl.compileFragmentShader(device);
+    impl.mDevice = device;
+    return impl.mVertModule && impl.mFragModule;
 }
 
-VkShaderModule AmberProgram::getFragmentShader(VkDevice device) noexcept {
-    return upcast(this)->getFragmentShader(device);
+VkShaderModule AmberProgram::getVertexShader() const noexcept {
+    return upcast(this)->mVertModule;
+}
+
+VkShaderModule AmberProgram::getFragmentShader() const noexcept {
+    return upcast(this)->mFragModule;
 }

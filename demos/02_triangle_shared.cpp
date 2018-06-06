@@ -17,7 +17,7 @@ static constexpr int DEMO_WIDTH = 512;
 static constexpr int DEMO_HEIGHT = 512;
 static constexpr float PI = 3.1415926535;
 
-static const std::string vertShaderGLSL = R"GLSL(#version 450
+static const std::string vertShaderGLSL = AMBER_PREFIX_450 R"GLSL(
 layout(location=0) in vec2 position;
 layout(location=1) in vec4 color;
 layout(location=0) out vec4 vert_color;
@@ -26,7 +26,7 @@ void main() {
     vert_color = color;
 })GLSL";
 
-static const std::string fragShaderGLSL = R"GLSL(#version 450
+static const std::string fragShaderGLSL = AMBER_PREFIX_450 R"GLSL(
 layout(location=0) out vec4 frag_color;
 layout(location=0) in vec4 vert_color;
 void main() {
@@ -84,8 +84,9 @@ int main(const int argc, const char *argv[]) {
 
     // Compile shaders.
     auto program = AmberProgram::create(vertShaderGLSL, fragShaderGLSL);
-    VkShaderModule vshader = program->getVertexShader(device);
-    VkShaderModule fshader = program->getFragmentShader(device);
+    program->compile(device);
+    VkShaderModule vshader = program->getVertexShader();
+    VkShaderModule fshader = program->getFragmentShader();
 
     // Create the pipeline.
     static_assert(sizeof(Vertex) == 12, "Unexpected vertex size.");
@@ -157,7 +158,7 @@ int main(const int argc, const char *argv[]) {
 
     // Cleanup.
     LavaCpuBuffer::destroy(&vertexBuffer);
-    AmberProgram::destroy(&program, device);
+    AmberProgram::destroy(&program);
     LavaPipeCache::destroy(&pipelines);
     LavaContext::destroy(&context);
     return 0;

@@ -24,16 +24,12 @@ using namespace std;
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#define STRINGIFY(x) #x
-#define STRINGIFY_(x) STRINGIFY(x)
-#define SHADER_PREFIX "#version 450\n#line " STRINGIFY_(__LINE__) "\n"
-
 namespace {
     constexpr int DEMO_WIDTH = 512;
     constexpr int DEMO_HEIGHT = 512;
     constexpr float PI = 3.1415926535;
 
-    constexpr char const* vertShaderGLSL = SHADER_PREFIX R"GLSL(
+    constexpr char const* vertShaderGLSL = AMBER_PREFIX_450 R"GLSL(
     layout(location=0) in vec2 position;
     layout(location=1) in vec4 color;
     layout(location=0) out vec4 vert_color;
@@ -42,7 +38,7 @@ namespace {
         vert_color = color;
     })GLSL";
 
-    constexpr char const* fragShaderGLSL = SHADER_PREFIX R"GLSL(
+    constexpr char const* fragShaderGLSL = AMBER_PREFIX_450 R"GLSL(
     layout(location=0) out vec4 frag_color;
     layout(location=0) in vec4 vert_color;
     void main() {
@@ -95,8 +91,9 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     };
 
     auto wrap_program = [device](char const* vshader, char const* fshader) {
-        auto deleter = [device](AmberProgram* ptr){ AmberProgram::destroy(&ptr, device); };
+        auto deleter = [device](AmberProgram* ptr){ AmberProgram::destroy(&ptr); };
         auto ptr = AmberProgram::create(vshader, fshader);
+        ptr->compile(device);
         return unique_ptr<AmberProgram, decltype(deleter)>(ptr, deleter);
     };
 
@@ -159,8 +156,8 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
             } }
         },
         .descriptorLayouts = {},
-        .vshader = program->getVertexShader(device),
-        .fshader = program->getFragmentShader(device),
+        .vshader = program->getVertexShader(),
+        .fshader = program->getFragmentShader(),
         .renderPass = renderPass
     });
     VkPipeline pipeline = pipelines->getPipeline();

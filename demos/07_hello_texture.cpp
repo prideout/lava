@@ -21,16 +21,12 @@
 
 using namespace par;
 
-#define STRINGIFY(x) #x
-#define STRINGIFY_(x) STRINGIFY(x)
-#define SHADER_PREFIX "#version 450\n#line " STRINGIFY_(__LINE__) "\n"
-
 namespace {
     constexpr int DEMO_WIDTH = 512;
     constexpr int DEMO_HEIGHT = 512;
     constexpr char const* TEXTURE_FILENAME = "../extras/assets/abstract.jpg";
 
-    constexpr char const* VSHADER_GLSL = SHADER_PREFIX R"(
+    constexpr char const* VSHADER_GLSL = AMBER_PREFIX_450 R"(
     layout(location = 0) in vec2 position;
     layout(location = 1) in vec2 uv;
     layout(location = 0) out vec2 vert_uv;
@@ -39,7 +35,7 @@ namespace {
         vert_uv = uv;
     })";
 
-    constexpr char const* FSHADER_GLSL = SHADER_PREFIX R"(
+    constexpr char const* FSHADER_GLSL = AMBER_PREFIX_450 R"(
     layout(location = 0) out vec4 frag_color;
     layout(location = 0) in vec2 vert_uv;
     layout(binding = 0) uniform sampler2D img;
@@ -106,8 +102,9 @@ int main(const int argc, const char *argv[]) {
 
     // Compile shaders.
     auto program = AmberProgram::create(VSHADER_GLSL, FSHADER_GLSL);
-    VkShaderModule vshader = program->getVertexShader(device);
-    VkShaderModule fshader = program->getFragmentShader(device);
+    program->compile(device);
+    VkShaderModule vshader = program->getVertexShader();
+    VkShaderModule fshader = program->getFragmentShader();
 
     // Create texture.
     // Note that STB does not provide a way to easily decode into a pre-allocated area, so we incur
@@ -235,7 +232,7 @@ int main(const int argc, const char *argv[]) {
     LavaTexture::destroy(&texture);
     LavaDescCache::destroy(&descriptors);
     LavaCpuBuffer::destroy(&vertexBuffer);
-    AmberProgram::destroy(&program, device);
+    AmberProgram::destroy(&program);
     LavaPipeCache::destroy(&pipelines);
     LavaContext::destroy(&context);
     return 0;

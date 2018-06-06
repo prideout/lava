@@ -20,7 +20,7 @@ namespace {
     constexpr int DEMO_HEIGHT = 512;
     constexpr float PI = 3.1415926535;
 
-    const std::string vertShaderGLSL = R"GLSL(#version 450
+    const std::string vertShaderGLSL = AMBER_PREFIX_450 R"GLSL(
     layout(location = 0) in vec2 position;
     layout(location = 1) in vec4 color;
     layout(location = 0) out vec4 vert_color;
@@ -32,7 +32,7 @@ namespace {
         vert_color = color;
     })GLSL";
 
-    const std::string fragShaderGLSL = R"GLSL(#version 450
+    const std::string fragShaderGLSL = AMBER_PREFIX_450 R"GLSL(
     layout(location = 0) out vec4 frag_color;
     layout(location = 0) in vec4 vert_color;
     void main() {
@@ -92,8 +92,9 @@ int main(const int argc, const char *argv[]) {
 
     // Compile shaders.
     auto program = AmberProgram::create(vertShaderGLSL, fragShaderGLSL);
-    VkShaderModule vshader = program->getVertexShader(device);
-    VkShaderModule fshader = program->getFragmentShader(device);
+    program->compile(device);
+    VkShaderModule vshader = program->getVertexShader();
+    VkShaderModule fshader = program->getFragmentShader();
 
     // Create the UBO and staging area.
     LavaGpuBuffer* ubo = LavaGpuBuffer::create({
@@ -193,7 +194,7 @@ int main(const int argc, const char *argv[]) {
     LavaGpuBuffer::destroy(&ubo);
     LavaCpuBuffer::destroy(&uboStage);
     LavaCpuBuffer::destroy(&vertexBuffer);
-    AmberProgram::destroy(&program, device);
+    AmberProgram::destroy(&program);
     LavaPipeCache::destroy(&pipelines);
     LavaContext::destroy(&context);
     return 0;

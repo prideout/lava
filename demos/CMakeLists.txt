@@ -15,8 +15,9 @@ link_libraries(${DEMO_LIBS})
 include_directories(
     ../extras
     ../extras/glslang
-    ../extras/stb
     ../extras/par
+    ../extras/stb
+    ../extras/tinyobjloader
     ../include)
 
 set(DEMO_NAMES
@@ -26,7 +27,8 @@ set(DEMO_NAMES
     04_triangle_recorded
     05_spinny_double
     06_spinny_staged
-    07_hello_texture)
+    07_hello_texture
+    08_klein_bottle)
 
 foreach(DEMO ${DEMO_NAMES})
     add_executable(${DEMO} ${DEMO}.cpp ${AMBER_SOURCE})

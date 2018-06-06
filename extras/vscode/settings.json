@@ -15,14 +15,15 @@
         "system_error": "cpp",
         "tuple": "cpp",
         "type_traits": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "__config": "cpp"
     },
     "files.exclude": {
         "include/spdlog": true,
         "extras/glfw": true,
         "extras/glslang": true,
         "extras/stb": true,
-        "extras/tinyobjloader": true,
+        "extras/tinyobjloader": false,
         "extras/par": true,
         ".debug": true,
         ".release": true,

@@ -49,7 +49,7 @@ const VkBuffer vkbuffer = lavabuffer->getBuffer();
 
 // do stuff with the VkBuffer here...
 
-LavaGpuBuffer::destroy(&lavabuffer);
+LavaGpuBuffer::destroy(&amp;lavabuffer);
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### Building and Running the Demos
@@ -81,7 +81,7 @@ Then, for any platform, do this:
     ```bash
     cd [path to repo]
     mkdir .debug ; cd .debug ; cmake .. -G Ninja
-    ninja && ./spinny_double
+    ninja &amp;&amp; ./spinny_double
     ```
 
 ### LunarG SDK Instructions
@@ -114,12 +114,12 @@ For example, if your app uses  [GLFW](http://www.glfw.org/), you could initializ
 so:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
-auto context = LavaContext::create({
+LavaContext* context = LavaContext::create({
     .depthBuffer = false,
     .validation = true,
     .createSurface = [window] (VkInstance instance) {
         VkSurfaceKHR surface;
-        glfwCreateWindowSurface(instance, window, nullptr, &surface);
+        glfwCreateWindowSurface(instance, window, nullptr, &amp;surface);
         return surface;
     }
 });
@@ -143,7 +143,7 @@ Simply wrap your command sequence in `beginFrame` / `endFrame` like this:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
 VkCommandBuffer cmdbuffer = context->beginFrame();
-vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
+vkCmdBeginRenderPass(cmdbuffer, &amp;rpbi, VK_SUBPASS_CONTENTS_INLINE);
 vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
 vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
@@ -173,7 +173,7 @@ class LavaContext {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The work API is especially useful for invoking `vkCmdCopy*` since it can be done at initialization
-time, before drawing a frame.
+time, before drawing a frame. See [LavaCpuBuffer](#LavaCpuBuffer) for an example.
 
 #### Recording API
 
@@ -209,7 +209,7 @@ can create the layout and a descriptor like this:
 VkDevice device = ...;
 VkBuffer ubo = ...;
 
-auto descriptors = LavaDescCache::create({
+LavaDescCache* descriptors = LavaDescCache::create({
     .device = device,
     .uniformBuffers = { ubo }, // If you don't have a UBO yet, just say: { 0 }
     .imageSamplers = { 0, 0 }  // Declare two image samplers (not known yet)
@@ -296,18 +296,73 @@ the complete API, take a look at
 
 ### LavaCpuBuffer
 
-!!! ERROR
-    TBD
+This creates a single **VkBuffer**, using
+[vk_mem_alloc](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator) to consolidate
+**VkDeviceMemory** objects. Here's a usage example:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+LavaCpuBuffer* stage = LavaCpuBuffer::create({
+    .device = device,
+    .gpu = gpu,
+    .size = sizeof(TRIANGLE_VERTICES),
+    .source = pverts,
+    .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+});
+
+delete pverts;
+
+VkCommandBuffer cmdbuffer = context->beginWork();
+const VkBufferCopy region = { .size = sizeof(TRIANGLE_VERTICES) };
+vkCmdCopyBuffer(cmdbuffer, stage->getBuffer(), destBuffer, 1, &amp;region);
+context->endWork();
+context->waitWork();
+
+LavaCpuBuffer::destroy(&amp;stage);
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### LavaGpuBuffer
 
-!!! ERROR
-    TBD
+Similar to [**LavaCpuBuffer**](#LavaCpuBuffer), but creates device-only memory.
 
 ### LavaTexture
 
-!!! ERROR
-    TBD
+This class won't load a texture from disk or decode a PNG file. However it does help create a
+**VkImage**, **VkImageLayout**, staging buffer, and layout transition.
+
+Constructing a texture is easy. Here's an example that uses
+[stb_image](https://github.com/nothings/stb) to decode a PNG file from disk:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~C
+uint8_t* texels = stbi_load(TEXTURE_FILENAME, &width, &height, 0, 4);
+LavaTexture* texture = LavaTexture::create({
+    .device = device, .gpu = gpu,
+    .size = width * height * 4u,
+    .source = texels,
+    .width = width,
+    .height = height,
+    .format = VK_FORMAT_R8G8B8A8_UNORM,
+});
+stbi_image_free(texels);
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+At this point, the staging buffer is populated but the image is not. The next step is to copy the
+staging data and transition the image layout. LavaTexture makes this convenient via the
+`uploadStage` method, which takes a **VkCommandBuffer** for input:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~C
+// Copy the data to device-only memory and transition to an optimal layout:
+texture->uploadStage(context->beginWork());
+context->endWork();
+context->waitWork();
+
+// At this point the texture is ready to be sampled from, and we can free the staging buffer:
+texture->freeStage();
+
+// Extract the Vulkan objects we need to set up a sampler:
+VkImageView imageView = texture->getImageView();
+VkImage image = texture->getImage();
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 ## Internal Guidelines
 

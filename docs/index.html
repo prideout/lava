@@ -160,7 +160,7 @@ surface, which can easily be provided with a small lambda function.
 For example, if your app uses  <a href="http://www.glfw.org/">GLFW</a>, you could initialize LavaContext like
 so:
 
-</p><pre class="listing tilde"><code><span class="hljs-keyword">auto</span> context = LavaContext::create({
+</p><pre class="listing tilde"><code>LavaContext* context = LavaContext::create({
     .depthBuffer = <span class="hljs-literal">false</span>,
     .validation = <span class="hljs-literal">true</span>,
     .createSurface = [window] (VkInstance instance) {
@@ -220,7 +220,7 @@ does not automatically perform presentation or swapping.
 };</code></pre><p>
 
 The work API is especially useful for invoking <code>vkCmdCopy*</code> since it can be done at initialization
-time, before drawing a frame.
+time, before drawing a frame. See <a href="#LavaCpuBuffer">LavaCpuBuffer</a> for an example.
 
 </p>
 <a class="target" name="recordingapi">&nbsp;</a><a class="target" name="toc0.2.1.3">&nbsp;</a><h4><a href="#recordingapi"># </a>Recording API<a href="#" class="gotop">Back to Top</a></h4>
@@ -261,7 +261,7 @@ can create the layout and a descriptor like this:
 </p><pre class="listing tilde"><code>VkDevice device = ...;
 VkBuffer ubo = ...;
 
-<span class="hljs-keyword">auto</span> descriptors = LavaDescCache::create({
+LavaDescCache* descriptors = LavaDescCache::create({
     .device = device,
     .uniformBuffers = { ubo }, <span class="hljs-comment">// If you don't have a UBO yet, just say: { 0 }</span>
     .imageSamplers = { <span class="hljs-number">0</span>, <span class="hljs-number">0</span> }  <span class="hljs-comment">// Declare two image samplers (not known yet)</span>
@@ -294,77 +294,123 @@ that have been unused for a specified amount of time. For example:
 To see the complete API, take a look at
 <a href="https://github.com/prideout/lava/blob/master/include/par/LavaDescCache.h">LavaDescCache.h</a>.
 
-</p><p>
-
-</p><div class="admonition error">To do:
-
-<p></p><p>
-
-</p><ul>
-    <li class="minus">Add unsetUniformBuffer and unsetImageSampler</li></ul></div>
-
-<p></p>
+</p>
 <a class="target" name="lavapipecache">&nbsp;</a><a class="target" name="toc0.2.3">&nbsp;</a><h3><a href="#lavapipecache"># </a>LavaPipeCache<a href="#" class="gotop">Back to Top</a></h3>
 <p>
 
 
-This class makes it easy to create pipeline objects on the
-fly, as well as modifying rasterization state:
+This class makes it easy to create pipeline objects and modify rasterization state. Its construction
+config structure includes the vertex topology, descriptor set layouts (if any), render pass, and
+shaders. For example:
 
 </p><pre class="listing tilde"><code>LavaPipeCache* pipelines = LavaPipeCache::create({
     .device = device,
     .vertex = {
         .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
         .attributes = { {
-            .binding = <span class="hljs-number">0u</span>,
+            .binding = 0u,
             .format = VK_FORMAT_R32G32B32_SFLOAT,
-            .location = <span class="hljs-number">0u</span>,
-            .offset = <span class="hljs-number">0u</span>,
+            .location = 0u,
+            .offset = 0u,
         } },
         .buffers = { {
-            .binding = <span class="hljs-number">0u</span>,
-            .stride = <span class="hljs-number">12</span>,
+            .binding = 0u,
+            .stride = 12,
         } }
     },
     .descriptorLayouts = {},
     .vshader = vertexShaderModule,
     .fshader = fragmentShaderModule,
     .renderPass = renderPass
-});
-VkPipeline pipeline = pipelines-&gt;getPipeline();
-<span class="hljs-comment">// Do stuff here...</span>
+});</code></pre><p>
+
+You can push changes to any of the above properties except the device and descriptor set layouts.
+After pushing a change, the subsequent call to <code>getPipeline()</code> will either create a new pipeline
+object, or return one from the cache. For example:
+
+</p><pre class="listing tilde"><code>VkPipeline pipeline = pipelines-&gt;getPipeline();
+<span class="hljs-comment">// Draw stuff here...</span>
+
 pipelines-&gt;setRenderPass(newRenderPass);
 pipelines-&gt;setRasterState(newRasterState);
 pipeline = pipelines-&gt;getPipeline();
-<span class="hljs-comment">// Do stuff here...</span>
-LavaPipeCache::destroy(&amp;pipelines);</code></pre>
+<span class="hljs-comment">// Draw stuff here...</span></code></pre><p>
+
+Similar to <strong class="asterisk">LavaDescCache</strong>, unused descriptors can be evicted by calling <code>releaseUnused</code>. To see
+the complete API, take a look at
+<a href="https://github.com/prideout/lava/blob/master/include/par/LavaPipeCache.h">LavaPipeCache.h</a>.
+
+</p>
 <a class="target" name="lavacpubuffer">&nbsp;</a><a class="target" name="toc0.2.4">&nbsp;</a><h3><a href="#lavacpubuffer"># </a>LavaCpuBuffer<a href="#" class="gotop">Back to Top</a></h3>
 <p>
 
 
+This creates a single <strong class="asterisk">VkBuffer</strong>, using
+<a href="https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator">vk_mem_alloc</a> to consolidate
+<strong class="asterisk">VkDeviceMemory</strong> objects. Here's a usage example:
 
+</p><pre class="listing tilde"><code>LavaCpuBuffer* stage = LavaCpuBuffer::create({
+    .device = device,
+    .gpu = gpu,
+    .size = <span class="hljs-keyword">sizeof</span>(TRIANGLE_VERTICES),
+    .source = pverts,
+    .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+});
 
-</p><div class="admonition error">TBD</div>
+<span class="hljs-keyword">delete</span> pverts;
 
-<p></p>
+VkCommandBuffer cmdbuffer = context-&gt;beginWork();
+<span class="hljs-keyword">const</span> VkBufferCopy region = { .size = <span class="hljs-keyword">sizeof</span>(TRIANGLE_VERTICES) };
+vkCmdCopyBuffer(cmdbuffer, stage-&gt;getBuffer(), destBuffer, <span class="hljs-number">1</span>, &amp;region);
+context-&gt;endWork();
+context-&gt;waitWork();
+
+LavaCpuBuffer::destroy(&amp;stage);</code></pre>
 <a class="target" name="lavagpubuffer">&nbsp;</a><a class="target" name="toc0.2.5">&nbsp;</a><h3><a href="#lavagpubuffer"># </a>LavaGpuBuffer<a href="#" class="gotop">Back to Top</a></h3>
 <p>
 
 
+Similar to <a href="#LavaCpuBuffer"><strong class="asterisk">LavaCpuBuffer</strong></a>, but creates device-only memory.
 
-
-</p><div class="admonition error">TBD</div>
-
-<p></p>
+</p>
 <a class="target" name="lavatexture">&nbsp;</a><a class="target" name="toc0.2.6">&nbsp;</a><h3><a href="#lavatexture"># </a>LavaTexture<a href="#" class="gotop">Back to Top</a></h3>
 <p>
 
 
+This class won't load a texture from disk or decode a PNG file. However it does help create a
+<strong class="asterisk">VkImage</strong>, <strong class="asterisk">VkImageLayout</strong>, staging buffer, and layout transition.
 
+</p><p>
 
-</p><div class="admonition error">TBD</div>
+Constructing a texture is easy. Here's an example that uses
+<a href="https://github.com/nothings/stb">stb_image</a> to decode a PNG file from disk:
 
-<p></p>
+</p><pre class="listing tilde"><code><span class="hljs-keyword">uint8_t</span>* texels = stbi_load(TEXTURE_FILENAME, &amp;width, &amp;height, <span class="hljs-number">0</span>, <span class="hljs-number">4</span>);
+LavaTexture* texture = LavaTexture::create({
+    .device = device, .gpu = gpu,
+    .size = width * height * <span class="hljs-number">4u</span>,
+    .source = texels,
+    .width = width,
+    .height = height,
+    .format = VK_FORMAT_R8G8B8A8_UNORM,
+});
+stbi_image_free(texels);</code></pre><p>
+
+At this point, the staging buffer is populated but the image is not. The next step is to copy the
+staging data and transition the image layout. LavaTexture makes this convenient via the
+<code>uploadStage</code> method, which takes a <strong class="asterisk">VkCommandBuffer</strong> for input:
+
+</p><pre class="listing tilde"><code><span class="hljs-comment">// Copy the data to device-only memory and transition to an optimal layout:</span>
+texture-&gt;uploadStage(context-&gt;beginWork());
+context-&gt;endWork();
+context-&gt;waitWork();
+
+<span class="hljs-comment">// At this point the texture is ready to be sampled from, and we can free the staging buffer:</span>
+texture-&gt;freeStage();
+
+<span class="hljs-comment">// Extract the Vulkan objects we need to set up a sampler:</span>
+VkImageView imageView = texture-&gt;getImageView();
+VkImage image = texture-&gt;getImage();</code></pre>
 <a class="target" name="internalguidelines">&nbsp;</a><a class="target" name="toc0.3">&nbsp;</a><h2><a href="#internalguidelines"># </a>Internal Guidelines<a href="#" class="gotop">Back to Top</a></h2>
 
 <a class="target" name="visualstudiocode">&nbsp;</a><a class="target" name="toc0.3.1">&nbsp;</a><h3><a href="#visualstudiocode"># </a>Visual Studio Code<a href="#" class="gotop">Back to Top</a></h3>
@@ -413,6 +459,12 @@ imperative (“Open the file”).
 
 </p><p>
 
+// By providing an &ldquo;export&rdquo; button, we're fixing the flash of unstyled content, adding support for
+// deep anchors, augmenting the headers programatically, and baking the syntax highlighting for
+// faster load times.
+
+</p><p>
+
 window.setTimeout(function() {
 
 </p><p>
@@ -444,7 +496,7 @@ window.setTimeout(function() {
     let anchor = document.createElement(&ldquo;a&rdquo;); 
     anchor.appendChild(document.createTextNode(&ldquo;export DOM&rdquo;));  
     anchor.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(txt));
-    anchor.setAttribute('download', 'lavadoc.html');
+    anchor.setAttribute('download', 'index.html');
     document.body.insertBefore(anchor, document.querySelector('span')); 
 }, 100);
 

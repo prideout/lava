@@ -1,5 +1,3 @@
-# flesh out docs
-
 # 08_klein_bottle
 
     ../extras/assets/klein.obj
@@ -21,7 +19,7 @@
 
     https://software.intel.com/sites/default/files/managed/b4/a0/author_preprint_texture-space-caching-and-reconstruction-for-ray-tracing.pdf
 
-# demo ideas
+# Demo ideas
 
     demos/circle    draws filled-in circle with random sampling
     demos/gamma     https://www.shadertoy.com/view/llBGz1
@@ -32,7 +30,7 @@
     http://xeogl.org/examples/#materials_metallic_fireHydrant
     https://github.com/syoyo/tinygltf
 
-# Path Tracer Notes
+# Path tracer notes
 
     https://developer.apple.com/documentation/metalperformanceshaders/metal_for_accelerating_ray_tracing
     https://github.com/prideout/aobaker

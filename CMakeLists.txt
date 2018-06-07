@@ -8,9 +8,9 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-# We turn on the sanitizer for subprojects to prevent false positives.
 # Note that -fsanitize=undefined is also an interesting option.
-# set(EXTRA_SANITIZE_OPTIONS "-fsanitize=address")
+set(EXTRA_SANITIZE_OPTIONS "-fsanitize=address")
+
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_SANITIZE_OPTIONS}")
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")

@@ -58,6 +58,7 @@ struct DepthBundle {
 
 struct LavaContextImpl : LavaContext {
     LavaContextImpl(bool useValidation) noexcept;
+    ~LavaContextImpl() noexcept;
     void initDevice(VkSurfaceKHR surface, bool createDepthBuffer) noexcept;
     void killDevice() noexcept;
     VkCommandBuffer beginFrame() noexcept;
@@ -108,10 +109,14 @@ LavaContext* LavaContext::create(Config config) noexcept {
     return impl;
 }
 
-LavaContext::~LavaContext() noexcept {
-    LavaContextImpl* impl = upcast(this);
-    impl->killDevice();
-    vkDestroyInstance(impl->mInstance, VKALLOC);
+void LavaContext::operator delete(void* ptr) {
+    auto impl = (LavaContextImpl*) ptr;
+    impl->~LavaContextImpl();
+}
+
+LavaContextImpl::~LavaContextImpl() noexcept {
+    killDevice();
+    vkDestroyInstance(mInstance, VKALLOC);
 }
 
 static bool isExtensionSupported(const string& ext) noexcept;

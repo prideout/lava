@@ -12,14 +12,12 @@ namespace par {
 class AmberProgram {
 public:
     static AmberProgram* create(const std::string& vshader, const std::string& fshader) noexcept;
-    static void destroy(AmberProgram**) noexcept;
+    ~AmberProgram() noexcept;
     bool compile(VkDevice device) noexcept;
     VkShaderModule getVertexShader() const noexcept;
     VkShaderModule getFragmentShader() const noexcept;
 protected:
-    // par::heaponly
     AmberProgram() noexcept = default;
-    ~AmberProgram() noexcept = default;
     // par::noncopyable
     AmberProgram(AmberProgram const&) = delete;
     AmberProgram& operator=(AmberProgram const&) = delete;

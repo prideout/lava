@@ -155,14 +155,13 @@ LavaPipeCache* LavaPipeCache::create(Config config) noexcept {
     return impl;
 }
 
-void LavaPipeCache::destroy(LavaPipeCache** that) noexcept {
-    LavaPipeCacheImpl* impl = upcast(*that);
+LavaPipeCache::~LavaPipeCache() noexcept {
+    LavaPipeCacheImpl* impl = upcast(this);
     for (auto& pair : impl->cache) {
         vkDestroyPipeline(impl->device, pair.second.handle, VKALLOC);
     }
     vkDestroyPipelineLayout(impl->device, impl->pipelineLayout, VKALLOC);
     delete upcast(impl);
-    *that = nullptr;
 }
 
 VkPipelineLayout LavaPipeCache::getLayout() const noexcept {

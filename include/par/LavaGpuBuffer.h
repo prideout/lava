@@ -16,12 +16,10 @@ public:
         VkBufferUsageFlags usage;
     };    
     static LavaGpuBuffer* create(Config config) noexcept;
-    static void destroy(LavaGpuBuffer**) noexcept;
+    ~LavaGpuBuffer() noexcept;
     VkBuffer getBuffer() const noexcept;
 protected:
-    // par::heaponly
     LavaGpuBuffer() noexcept = default;
-    ~LavaGpuBuffer() noexcept = default;
     // par::noncopyable
     LavaGpuBuffer(LavaGpuBuffer const&) = delete;
     LavaGpuBuffer& operator=(LavaGpuBuffer const&) = delete;

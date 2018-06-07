@@ -11,13 +11,11 @@ namespace par {
 class AmberCompiler {
 public:
     static AmberCompiler* create() noexcept;
-    static void destroy(AmberCompiler**) noexcept;
+    ~AmberCompiler() noexcept;
     enum Stage { VERTEX, FRAGMENT, COMPUTE };
     bool compile(Stage stage, const std::string& glsl, std::vector<uint32_t>* spirv) const noexcept;
 protected:
-    // par::heaponly
     AmberCompiler() noexcept = default;
-    ~AmberCompiler() noexcept = default;
     // par::noncopyable
     AmberCompiler(AmberCompiler const&) = delete;
     AmberCompiler(AmberCompiler&&) = delete;

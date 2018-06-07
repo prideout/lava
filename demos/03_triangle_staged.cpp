@@ -132,7 +132,7 @@ int main(const int argc, const char *argv[]) {
 
     // Ensure the VBO is ready before we start drawing.
     context->waitWork();
-    LavaCpuBuffer::destroy(&stage);
+    delete stage;
 
     // Main game loop.
     while (!glfwWindowShouldClose(window)) {
@@ -174,9 +174,9 @@ int main(const int argc, const char *argv[]) {
     context->waitFrame();
 
     // Cleanup.
-    LavaGpuBuffer::destroy(&vertexBuffer);
-    AmberProgram::destroy(&program);
-    LavaPipeCache::destroy(&pipelines);
-    LavaContext::destroy(&context);
+    delete vertexBuffer;
+    delete pipelines;
+    delete program;
+    delete context;
     return 0;
 }

@@ -20,7 +20,7 @@ public:
         std::function<VkSurfaceKHR(VkInstance)> createSurface;
     };
     static LavaContext* create(Config config) noexcept;
-    static void destroy(LavaContext**) noexcept;
+    ~LavaContext() noexcept;
 
     // Starts a new command buffer and returns it.
     VkCommandBuffer beginFrame() noexcept;
@@ -66,9 +66,7 @@ public:
     VkFramebuffer getFramebuffer(uint32_t i = 0) const noexcept;
 
 protected:
-    // par::heaponly
     LavaContext() noexcept = default;
-    ~LavaContext() noexcept = default;
     // par::noncopyable
     LavaContext(LavaContext const&) = delete;
     LavaContext& operator=(LavaContext const&) = delete;

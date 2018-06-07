@@ -138,7 +138,7 @@ int main(const int argc, const char *argv[]) {
 
     // Ensure the VBO is ready before we start drawing.
     context->waitWork();
-    LavaCpuBuffer::destroy(&stage);
+    delete stage;
 
     // Record two command buffers.
     LavaRecording* frame = context->createRecording();
@@ -181,9 +181,9 @@ int main(const int argc, const char *argv[]) {
 
     // Cleanup.
     context->freeRecording(frame);
-    LavaGpuBuffer::destroy(&vertexBuffer);
-    AmberProgram::destroy(&program);
-    LavaPipeCache::destroy(&pipelines);
-    LavaContext::destroy(&context);
+    delete vertexBuffer;
+    delete pipelines;
+    delete program;
+    delete context;
     return 0;
 }

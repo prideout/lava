@@ -23,11 +23,10 @@ LavaGpuBuffer* LavaGpuBuffer::create(Config config) noexcept {
     return new LavaGpuBufferImpl(config);
 }
 
-void LavaGpuBuffer::destroy(LavaGpuBuffer** that) noexcept {
-    LavaGpuBufferImpl* impl = upcast(*that);
+LavaGpuBuffer::~LavaGpuBuffer() noexcept {
+    LavaGpuBufferImpl* impl = upcast(this);
     vmaDestroyBuffer(impl->vma, impl->buffer, impl->memory);
     delete upcast(impl);
-    *that = nullptr;
 }
 
 LavaGpuBufferImpl::LavaGpuBufferImpl(Config config) noexcept : device(config.device) {

@@ -190,12 +190,12 @@ int main(const int argc, const char *argv[]) {
     context->waitFrame();
 
     // Cleanup.
-    LavaDescCache::destroy(&descriptors);
-    LavaGpuBuffer::destroy(&ubo);
-    LavaCpuBuffer::destroy(&uboStage);
-    LavaCpuBuffer::destroy(&vertexBuffer);
-    AmberProgram::destroy(&program);
-    LavaPipeCache::destroy(&pipelines);
-    LavaContext::destroy(&context);
+    delete descriptors;
+    delete ubo;
+    delete uboStage;
+    delete vertexBuffer;
+    delete pipelines;
+    delete program;
+    delete context;
     return 0;
 }

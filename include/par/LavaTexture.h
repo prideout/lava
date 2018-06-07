@@ -19,14 +19,12 @@ public:
         VkFormat format;
     };
     static LavaTexture* create(Config config) noexcept;
-    static void destroy(LavaTexture**) noexcept;
+    ~LavaTexture() noexcept;
     void uploadStage(VkCommandBuffer cmd) const noexcept;
     void freeStage() noexcept;
     VkImageView getImageView() const noexcept;
 protected:
-    // par::heaponly
     LavaTexture() noexcept = default;
-    ~LavaTexture() noexcept = default;
     // par::noncopyable
     LavaTexture(LavaTexture const&) = delete;
     LavaTexture& operator=(LavaTexture const&) = delete;

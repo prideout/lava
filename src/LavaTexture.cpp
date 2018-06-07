@@ -29,13 +29,12 @@ LavaTexture* LavaTexture::create(Config config) noexcept {
     return new LavaTextureImpl(config);
 }
 
-void LavaTexture::destroy(LavaTexture** that) noexcept {
-    LavaTextureImpl& impl = *upcast(*that);
+LavaTexture::~LavaTexture() noexcept {
+    LavaTextureImpl& impl = *upcast(this);
     vmaDestroyBuffer(impl.vma, impl.stage, impl.stageMem);
     vmaDestroyImage(impl.vma, impl.image, impl.imageMem);
     vkDestroyImageView(impl.device, impl.view, VKALLOC);
     delete upcast(&impl);
-    *that = nullptr;
 }
 
 LavaTextureImpl::LavaTextureImpl(Config config) noexcept : device(config.device) {

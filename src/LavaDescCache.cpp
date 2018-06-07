@@ -167,15 +167,14 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
     return impl;
 }
 
-void LavaDescCache::destroy(LavaDescCache** that) noexcept {
-    LavaDescCacheImpl& impl = *upcast(*that);
+LavaDescCache::~LavaDescCache() noexcept {
+    LavaDescCacheImpl& impl = *upcast(this);
     for (auto& pair : impl.cache) {
         vkFreeDescriptorSets(impl.device, impl.descriptorPool, 1, &pair.second.handle);
     }
     vkDestroyDescriptorPool(impl.device, impl.descriptorPool, VKALLOC);
     vkDestroyDescriptorSetLayout(impl.device, impl.layout, VKALLOC);
-    delete upcast(*that);
-    *that = nullptr;
+    delete upcast(this);
 }
 
 VkDescriptorSetLayout LavaDescCache::getLayout() const noexcept {

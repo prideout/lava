@@ -33,16 +33,16 @@ objects. It is open sourced under the MIT license, available at https://github.c
 Each Lava class is completely independent of every other class, so clients can choose a subset
 of functionality as needed.
 
-Lava lives in the `par` namespace, and every class is instanced using a static `create`
-method. Most classes define a `Config` struct that gets passed into their constructor. We recommend
-using initializer syntax to populate the config structure on the fly. For example:
+Lava lives in the `par` namespace, and every class is instanced using a static `create` method.
+Each class defines a nested `Config` struct that gets passed to the constructor. We recommend using
+initializer syntax to populate the struct on the fly. For example:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
 #include &lt;par/LavaGpuBuffer.h&gt;
 
 using namespace par;
 
-LavaGpuBuffer* lavabuffer = LavaGpuBuffer::create({ // pass in a Config struct
+LavaGpuBuffer* lavabuffer = LavaGpuBuffer::create({ // pass in a LavaGpuBuffer::Config
     .device = device,
     .gpu = physicalDevice,
     .size = sizeof(TRIANGLE_VERTICES),
@@ -52,7 +52,7 @@ const VkBuffer vkbuffer = lavabuffer->getBuffer();
 
 // do stuff with the VkBuffer here...
 
-LavaGpuBuffer::destroy(&amp;lavabuffer);
+delete lavabuffer;
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### Building and Running the Demos
@@ -84,7 +84,7 @@ Then, for any platform, do this:
     ```bash
     cd [path to repo]
     mkdir .debug ; cd .debug ; cmake .. -G Ninja
-    ninja &amp;&amp; ./spinny_double
+    ninja &amp;&amp; ./05_spinny_double
     ```
 
 If you want to run every demo in sequence, do:
@@ -326,7 +326,7 @@ vkCmdCopyBuffer(cmdbuffer, stage->getBuffer(), destBuffer, 1, &amp;region);
 context->endWork();
 context->waitWork();
 
-LavaCpuBuffer::destroy(&amp;stage);
+delete stage;
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### LavaGpuBuffer

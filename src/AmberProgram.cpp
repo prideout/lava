@@ -13,7 +13,6 @@ using namespace std;
 
 struct AmberProgramImpl : AmberProgram {
     AmberProgramImpl(const string& vshader, const string& fshader) noexcept;
-    ~AmberProgramImpl() noexcept;
     VkShaderModule compileVertexShader(VkDevice device) noexcept;
     VkShaderModule compileFragmentShader(VkDevice device) noexcept;
     AmberCompiler* mCompiler;
@@ -30,23 +29,18 @@ AmberProgram* AmberProgram::create(const string& vshader, const string& fshader)
     return new AmberProgramImpl(vshader, fshader);
 }
 
-void AmberProgram::destroy(AmberProgram** that) noexcept {
-    AmberProgramImpl* impl = upcast(*that);
+AmberProgram::~AmberProgram() noexcept {
+    AmberProgramImpl* impl = upcast(this);
     VkDevice device = impl->mDevice;
     if (device) {
         vkDestroyShaderModule(device, impl->mVertModule, VKALLOC);
         vkDestroyShaderModule(device, impl->mFragModule, VKALLOC);
     }
-    delete upcast(impl);
-    *that = nullptr;
+    delete impl->mCompiler;
 }
 
 AmberProgramImpl::AmberProgramImpl(const string& vshader, const string& fshader) noexcept :
         mCompiler(AmberCompiler::create()), mVertShader(vshader), mFragShader(fshader) {}
-
-AmberProgramImpl::~AmberProgramImpl() noexcept {
-    AmberCompiler::destroy(&mCompiler);
-}
 
 VkShaderModule AmberProgramImpl::compileVertexShader(VkDevice device) noexcept {
     if (mVertModule) {

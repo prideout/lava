@@ -100,7 +100,7 @@ int main(const int argc, const char *argv[]) {
     }
 
     // Cleanup.
-    AmberProgram::destroy(&program);
-    LavaContext::destroy(&context);
+    delete program;
+    delete context;
     return 0;
 }

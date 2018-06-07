@@ -38,7 +38,7 @@ public:
         VkRenderPass renderPass;
     };
     static LavaPipeCache* create(Config config) noexcept;
-    static void destroy(LavaPipeCache**) noexcept;
+    ~LavaPipeCache() noexcept;
 
     // Fetches the pipeline layout that was created at construction.
     VkPipelineLayout getLayout() const noexcept;
@@ -59,9 +59,7 @@ public:
     // Evicts pipeline objects that were last used more than N milliseconds ago.
     void releaseUnused(uint64_t milliseconds) noexcept;
 protected:
-    // par::heaponly
     LavaPipeCache() noexcept = default;
-    ~LavaPipeCache() noexcept = default;
     // par::noncopyable
     LavaPipeCache(LavaPipeCache const&) = delete;
     LavaPipeCache& operator=(LavaPipeCache const&) = delete;

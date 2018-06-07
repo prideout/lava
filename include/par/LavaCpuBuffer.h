@@ -17,13 +17,11 @@ public:
         VkBufferUsageFlags usage;
     };    
     static LavaCpuBuffer* create(Config config) noexcept;
-    static void destroy(LavaCpuBuffer**) noexcept;
+    ~LavaCpuBuffer() noexcept;
     VkBuffer getBuffer() const noexcept;
     void setData(void const* sourceData, uint32_t bytesToCopy) noexcept;
 protected:
-    // par::heaponly
     LavaCpuBuffer() noexcept = default;
-    ~LavaCpuBuffer() noexcept = default;
     // par::noncopyable
     LavaCpuBuffer(LavaCpuBuffer const&) = delete;
     LavaCpuBuffer& operator=(LavaCpuBuffer const&) = delete;

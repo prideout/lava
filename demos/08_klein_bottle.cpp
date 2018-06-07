@@ -85,26 +85,26 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     const VkExtent2D extent = context->getSize();
 
     auto wrap_texture = [device, gpu](char const* filename) {
-        auto deleter = [](LavaTexture* ptr){ LavaTexture::destroy(&ptr); };
+        auto deleter = [](LavaTexture* ptr){ delete ptr; };
         auto ptr = create_texture(filename, device, gpu);
         return unique_ptr<LavaTexture, decltype(deleter)>(ptr, deleter);
     };
 
     auto wrap_program = [device](char const* vshader, char const* fshader) {
-        auto deleter = [device](AmberProgram* ptr){ AmberProgram::destroy(&ptr); };
+        auto deleter = [device](AmberProgram* ptr){ delete ptr; };
         auto ptr = AmberProgram::create(vshader, fshader);
         ptr->compile(device);
         return unique_ptr<AmberProgram, decltype(deleter)>(ptr, deleter);
     };
 
     auto wrap_pipecache = [](LavaPipeCache::Config config) {
-        auto deleter = [](LavaPipeCache* ptr){ LavaPipeCache::destroy(&ptr); };
+        auto deleter = [](LavaPipeCache* ptr){ delete ptr; };
         auto ptr = LavaPipeCache::create(config);
         return unique_ptr<LavaPipeCache, decltype(deleter)>(ptr, deleter);
     };
 
     auto wrap_buffer = [](LavaGpuBuffer::Config config) {
-        auto deleter = [](LavaGpuBuffer* ptr){ LavaGpuBuffer::destroy(&ptr); };
+        auto deleter = [](LavaGpuBuffer* ptr){ delete ptr; };
         auto ptr = LavaGpuBuffer::create(config);
         return unique_ptr<LavaGpuBuffer, decltype(deleter)>(ptr, deleter);
     };
@@ -167,7 +167,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     backdrop->freeStage();
     occlusion->freeStage();
     rust->freeStage();
-    LavaCpuBuffer::destroy(&vboStage);
+    delete vboStage;
 
     // Record two command buffers.
     LavaRecording* frame = context->createRecording();
@@ -237,6 +237,6 @@ int main(const int argc, const char *argv[]) {
         }
     });
     run_demo(context, window);
-    LavaContext::destroy(&context);
+    delete context;
     return 0;
 }

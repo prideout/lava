@@ -16,7 +16,16 @@
         "tuple": "cpp",
         "type_traits": "cpp",
         "vector": "cpp",
-        "__config": "cpp"
+        "__config": "cpp",
+        "__nullptr": "cpp",
+        "cstddef": "cpp",
+        "exception": "cpp",
+        "initializer_list": "cpp",
+        "stdexcept": "cpp",
+        "typeinfo": "cpp",
+        "algorithm": "cpp",
+        "__functional_03": "cpp",
+        "__tree": "cpp"
     },
     "files.exclude": {
         "include/spdlog": true,

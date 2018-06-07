@@ -26,7 +26,7 @@ public:
         std::vector<VkDescriptorImageInfo> imageSamplers;
     };
     static LavaDescCache* create(Config config) noexcept;
-    static void destroy(LavaDescCache**) noexcept;
+    ~LavaDescCache() noexcept;
 
     // Fetches the descriptor set layout that was created at construction.
     VkDescriptorSetLayout getLayout() const noexcept;
@@ -53,9 +53,7 @@ public:
     // Evicts descriptor sets and samplers that were last used more than N milliseconds ago.
     void releaseUnused(uint64_t milliseconds) noexcept;
 protected:
-    // par::heaponly
     LavaDescCache() noexcept = default;
-    ~LavaDescCache() noexcept = default;
     // par::noncopyable
     LavaDescCache(LavaDescCache const&) = delete;
     LavaDescCache& operator=(LavaDescCache const&) = delete;

@@ -58,7 +58,6 @@ struct DepthBundle {
 
 struct LavaContextImpl : LavaContext {
     LavaContextImpl(bool useValidation) noexcept;
-    ~LavaContextImpl() noexcept;
     void initDevice(VkSurfaceKHR surface, bool createDepthBuffer) noexcept;
     void killDevice() noexcept;
     VkCommandBuffer beginFrame() noexcept;
@@ -109,11 +108,10 @@ LavaContext* LavaContext::create(Config config) noexcept {
     return impl;
 }
 
-void LavaContext::destroy(LavaContext** that) noexcept {
-    LavaContextImpl* impl = upcast(*that);
+LavaContext::~LavaContext() noexcept {
+    LavaContextImpl* impl = upcast(this);
     impl->killDevice();
-    delete impl;
-    *that = nullptr;
+    vkDestroyInstance(impl->mInstance, VKALLOC);
 }
 
 static bool isExtensionSupported(const string& ext) noexcept;
@@ -162,10 +160,6 @@ LavaContextImpl::LavaContextImpl(bool useValidation) noexcept {
     error = vkCreateInstance(&info, VKALLOC, &mInstance);
     LOG_CHECK(not error, "Unable to create Vulkan instance.");
     LavaLoader::bind(mInstance);
-}
-
-LavaContextImpl::~LavaContextImpl() noexcept {
-    vkDestroyInstance(mInstance, VKALLOC);
 }
 
 void LavaContextImpl::killDevice() noexcept {

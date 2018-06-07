@@ -229,11 +229,11 @@ int main(const int argc, const char *argv[]) {
 
     // Cleanup.
     vkDestroySampler(device, sampler, 0);
-    LavaTexture::destroy(&texture);
-    LavaDescCache::destroy(&descriptors);
-    LavaCpuBuffer::destroy(&vertexBuffer);
-    AmberProgram::destroy(&program);
-    LavaPipeCache::destroy(&pipelines);
-    LavaContext::destroy(&context);
+    delete texture;
+    delete descriptors;
+    delete vertexBuffer;
+    delete pipelines;
+    delete program;
+    delete context;
     return 0;
 }

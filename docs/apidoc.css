@@ -19,10 +19,18 @@ body {
 }
 
 .md .gotop {
+    font-weight: normal;
     font-size: 10px;
     float: right;
-    line-height: 50px;
     color: #99a3d8 !important;
+}
+
+.md h2 .gotop, .md h3 .gotop {
+    line-height: 50px;
+}
+
+.md h4 .gotop {
+    line-height: 40px;
 }
 
 .md a,

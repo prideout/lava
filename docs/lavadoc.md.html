@@ -33,16 +33,16 @@ objects. It is open sourced under the MIT license, available at https://github.c
 Each Lava class is completely independent of every other class, so clients can choose a subset
 of functionality as needed.
 
-Lava lives in the `par` namespace, and every class is instanced using a static `create` method.
-Each class defines a nested `Config` struct that gets passed to the constructor. We recommend using
-initializer syntax to populate the struct on the fly. For example:
+Lava classes are defined in the `par` namespace, instanced using static `create` methods that
+consume simple POD structures. We recommend using initializer syntax to populate these structs. For
+example:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
 #include &lt;par/LavaGpuBuffer.h&gt;
 
 using namespace par;
 
-LavaGpuBuffer* lavabuffer = LavaGpuBuffer::create({ // pass in a LavaGpuBuffer::Config
+LavaGpuBuffer* lavabuffer = LavaGpuBuffer::create({ // pass in a Config struct
     .device = device,
     .gpu = physicalDevice,
     .size = sizeof(TRIANGLE_VERTICES),
@@ -54,6 +54,10 @@ const VkBuffer vkbuffer = lavabuffer->getBuffer();
 
 delete lavabuffer;
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If desired, you can wrap your Lava objects in `unique_ptr` or `shared_ptr`, but please note that
+destruction order matters. For example, you will often want to ensure that LavaContext gets deleted
+after every other Lava object, since it destroys the **VkDevice** and **VkInstance**.
 
 ### Building and Running the Demos
 

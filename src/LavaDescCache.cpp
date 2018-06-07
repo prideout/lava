@@ -85,6 +85,7 @@ namespace DirtyFlag {
 }
 
 struct LavaDescCacheImpl : LavaDescCache {
+    ~LavaDescCacheImpl() noexcept;
     CacheVal* currentDescriptor = nullptr;
     VkDevice device;
     Cache cache;
@@ -167,14 +168,17 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
     return impl;
 }
 
-LavaDescCache::~LavaDescCache() noexcept {
-    LavaDescCacheImpl& impl = *upcast(this);
-    for (auto& pair : impl.cache) {
-        vkFreeDescriptorSets(impl.device, impl.descriptorPool, 1, &pair.second.handle);
+void LavaDescCache::operator delete(void* ptr) {
+    auto impl = (LavaDescCacheImpl*) ptr;
+    impl->~LavaDescCacheImpl();
+}
+
+LavaDescCacheImpl::~LavaDescCacheImpl() noexcept {
+    for (auto& pair : cache) {
+        vkFreeDescriptorSets(device, descriptorPool, 1, &pair.second.handle);
     }
-    vkDestroyDescriptorPool(impl.device, impl.descriptorPool, VKALLOC);
-    vkDestroyDescriptorSetLayout(impl.device, impl.layout, VKALLOC);
-    delete upcast(this);
+    vkDestroyDescriptorPool(device, descriptorPool, VKALLOC);
+    vkDestroyDescriptorSetLayout(device, layout, VKALLOC);
 }
 
 VkDescriptorSetLayout LavaDescCache::getLayout() const noexcept {

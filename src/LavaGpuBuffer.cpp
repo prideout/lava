@@ -11,6 +11,7 @@ using namespace par;
 
 struct LavaGpuBufferImpl : LavaGpuBuffer {
     LavaGpuBufferImpl(Config config) noexcept;
+    ~LavaGpuBufferImpl() noexcept;
     VkDevice device;
     VkBuffer buffer;
     VmaAllocation memory;
@@ -23,10 +24,13 @@ LavaGpuBuffer* LavaGpuBuffer::create(Config config) noexcept {
     return new LavaGpuBufferImpl(config);
 }
 
-LavaGpuBuffer::~LavaGpuBuffer() noexcept {
-    LavaGpuBufferImpl* impl = upcast(this);
-    vmaDestroyBuffer(impl->vma, impl->buffer, impl->memory);
-    delete upcast(impl);
+void LavaGpuBuffer::operator delete(void* ptr) {
+    auto impl = (LavaGpuBufferImpl*) ptr;
+    impl->~LavaGpuBufferImpl();
+}
+
+LavaGpuBufferImpl::~LavaGpuBufferImpl() noexcept {
+    vmaDestroyBuffer(vma, buffer, memory);
 }
 
 LavaGpuBufferImpl::LavaGpuBufferImpl(Config config) noexcept : device(config.device) {

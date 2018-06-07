@@ -17,7 +17,7 @@ public:
         VkBufferUsageFlags usage;
     };    
     static LavaCpuBuffer* create(Config config) noexcept;
-    ~LavaCpuBuffer() noexcept;
+    static void operator delete(void* );
     VkBuffer getBuffer() const noexcept;
     void setData(void const* sourceData, uint32_t bytesToCopy) noexcept;
 protected:

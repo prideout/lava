@@ -86,6 +86,7 @@ namespace DirtyFlag {
 }
 
 struct LavaPipeCacheImpl : LavaPipeCache {
+    ~LavaPipeCacheImpl() noexcept;
     CacheVal* currentPipeline = nullptr;
     VkDevice device;
     Cache cache;
@@ -155,13 +156,16 @@ LavaPipeCache* LavaPipeCache::create(Config config) noexcept {
     return impl;
 }
 
-LavaPipeCache::~LavaPipeCache() noexcept {
-    LavaPipeCacheImpl* impl = upcast(this);
-    for (auto& pair : impl->cache) {
-        vkDestroyPipeline(impl->device, pair.second.handle, VKALLOC);
+void LavaPipeCache::operator delete(void* ptr) {
+    auto impl = (LavaPipeCacheImpl*) ptr;
+    impl->~LavaPipeCacheImpl();
+}
+
+LavaPipeCacheImpl::~LavaPipeCacheImpl() noexcept {
+    for (auto& pair : cache) {
+        vkDestroyPipeline(device, pair.second.handle, VKALLOC);
     }
-    vkDestroyPipelineLayout(impl->device, impl->pipelineLayout, VKALLOC);
-    delete upcast(impl);
+    vkDestroyPipelineLayout(device, pipelineLayout, VKALLOC);
 }
 
 VkPipelineLayout LavaPipeCache::getLayout() const noexcept {

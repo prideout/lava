@@ -19,7 +19,7 @@ public:
         VkFormat format;
     };
     static LavaTexture* create(Config config) noexcept;
-    ~LavaTexture() noexcept;
+    static void operator delete(void* ptr) noexcept;
     void uploadStage(VkCommandBuffer cmd) const noexcept;
     void freeStage() noexcept;
     VkImageView getImageView() const noexcept;

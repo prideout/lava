@@ -11,6 +11,7 @@ using namespace par;
 
 struct LavaCpuBufferImpl : LavaCpuBuffer {
     LavaCpuBufferImpl(Config config) noexcept;
+    ~LavaCpuBufferImpl() noexcept;
     VkDevice device;
     VkBuffer buffer;
     VmaAllocation memory;
@@ -23,10 +24,13 @@ LavaCpuBuffer* LavaCpuBuffer::create(Config config) noexcept {
     return new LavaCpuBufferImpl(config);
 }
 
-LavaCpuBuffer::~LavaCpuBuffer() noexcept {
-    LavaCpuBufferImpl* impl = upcast(this);
-    vmaDestroyBuffer(impl->vma, impl->buffer, impl->memory);
-    delete upcast(impl);
+void LavaCpuBuffer::operator delete(void* ptr) {
+    auto impl = (LavaCpuBufferImpl*) ptr;
+    impl->~LavaCpuBufferImpl();
+}
+
+LavaCpuBufferImpl::~LavaCpuBufferImpl() noexcept {
+    vmaDestroyBuffer(vma, buffer, memory);
 }
 
 LavaCpuBufferImpl::LavaCpuBufferImpl(Config config) noexcept : device(config.device) {

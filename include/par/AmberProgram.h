@@ -12,7 +12,7 @@ namespace par {
 class AmberProgram {
 public:
     static AmberProgram* create(const std::string& vshader, const std::string& fshader) noexcept;
-    ~AmberProgram() noexcept;
+    static void operator delete(void* ptr) noexcept;
     bool compile(VkDevice device) noexcept;
     VkShaderModule getVertexShader() const noexcept;
     VkShaderModule getFragmentShader() const noexcept;

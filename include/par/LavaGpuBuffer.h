@@ -16,7 +16,7 @@ public:
         VkBufferUsageFlags usage;
     };    
     static LavaGpuBuffer* create(Config config) noexcept;
-    ~LavaGpuBuffer() noexcept;
+    static void operator delete(void* );
     VkBuffer getBuffer() const noexcept;
 protected:
     LavaGpuBuffer() noexcept = default;

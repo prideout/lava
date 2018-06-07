@@ -16,6 +16,7 @@ static int ninstances = 0;
 
 struct AmberCompilerImpl : AmberCompiler {
     AmberCompilerImpl() noexcept;
+    ~AmberCompilerImpl() noexcept;
     bool compile(Stage stage, const string& glsl, vector<uint32_t>* spirv) const noexcept;
 };
 
@@ -27,7 +28,12 @@ AmberCompiler* AmberCompiler::create() noexcept {
     return new AmberCompilerImpl();
 }
 
-AmberCompiler::~AmberCompiler() noexcept {
+void AmberCompiler::operator delete(void* ptr) noexcept {
+    auto impl = (AmberCompilerImpl*) ptr;
+    impl->~AmberCompilerImpl();
+}
+
+AmberCompilerImpl::~AmberCompilerImpl() noexcept {
     if (--ninstances == 0) {
         glslang::FinalizeProcess();
     }

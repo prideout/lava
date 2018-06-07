@@ -38,7 +38,7 @@ public:
         VkRenderPass renderPass;
     };
     static LavaPipeCache* create(Config config) noexcept;
-    ~LavaPipeCache() noexcept;
+    static void operator delete(void* );
 
     // Fetches the pipeline layout that was created at construction.
     VkPipelineLayout getLayout() const noexcept;

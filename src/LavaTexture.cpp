@@ -11,6 +11,7 @@ using namespace par;
 
 struct LavaTextureImpl : LavaTexture {
     LavaTextureImpl(Config config) noexcept;
+    ~LavaTextureImpl() noexcept;
     VkDevice device;
     VmaAllocation stageMem;
     VmaAllocation imageMem;
@@ -29,12 +30,15 @@ LavaTexture* LavaTexture::create(Config config) noexcept {
     return new LavaTextureImpl(config);
 }
 
-LavaTexture::~LavaTexture() noexcept {
-    LavaTextureImpl& impl = *upcast(this);
-    vmaDestroyBuffer(impl.vma, impl.stage, impl.stageMem);
-    vmaDestroyImage(impl.vma, impl.image, impl.imageMem);
-    vkDestroyImageView(impl.device, impl.view, VKALLOC);
-    delete upcast(&impl);
+void LavaTexture::operator delete(void* ptr) noexcept {
+    auto impl = (LavaTextureImpl*) ptr;
+    impl->~LavaTextureImpl();
+}
+
+LavaTextureImpl::~LavaTextureImpl() noexcept {
+    vmaDestroyBuffer(vma, stage, stageMem);
+    vmaDestroyImage(vma, image, imageMem);
+    vkDestroyImageView(device, view, VKALLOC);
 }
 
 LavaTextureImpl::LavaTextureImpl(Config config) noexcept : device(config.device) {

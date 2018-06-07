@@ -26,7 +26,7 @@ public:
         std::vector<VkDescriptorImageInfo> imageSamplers;
     };
     static LavaDescCache* create(Config config) noexcept;
-    ~LavaDescCache() noexcept;
+    static void operator delete(void* );
 
     // Fetches the descriptor set layout that was created at construction.
     VkDescriptorSetLayout getLayout() const noexcept;

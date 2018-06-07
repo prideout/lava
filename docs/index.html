@@ -73,9 +73,9 @@ of functionality as needed.
 
 </p><p>
 
-Lava lives in the <code>par</code> namespace, and every class is instanced using a static <code>create</code>
-method. Most classes define a <code>Config</code> struct that gets passed into their constructor. We recommend
-using initializer syntax to populate the config structure on the fly. For example:
+Lava classes are defined in the <code>par</code> namespace, instanced using static <code>create</code> methods that
+consume simple POD structures. We recommend using initializer syntax to populate these structs. For
+example:
 
 </p><pre class="listing tilde"><code><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;par/LavaGpuBuffer.h&gt;</span></span>
 
@@ -91,7 +91,13 @@ LavaGpuBuffer* lavabuffer = LavaGpuBuffer::create({ <span class="hljs-comment">/
 
 <span class="hljs-comment">// do stuff with the VkBuffer here...</span>
 
-LavaGpuBuffer::destroy(&amp;lavabuffer);</code></pre>
+<span class="hljs-keyword">delete</span> lavabuffer;</code></pre><p>
+
+If desired, you can wrap your Lava objects in <code>unique_ptr</code> or <code>shared_ptr</code>, but please note that
+destruction order matters. For example, you will often want to ensure that LavaContext gets deleted
+after every other Lava object, since it destroys the <strong class="asterisk">VkDevice</strong> and <strong class="asterisk">VkInstance</strong>.
+
+</p>
 <a class="target" name="buildingandrunningthedemos">&nbsp;</a><a class="target" name="toc0.1.1">&nbsp;</a><h3><a href="#buildingandrunningthedemos"># </a>Building and Running the Demos<a href="#" class="gotop">Back to Top</a></h3>
 <p>
 
@@ -126,7 +132,7 @@ Then, for any platform, do this:
 <li class="number">Invoke the following commands in your terminal.
     <p></p><pre class="listing backtick"><code><span class="hljs-built_in">cd</span> [path to repo]
 mkdir .debug ; <span class="hljs-built_in">cd</span> .debug ; cmake .. -G Ninja
-ninja &amp;&amp; ./spinny_double</code></pre><p></p></li></ol>
+ninja &amp;&amp; ./05_spinny_double</code></pre><p></p></li></ol>
 
 <p></p><p>
 
@@ -375,7 +381,7 @@ vkCmdCopyBuffer(cmdbuffer, stage-&gt;getBuffer(), destBuffer, <span class="hljs-
 context-&gt;endWork();
 context-&gt;waitWork();
 
-LavaCpuBuffer::destroy(&amp;stage);</code></pre>
+<span class="hljs-keyword">delete</span> stage;</code></pre>
 <a class="target" name="lavagpubuffer">&nbsp;</a><a class="target" name="toc0.2.5">&nbsp;</a><h3><a href="#lavagpubuffer"># </a>LavaGpuBuffer<a href="#" class="gotop">Back to Top</a></h3>
 <p>
 

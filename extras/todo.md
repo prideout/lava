@@ -4,6 +4,8 @@
     https://github.com/syoyo/tinyobjloader#example-code
     https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
 
+# Investigate lavalib crash on Linux
+
 # lavaray
 
     Lava as a submodule

@@ -4,7 +4,7 @@ project(LavaDemos)
 
 file(GLOB_RECURSE AMBER_SOURCE "../src/Amber*.cpp")
 
-set(DEMO_LIBS lava glfw glslang SPIRV)
+set(DEMO_LIBS glfw glslang SPIRV)
 
 if (APPLE)
     list(APPEND DEMO_LIBS "$ENV{VULKAN_SDK}/macOS/lib/libvulkan.1.dylib")
@@ -31,6 +31,6 @@ set(DEMO_NAMES
     08_klein_bottle)
 
 foreach(DEMO ${DEMO_NAMES})
-    add_executable(${DEMO} ${DEMO}.cpp ${AMBER_SOURCE})
+    add_executable(${DEMO} ${DEMO}.cpp ${AMBER_SOURCE} ${LAVA_SOURCE})
     set_target_properties(${DEMO} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 endforeach()

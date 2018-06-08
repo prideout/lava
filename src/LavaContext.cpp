@@ -57,7 +57,7 @@ struct DepthBundle {
 };
 
 struct LavaContextImpl : LavaContext {
-    LavaContextImpl(bool useValidation) noexcept;
+    explicit LavaContextImpl(bool useValidation) noexcept;
     ~LavaContextImpl() noexcept;
     void initDevice(VkSurfaceKHR surface, bool createDepthBuffer) noexcept;
     void killDevice() noexcept;
@@ -102,8 +102,7 @@ namespace LavaLoader {
 LAVA_DEFINE_UPCAST(LavaContext)
 
 LavaContext* LavaContext::create(Config config) noexcept {
-    LavaLoader::init();
-    LavaContextImpl* impl = new LavaContextImpl(config.validation);
+    auto impl = new LavaContextImpl(config.validation);
     impl->mSurface = config.createSurface(impl->mInstance);
     impl->initDevice(impl->mSurface, config.depthBuffer);
     return impl;

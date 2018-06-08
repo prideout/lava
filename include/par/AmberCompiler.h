@@ -11,7 +11,7 @@ namespace par {
 class AmberCompiler {
 public:
     static AmberCompiler* create() noexcept;
-    static void operator delete(void* ptr);
+    static void operator delete(void* ptr) noexcept;
     enum Stage { VERTEX, FRAGMENT, COMPUTE };
     bool compile(Stage stage, const std::string& glsl, std::vector<uint32_t>* spirv) const noexcept;
 protected:

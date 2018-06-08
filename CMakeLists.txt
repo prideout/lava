@@ -9,7 +9,8 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 
 # Note that -fsanitize=undefined is also an interesting option.
-set(EXTRA_SANITIZE_OPTIONS "-fsanitize=address")
+# -fsanitize=leak is also interesting, but not yet supported on MacOS.
+# set(EXTRA_SANITIZE_OPTIONS "-fsanitize=address")
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_SANITIZE_OPTIONS}")
 

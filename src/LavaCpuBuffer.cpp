@@ -26,7 +26,7 @@ LavaCpuBuffer* LavaCpuBuffer::create(Config config) noexcept {
 
 void LavaCpuBuffer::operator delete(void* ptr) {
     auto impl = (LavaCpuBufferImpl*) ptr;
-    impl->~LavaCpuBufferImpl();
+    ::delete impl;
 }
 
 LavaCpuBufferImpl::~LavaCpuBufferImpl() noexcept {

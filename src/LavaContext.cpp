@@ -110,7 +110,7 @@ LavaContext* LavaContext::create(Config config) noexcept {
 
 void LavaContext::operator delete(void* ptr) {
     auto impl = (LavaContextImpl*) ptr;
-    impl->~LavaContextImpl();
+    ::delete impl;
 }
 
 LavaContextImpl::~LavaContextImpl() noexcept {

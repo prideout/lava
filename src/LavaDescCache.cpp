@@ -170,7 +170,7 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
 
 void LavaDescCache::operator delete(void* ptr) {
     auto impl = (LavaDescCacheImpl*) ptr;
-    impl->~LavaDescCacheImpl();
+    ::delete impl;
 }
 
 LavaDescCacheImpl::~LavaDescCacheImpl() noexcept {

@@ -32,7 +32,7 @@ LavaTexture* LavaTexture::create(Config config) noexcept {
 
 void LavaTexture::operator delete(void* ptr) noexcept {
     auto impl = (LavaTextureImpl*) ptr;
-    impl->~LavaTextureImpl();
+    ::delete impl;
 }
 
 LavaTextureImpl::~LavaTextureImpl() noexcept {

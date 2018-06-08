@@ -26,7 +26,7 @@ LavaGpuBuffer* LavaGpuBuffer::create(Config config) noexcept {
 
 void LavaGpuBuffer::operator delete(void* ptr) {
     auto impl = (LavaGpuBufferImpl*) ptr;
-    impl->~LavaGpuBufferImpl();
+    ::delete impl;
 }
 
 LavaGpuBufferImpl::~LavaGpuBufferImpl() noexcept {

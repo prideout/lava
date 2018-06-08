@@ -30,7 +30,7 @@ AmberCompiler* AmberCompiler::create() noexcept {
 
 void AmberCompiler::operator delete(void* ptr) noexcept {
     auto impl = (AmberCompilerImpl*) ptr;
-    impl->~AmberCompilerImpl();
+    ::delete impl;
 }
 
 AmberCompilerImpl::~AmberCompilerImpl() noexcept {

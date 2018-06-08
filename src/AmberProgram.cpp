@@ -32,7 +32,7 @@ AmberProgram* AmberProgram::create(const string& vshader, const string& fshader)
 
 void AmberProgram::operator delete(void* ptr) noexcept {
     auto impl = (AmberProgramImpl*) ptr;
-    impl->~AmberProgramImpl();
+    ::delete impl;
 }
 
 AmberProgramImpl::~AmberProgramImpl() noexcept {

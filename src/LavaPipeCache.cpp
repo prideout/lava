@@ -158,7 +158,7 @@ LavaPipeCache* LavaPipeCache::create(Config config) noexcept {
 
 void LavaPipeCache::operator delete(void* ptr) {
     auto impl = (LavaPipeCacheImpl*) ptr;
-    impl->~LavaPipeCacheImpl();
+    ::delete impl;
 }
 
 LavaPipeCacheImpl::~LavaPipeCacheImpl() noexcept {

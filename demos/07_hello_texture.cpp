@@ -40,7 +40,6 @@ namespace {
     layout(location = 0) in vec2 vert_uv;
     layout(binding = 0) uniform sampler2D img;
     void main() {
-        // frag_color = vec4(vert_uv, 0, 1);
         frag_color = texture(img, vert_uv);
     })";
 

@@ -48,3 +48,7 @@ LavaGpuBufferImpl::LavaGpuBufferImpl(Config config) noexcept : device(config.dev
 VkBuffer LavaGpuBuffer::getBuffer() const noexcept {
     return upcast(this)->buffer;
 }
+
+const VkBuffer* LavaGpuBuffer::getBufferPtr() const noexcept {
+    return &(upcast(this)->buffer);
+}

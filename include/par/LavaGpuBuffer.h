@@ -18,6 +18,7 @@ public:
     static LavaGpuBuffer* create(Config config) noexcept;
     static void operator delete(void* );
     VkBuffer getBuffer() const noexcept;
+    const VkBuffer* getBufferPtr() const noexcept;
 protected:
     LavaGpuBuffer() noexcept = default;
     // par::noncopyable

@@ -25,7 +25,16 @@
         "typeinfo": "cpp",
         "algorithm": "cpp",
         "__functional_03": "cpp",
-        "__tree": "cpp"
+        "__tree": "cpp",
+        "__hash_table": "cpp",
+        "__split_buffer": "cpp",
+        "list": "cpp",
+        "map": "cpp",
+        "set": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "unordered_map": "cpp",
+        "utility": "cpp"
     },
     "files.exclude": {
         "include/spdlog": true,

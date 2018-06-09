@@ -46,7 +46,6 @@ namespace {
     layout(location = 0) in vec2 vert_uv;
     layout(binding = 0) uniform sampler2D img;
     void main() {
-        // frag_color = vec4(vert_uv, 0, 1);
         frag_color = texture(img, vert_uv);
     })";
 
@@ -66,9 +65,13 @@ namespace {
     #undef N
     #undef P
 
-    struct Mesh {
+    struct Geometry {
         std::unique_ptr<LavaGpuBuffer> vertices;
         std::unique_ptr<LavaGpuBuffer> indices;
+        std::unique_ptr<LavaCpuBuffer> vstage;
+        std::unique_ptr<LavaCpuBuffer> istage;
+        VkBufferCopy vregion = {};
+        VkBufferCopy iregion = {};
     };
 
     template <typename T>
@@ -77,7 +80,7 @@ namespace {
     }
 }
 
-static Mesh load_mesh(const char* filename, VkDevice device, VkPhysicalDevice gpu) {
+static Geometry load_geometry(const char* filename, VkDevice device, VkPhysicalDevice gpu) {
     tinyobj::attrib_t attrib;
     vector<tinyobj::shape_t> shapes;
     vector<tinyobj::material_t> materials;
@@ -94,23 +97,47 @@ static Mesh load_mesh(const char* filename, VkDevice device, VkPhysicalDevice gp
     }
     llog.info("Loaded {:2} shapes from {}", shapes.size(), filename);
     llog.info("\tshape 0 has {} triangles", shapes[0].mesh.indices.size() / 3);
+
+    vector<uint16_t> indices;
+    indices.reserve(shapes[0].mesh.indices.size());
+    for (auto compound_index : shapes[0].mesh.indices) {
+        indices.emplace_back(compound_index.vertex_index);
+    }
     
-    Mesh mesh = {
+    assert(sizeof(attrib.vertices[0] == sizeof(float)));
+    const uint32_t vsize = (uint32_t) (sizeof(float) * attrib.vertices.size());
+    const uint32_t isize = (uint32_t) (sizeof(uint16_t) * indices.size());
+
+    return Geometry {
         .vertices = make_unique<LavaGpuBuffer>({
             .device = device,
             .gpu = gpu,
-            .size = (uint32_t) (sizeof(uint16_t) * shapes[0].mesh.indices.size()),
+            .size = vsize,
             .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
         }),
         .indices = make_unique<LavaGpuBuffer>({
             .device = device,
             .gpu = gpu,
-            .size = (uint32_t) (sizeof(float) * attrib.vertices.size()),
+            .size = (uint32_t) (sizeof(uint16_t) * shapes[0].mesh.indices.size()),
             .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
-        })
+        }),
+        .vstage = make_unique<LavaCpuBuffer>({
+            .device = device,
+            .gpu = gpu,
+            .size = (uint32_t) (sizeof(float) * attrib.vertices.size()),
+            .source = attrib.vertices.data(),
+            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        }),
+        .istage = make_unique<LavaCpuBuffer>({
+            .device = device,
+            .gpu = gpu,
+            .size = isize,
+            .source = indices.data(),
+            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        }),
+        .vregion = { .size = vsize },
+        .iregion = { .size = isize }
     };
-
-    return mesh;
 }
 
 static unique_ptr<LavaTexture> load_texture(char const* filename, VkDevice device,
@@ -147,13 +174,15 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     auto rust = load_texture("../extras/assets/rust.png", device, gpu);
 
     // Create the klein bottle mesh.
-    auto mesh = load_mesh("../extras/assets/klein.obj", device, gpu);
+    auto geo = load_geometry("../extras/assets/klein.obj", device, gpu);
 
     // Start uploading the textures and geometry.
     VkCommandBuffer workbuf = context->beginWork();
     backdrop_texture->uploadStage(workbuf);
     occlusion->uploadStage(workbuf);
     rust->uploadStage(workbuf);
+    vkCmdCopyBuffer(workbuf, geo.istage->getBuffer(), geo.indices->getBuffer(), 1, &geo.iregion);
+    vkCmdCopyBuffer(workbuf, geo.vstage->getBuffer(), geo.vertices->getBuffer(), 1, &geo.vregion);
 
     // Create shader modules.
     auto make_program = [device](char const* vshader, char const* fshader) {
@@ -205,34 +234,49 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     const VkDescriptorSetLayout dlayout = descriptors->getLayout();
     const VkDescriptorSet dset = descriptors->getDescriptor();
 
+    // Describe the vertex configuration for all geometries.
+    const LavaPipeCache::VertexState backdrop_vertex {
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+        .attributes = { {
+            .binding = 0u,
+            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .location = 0u,
+            .offset = 0u,
+        }, {
+            .binding = 0u,
+            .format = VK_FORMAT_R32G32_SFLOAT,
+            .location = 1u,
+            .offset = 12u,
+        } },
+        .buffers = { {
+            .binding = 0u,
+            .stride = 20,
+        } }
+    };
+    const LavaPipeCache::VertexState klein_bottle_vertex {
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .attributes = { {
+            .binding = 0u,
+            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .location = 0u,
+            .offset = 0u,
+        } },
+        .buffers = { {
+            .binding = 0u,
+            .stride = 12,
+        } }
+    };
+
     // Create the pipeline.
     static_assert(sizeof(Vertex) == 20, "Unexpected vertex size.");
     auto pipelines = make_unique<LavaPipeCache>({
         .device = device,
-        .vertex = {
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-            .attributes = { {
-                .binding = 0u,
-                .format = VK_FORMAT_R32G32B32_SFLOAT,
-                .location = 0u,
-                .offset = 0u,
-            }, {
-                .binding = 0u,
-                .format = VK_FORMAT_R32G32_SFLOAT,
-                .location = 1u,
-                .offset = 12u,
-            } },
-            .buffers = { {
-                .binding = 0u,
-                .stride = 20,
-            } }
-        },
+        .vertex = {},
         .descriptorLayouts = { dlayout },
         .vshader = backdrop_program->getVertexShader(),
         .fshader = backdrop_program->getFragmentShader(),
         .renderPass = renderPass
     });
-    const VkPipeline pipeline = pipelines->getPipeline();
     const VkPipelineLayout playout = pipelines->getLayout();
 
     // Wait until done uploading the textures and geometry.
@@ -242,7 +286,10 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     occlusion->freeStage();
     rust->freeStage();
     delete vboStage;
+    geo.istage.reset();
+    geo.vstage.reset();
 
+    // Fill in some info structs before starting the render loop.
     const VkClearValue clearValues[] = {
         { .color.float32 = {0.1, 0.2, 0.4, 1.0} },
         { .depthStencil.depth = 0 }
@@ -251,46 +298,56 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         .width = (float) extent.width,
         .height = (float) extent.height
     };
+    const VkRect2D scissor { .extent = extent };
+    VkRenderPassBeginInfo rpbi {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = renderPass,
+        .renderArea.extent = extent,
+        .pClearValues = clearValues,
+        .clearValueCount = 2
+    };
+    const VkDeviceSize offsets[] = { 0 };
 
     // Record two command buffers.
     LavaRecording* frame = context->createRecording();
     for (uint32_t i = 0; i < 2; i++) {
+        rpbi.framebuffer = context->getFramebuffer(i);
         const VkCommandBuffer cmdbuffer = context->beginRecording(frame, i);
-        const VkRenderPassBeginInfo rpbi {
-            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .framebuffer = context->getFramebuffer(i),
-            .renderPass = renderPass,
-            .renderArea.extent = extent,
-            .pClearValues = clearValues,
-            .clearValueCount = 2
-        };
-        const VkRect2D scissor { .extent = extent };
-        const VkBuffer buffer[] = { backdrop_vertices->getBuffer() };
-        const VkDeviceSize offsets[] = { 0 };
+
         vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdSetViewport(cmdbuffer, 0, 1, &viewport);
         vkCmdSetScissor(cmdbuffer, 0, 1, &scissor);
-        vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-        vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
         vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
                 &dset, 0, 0);
+
+        // Draw the backdrop.
+        pipelines->setVertexState(backdrop_vertex);
+        vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
+        vkCmdBindVertexBuffers(cmdbuffer, 0, 1, backdrop_vertices->getBufferPtr(), offsets);
         vkCmdDraw(cmdbuffer, 4, 1, 0, 0);
+
+        // Draw the klein bottle.
+        // pipelines->setVertexState(klein_bottle_vertex);
+        // vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
+        // vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
+        // vkCmdDraw(cmdbuffer, 4, 1, 0, 0);
+
         vkCmdEndRenderPass(cmdbuffer);
         context->endRecording();
     }
 
-    // Main game loop.
+    // Main render loop.
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         context->presentRecording(frame);
     }
 
-    // Wait for the command buffer to finish executing.
+    // Wait for the command buffer to finish before deleting any Vulkan objects.
     context->waitRecording(frame);
 
-    // Cleanup.
+    // Cleanup. All Vulkan objects except the sampler and recorded command buffers are stored
+    // unique_ptr so they self-destruct when the scope ends.
     context->freeRecording(frame);
-
     vkDestroySampler(device, sampler, 0);
 }
 

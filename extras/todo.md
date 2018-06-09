@@ -1,9 +1,15 @@
 # 08_klein_bottle
 
-    Introduce LavaGeometry, similar API to LavaTexture, except:
-        Make it always mapped, give it a data() method for the stage (returns null after freed)
-        Use it in klein_bottle load_mesh function.
+    Get it to draw without texturing
+    Texturing
+    Combine the VkBuffers
+    Introduce LavaGeometry
+        only supports two "attribs" because it assumes non-position data is interleaved
     https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
+
+# gli and ktx pipeline
+
+    cdwfs/img2ktx
 
 # .clang-format
 

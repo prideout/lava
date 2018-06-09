@@ -1,8 +1,14 @@
 # 08_klein_bottle
 
-    ../extras/assets/klein.obj
-    https://github.com/syoyo/tinyobjloader#example-code
+    Introduce LavaGeometry, similar API to LavaTexture, except:
+        Make it always mapped, give it a data() method for the stage (returns null after freed)
+        Use it in klein_bottle load_mesh function.
     https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
+
+# .clang-format
+
+    .clang-format
+        AlignAfterOpenBracket: BAS_DontAlign
 
 # Investigate lavalib crash on Linux
 
@@ -23,6 +29,7 @@
 
 # Demo ideas
 
+    demos/space_colony https://twitter.com/BendotK/status/1005209740874584064
     demos/circle    draws filled-in circle with random sampling
     demos/gamma     https://www.shadertoy.com/view/llBGz1
     demos/smallpt   https://www.codeplay.com/portal/sycl-ing-the-smallpt-raytracer

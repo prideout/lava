@@ -4,6 +4,7 @@
 #include <par/LavaLoader.h>
 #include <par/LavaContext.h>
 #include <par/LavaCpuBuffer.h>
+#include <par/LavaDescCache.h>
 #include <par/LavaGpuBuffer.h>
 #include <par/LavaLog.h>
 #include <par/LavaPipeCache.h>
@@ -11,6 +12,9 @@
 #include <par/AmberProgram.h>
 
 #include <GLFW/glfw3.h>
+
+#include <string>
+#include <vector>
 
 #include "vmath.h"
 
@@ -27,37 +31,90 @@ using namespace std;
 namespace {
     constexpr int DEMO_WIDTH = 512;
     constexpr int DEMO_HEIGHT = 512;
-    constexpr float PI = 3.1415926535;
 
-    constexpr char const* vertShaderGLSL = AMBER_PREFIX_450 R"GLSL(
-    layout(location=0) in vec2 position;
-    layout(location=1) in vec4 color;
-    layout(location=0) out vec4 vert_color;
+    constexpr char const* BACKDROP_VSHADER = AMBER_PREFIX_450 R"(
+    layout(location = 0) in vec3 position;
+    layout(location = 1) in vec2 uv;
+    layout(location = 0) out vec2 vert_uv;
     void main() {
-        gl_Position = vec4(position, 0, 1);
-        vert_color = color;
-    })GLSL";
+        gl_Position = vec4(position, 1);
+        vert_uv = uv;
+    })";
 
-    constexpr char const* fragShaderGLSL = AMBER_PREFIX_450 R"GLSL(
-    layout(location=0) out vec4 frag_color;
-    layout(location=0) in vec4 vert_color;
+    constexpr char const* BACKDROP_FSHADER = AMBER_PREFIX_450 R"(
+    layout(location = 0) out vec4 frag_color;
+    layout(location = 0) in vec2 vert_uv;
+    layout(binding = 0) uniform sampler2D img;
     void main() {
-        frag_color = vert_color;
-    })GLSL";
+        // frag_color = vec4(vert_uv, 0, 1);
+        frag_color = texture(img, vert_uv);
+    })";
 
     struct Vertex {
-        float position[2];
-        uint32_t color;
+        float position[3];
+        float uv[2];
     };
 
-    const Vertex TRIANGLE_VERTICES[] {
-        {{1, 0}, 0xffff0000u},
-        {{cosf(PI * 2 / 3), sinf(PI * 2 / 3)}, 0xff00ff00u},
-        {{cosf(PI * 4 / 3), sinf(PI * 4 / 3)}, 0xff0000ffu},
+    #define P +1
+    #define N -1
+    const Vertex BACKDROP_VERTICES[] {
+        {{P, P, 0}, {1,1}},
+        {{N, P, 0}, {0,1}},
+        {{P, N, 0}, {1,0}},
+        {{N, N, 0}, {0,0}},
     };
+    #undef N
+    #undef P
+
+    struct Mesh {
+        std::unique_ptr<LavaGpuBuffer> vertices;
+        std::unique_ptr<LavaGpuBuffer> indices;
+    };
+
+    template <typename T>
+    unique_ptr<T> make_unique(typename T::Config cfg) {
+        return unique_ptr<T>(T::create(cfg));
+    }
 }
 
-static LavaTexture* create_texture(char const* filename, VkDevice device, VkPhysicalDevice gpu) {
+static Mesh load_mesh(const char* filename, VkDevice device, VkPhysicalDevice gpu) {
+    tinyobj::attrib_t attrib;
+    vector<tinyobj::shape_t> shapes;
+    vector<tinyobj::material_t> materials;
+    string err;
+    constexpr bool triangulate = true;
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, filename, nullptr, triangulate);
+    if (!err.empty()) {
+        llog.error("{}: {}.", filename, err);
+        return {};
+    }
+    if (!ret || shapes.size() == 0) {
+        llog.error("Failed to load {}.", filename);
+        return {};
+    }
+    llog.info("Loaded {:2} shapes from {}", shapes.size(), filename);
+    llog.info("\tshape 0 has {} triangles", shapes[0].mesh.indices.size() / 3);
+    
+    Mesh mesh = {
+        .vertices = make_unique<LavaGpuBuffer>({
+            .device = device,
+            .gpu = gpu,
+            .size = (uint32_t) (sizeof(uint16_t) * shapes[0].mesh.indices.size()),
+            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+        }),
+        .indices = make_unique<LavaGpuBuffer>({
+            .device = device,
+            .gpu = gpu,
+            .size = (uint32_t) (sizeof(float) * attrib.vertices.size()),
+            .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+        })
+    };
+
+    return mesh;
+}
+
+static unique_ptr<LavaTexture> load_texture(char const* filename, VkDevice device,
+        VkPhysicalDevice gpu) {
     uint32_t width, height;
     int ok = stbi_info(filename, (int*) &width, (int*) &height, 0);
     if (!ok) {
@@ -75,7 +132,7 @@ static LavaTexture* create_texture(char const* filename, VkDevice device, VkPhys
         .format = VK_FORMAT_R8G8B8A8_UNORM,
     });
     stbi_image_free(texels);
-    return texture;
+    return unique_ptr<LavaTexture>(texture);
 }
 
 static void run_demo(LavaContext* context, GLFWwindow* window) {
@@ -84,87 +141,104 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     const VkRenderPass renderPass = context->getRenderPass();
     const VkExtent2D extent = context->getSize();
 
-    auto wrap_texture = [device, gpu](char const* filename) {
-        auto deleter = [](LavaTexture* ptr){ delete ptr; };
-        auto ptr = create_texture(filename, device, gpu);
-        return unique_ptr<LavaTexture, decltype(deleter)>(ptr, deleter);
-    };
+    // Load textures from disk.
+    auto backdrop_texture = load_texture("../extras/assets/abstract.jpg", device, gpu);
+    auto occlusion = load_texture("../extras/assets/klein.png", device, gpu);
+    auto rust = load_texture("../extras/assets/rust.png", device, gpu);
 
-    auto wrap_program = [device](char const* vshader, char const* fshader) {
-        auto deleter = [device](AmberProgram* ptr){ delete ptr; };
-        auto ptr = AmberProgram::create(vshader, fshader);
-        ptr->compile(device);
-        return unique_ptr<AmberProgram, decltype(deleter)>(ptr, deleter);
-    };
+    // Create the klein bottle mesh.
+    auto mesh = load_mesh("../extras/assets/klein.obj", device, gpu);
 
-    auto wrap_pipecache = [](LavaPipeCache::Config config) {
-        auto deleter = [](LavaPipeCache* ptr){ delete ptr; };
-        auto ptr = LavaPipeCache::create(config);
-        return unique_ptr<LavaPipeCache, decltype(deleter)>(ptr, deleter);
-    };
-
-    auto wrap_buffer = [](LavaGpuBuffer::Config config) {
-        auto deleter = [](LavaGpuBuffer* ptr){ delete ptr; };
-        auto ptr = LavaGpuBuffer::create(config);
-        return unique_ptr<LavaGpuBuffer, decltype(deleter)>(ptr, deleter);
-    };
-
-    auto program = wrap_program(vertShaderGLSL, fragShaderGLSL);
-    auto backdrop = wrap_texture("../extras/assets/abstract.jpg");
-    auto occlusion = wrap_texture("../extras/assets/klein.png");
-    auto rust = wrap_texture("../extras/assets/rust.png");
+    // Start uploading the textures and geometry.
     VkCommandBuffer workbuf = context->beginWork();
-    backdrop->uploadStage(workbuf);
+    backdrop_texture->uploadStage(workbuf);
     occlusion->uploadStage(workbuf);
     rust->uploadStage(workbuf);
 
-    auto vertexBuffer = wrap_buffer({
+    // Create shader modules.
+    auto make_program = [device](char const* vshader, char const* fshader) {
+        auto ptr = AmberProgram::create(vshader, fshader);
+        ptr->compile(device);
+        return unique_ptr<AmberProgram>(ptr);
+    };
+    auto backdrop_program = make_program(BACKDROP_VSHADER, BACKDROP_FSHADER);
+
+    // Create the backdrop mesh.
+    auto backdrop_vertices = make_unique<LavaGpuBuffer>({
         .device = device,
         .gpu = gpu,
-        .size = sizeof(TRIANGLE_VERTICES),
+        .size = sizeof(BACKDROP_VERTICES),
         .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
     });
     auto vboStage = LavaCpuBuffer::create({
         .device = device,
         .gpu = gpu,
-        .size = sizeof(TRIANGLE_VERTICES),
-        .source = TRIANGLE_VERTICES,
+        .size = sizeof(BACKDROP_VERTICES),
+        .source = BACKDROP_VERTICES,
         .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
     });
-    const VkBufferCopy region = { .size = sizeof(TRIANGLE_VERTICES) };
-    vkCmdCopyBuffer(workbuf, vboStage->getBuffer(), vertexBuffer->getBuffer(), 1, &region);
+    const VkBufferCopy region = { .size = sizeof(BACKDROP_VERTICES) };
+    vkCmdCopyBuffer(workbuf, vboStage->getBuffer(), backdrop_vertices->getBuffer(), 1, &region);
 
-    static_assert(sizeof(Vertex) == 12, "Unexpected vertex size.");
-    auto pipelines = wrap_pipecache({
+    // Create the sampler.
+    VkSampler sampler;
+    VkSamplerCreateInfo samplerInfo {
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .minFilter = VK_FILTER_LINEAR,
+        .magFilter = VK_FILTER_LINEAR,
+        .mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+        .minLod = 0.0f,
+        .maxLod = 0.25f
+    };
+    vkCreateSampler(device, &samplerInfo, 0, &sampler);
+
+    // Create the descriptor set.
+    auto descriptors = make_unique<LavaDescCache>({
+        .device = device,
+        .uniformBuffers = {},
+        .imageSamplers = { {
+            .sampler = sampler,
+            .imageView = backdrop_texture->getImageView(),
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        } }
+    });
+    const VkDescriptorSetLayout dlayout = descriptors->getLayout();
+    const VkDescriptorSet dset = descriptors->getDescriptor();
+
+    // Create the pipeline.
+    static_assert(sizeof(Vertex) == 20, "Unexpected vertex size.");
+    auto pipelines = make_unique<LavaPipeCache>({
         .device = device,
         .vertex = {
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
             .attributes = { {
                 .binding = 0u,
-                .format = VK_FORMAT_R32G32_SFLOAT,
+                .format = VK_FORMAT_R32G32B32_SFLOAT,
                 .location = 0u,
                 .offset = 0u,
             }, {
                 .binding = 0u,
-                .format = VK_FORMAT_R8G8B8A8_UNORM,
+                .format = VK_FORMAT_R32G32_SFLOAT,
                 .location = 1u,
-                .offset = 8u,
+                .offset = 12u,
             } },
             .buffers = { {
                 .binding = 0u,
-                .stride = 12,
+                .stride = 20,
             } }
         },
-        .descriptorLayouts = {},
-        .vshader = program->getVertexShader(),
-        .fshader = program->getFragmentShader(),
+        .descriptorLayouts = { dlayout },
+        .vshader = backdrop_program->getVertexShader(),
+        .fshader = backdrop_program->getFragmentShader(),
         .renderPass = renderPass
     });
-    VkPipeline pipeline = pipelines->getPipeline();
+    const VkPipeline pipeline = pipelines->getPipeline();
+    const VkPipelineLayout playout = pipelines->getLayout();
 
+    // Wait until done uploading the textures and geometry.
     context->endWork();
     context->waitWork();
-    backdrop->freeStage();
+    backdrop_texture->freeStage();
     occlusion->freeStage();
     rust->freeStage();
     delete vboStage;
@@ -187,14 +261,16 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
             .height = (float) extent.height
         };
         const VkRect2D scissor { .extent = extent };
-        const VkBuffer buffer[] = { vertexBuffer->getBuffer() };
+        const VkBuffer buffer[] = { backdrop_vertices->getBuffer() };
         const VkDeviceSize offsets[] = { 0 };
         vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdSetViewport(cmdbuffer, 0, 1, &viewport);
         vkCmdSetScissor(cmdbuffer, 0, 1, &scissor);
         vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
-        vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
+        vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
+                &dset, 0, 0);
+        vkCmdDraw(cmdbuffer, 4, 1, 0, 0);
         vkCmdEndRenderPass(cmdbuffer);
         context->endRecording();
     }
@@ -210,6 +286,8 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
 
     // Cleanup.
     context->freeRecording(frame);
+
+    vkDestroySampler(device, sampler, 0);
 }
 
 int main(const int argc, const char *argv[]) {
@@ -228,7 +306,7 @@ int main(const int argc, const char *argv[]) {
         });
     }
     LavaContext* context = LavaContext::create({
-        .depthBuffer = false,
+        .depthBuffer = true,
         .validation = true,
         .createSurface = [window] (VkInstance instance) {
             VkSurfaceKHR surface;

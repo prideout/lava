@@ -243,22 +243,26 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     rust->freeStage();
     delete vboStage;
 
+    const VkClearValue clearValues[] = {
+        { .color.float32 = {0.1, 0.2, 0.4, 1.0} },
+        { .depthStencil.depth = 0 }
+    };
+    const VkViewport viewport = {
+        .width = (float) extent.width,
+        .height = (float) extent.height
+    };
+
     // Record two command buffers.
     LavaRecording* frame = context->createRecording();
     for (uint32_t i = 0; i < 2; i++) {
         const VkCommandBuffer cmdbuffer = context->beginRecording(frame, i);
-        const VkClearValue clearValue = { .color.float32 = {0.1, 0.2, 0.4, 1.0} };
         const VkRenderPassBeginInfo rpbi {
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             .framebuffer = context->getFramebuffer(i),
             .renderPass = renderPass,
             .renderArea.extent = extent,
-            .pClearValues = &clearValue,
-            .clearValueCount = 1
-        };
-        const VkViewport viewport = {
-            .width = (float) extent.width,
-            .height = (float) extent.height
+            .pClearValues = clearValues,
+            .clearValueCount = 2
         };
         const VkRect2D scissor { .extent = extent };
         const VkBuffer buffer[] = { backdrop_vertices->getBuffer() };

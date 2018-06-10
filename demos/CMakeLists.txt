@@ -4,7 +4,7 @@ project(LavaDemos)
 
 file(GLOB_RECURSE AMBER_SOURCE "../src/Amber*.cpp")
 
-set(DEMO_LIBS glfw glslang SPIRV)
+set(DEMO_LIBS glfw glslang SPIRV curl)
 
 if (APPLE)
     list(APPEND DEMO_LIBS "$ENV{VULKAN_SDK}/macOS/lib/libvulkan.1.dylib")
@@ -28,7 +28,8 @@ set(DEMO_NAMES
     05_spinny_double
     06_spinny_staged
     07_hello_texture
-    08_klein_bottle)
+    08_klein_bottle
+    09_particle_system)
 
 foreach(DEMO ${DEMO_NAMES})
     add_executable(${DEMO} ${DEMO}.cpp ${AMBER_SOURCE} ${LAVA_SOURCE})

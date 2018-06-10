@@ -1,8 +1,12 @@
+# 09_particle_system
+
+    Split up the three glyphs, interleave them a little
+    Density with the Ramya texture
+    2D FBM noise (look at heman)
+
 # 08_klein_bottle
 
-    Get it to draw without texturing
-    Texturing
-    Combine the VkBuffers
+    Get mesh to draw
     Introduce LavaGeometry
         only supports two "attribs" because it assumes non-position data is interleaved
     https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
@@ -36,6 +40,8 @@
 # Demo ideas
 
     demos/space_colony https://twitter.com/BendotK/status/1005209740874584064
+                       http://algorithmicbotany.org/papers/colonization.egwnp2007.large.pdf
+                       http://algorithmicbotany.org/papers/venation.sig2005.pdf
     demos/circle    draws filled-in circle with random sampling
     demos/gamma     https://www.shadertoy.com/view/llBGz1
     demos/smallpt   https://www.codeplay.com/portal/sycl-ing-the-smallpt-raytracer

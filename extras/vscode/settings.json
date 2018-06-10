@@ -34,7 +34,9 @@
         "string": "cpp",
         "string_view": "cpp",
         "unordered_map": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "ios": "cpp",
+        "__locale": "cpp"
     },
     "files.exclude": {
         "include/spdlog": true,

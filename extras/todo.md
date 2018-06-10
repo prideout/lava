@@ -1,8 +1,3 @@
-# 09_particle_system
-
-    Cleaner timeline
-    Glyphs should individually lerp
-    2D FBM noise (look at heman)
 
 # 08_klein_bottle
 

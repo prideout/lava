@@ -25,3 +25,5 @@ Note that the core Lava library does not have dependencies on GLFW or glslang. *
   Demonstrates **LavaGpuBuffer** for uniforms and **vkCmdCopyBuffer**.
 - [06_hello_texture](hello_texture.cpp)
   Demonstrates **LavaTexture**.
+- [08_particle_system](particle_system.cpp)
+  Fun with point sprites.

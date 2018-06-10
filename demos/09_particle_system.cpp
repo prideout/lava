@@ -28,6 +28,9 @@ using namespace std;
 #define PAR_BLUENOISE_IMPLEMENTATION
 #include <par_bluenoise.h>
 
+#define PAR_EASINGS_IMPLEMENTATION
+#include <par_easings.h>
+
 namespace {
     constexpr int DEMO_WIDTH = 640;
     constexpr int DEMO_HEIGHT = 797;
@@ -59,54 +62,83 @@ namespace {
     };
     void main() {
         frag_color = vec4(0.8);
-        if (time > 16.0) {
-            float t = time - 16.0;
-            float a = min(1.0, t / 4.0);
-            frag_color = mix(frag_color, texture(img, vert_uv), a);
-        }
+        vec4 tex_color = texture(img, vert_uv);
+
+        // From t=9 to t=10, fade in the background.
+        frag_color = mix(frag_color, tex_color, clamp(time - 9.0, 0.0, 1.0));
+
     })";
 
     constexpr char const* POINTS_VSHADER = AMBER_PREFIX_450 R"(
     layout(location = 0) in vec2 glyphs_position;
     layout(location = 1) in vec2 ramya_position;
     layout(location = 0) out vec4 vert_color;
-    layout(location = 1) out vec2 vert_uv;
-    layout(location = 2) out vec2 final_uv;
     layout(binding = 0) uniform Uniforms {
         float time;
         float npoints;
     };
+    layout(binding = 1) uniform sampler2D img;
     void main() {
-        vec4 a = vec4(glyphs_position * vec2(1.5, -1.25), 0, 1);
-        vec4 b = vec4(ramya_position * vec2(2.5, 2.0), 0, 1);
-
-        float minval = 0.02;
-        gl_Position = mix(a, b, min(1.0, max(minval, (time - 2.5) / 6.0)));
-        vert_uv = 0.5 + 0.5 * gl_Position.xy;
-        final_uv = 0.5 + 0.5 * b.xy;
 
         gl_PointSize = 2.0;
-        vert_color = vec4(1, 1, 1, 0);
-        if (gl_VertexIndex < int(npoints * time / 3.0)) {
-            vert_color = vec4(0, 0, 0, 0.2);
+
+        float aspect = 640.0 / 797.0;
+        vec2 glyph = glyphs_position * vec2(1.5, -1.25);
+        vec2 ramya = ramya_position * vec2(2.5, 2.0);
+        float t = float(gl_VertexIndex) / npoints;
+        vec2 circle = 0.7 * vec2(sin(t * 6.28) / aspect, cos(t * 6.28));
+
+        int verts_per_glyph = int(npoints) / 3;
+        bool glyph_0 = gl_VertexIndex < verts_per_glyph;
+        bool glyph_1 = !glyph_0 && gl_VertexIndex < 2 * verts_per_glyph;
+        bool glyph_2 = !glyph_0 && !glyph_1;
+
+        vec2 pt = circle;
+        float alpha = 0.01;
+
+        // From t=1 to t=2, form the P.
+        if (glyph_0) {
+            pt = mix(pt, glyph, clamp(time - 1.0, 0.0, 1.0));
+
+            // From t=4 to t=5 lerp the R to Ramya.
+            alpha = clamp(time - 4.0, alpha, 1.0);
+            ramya = mix(circle, ramya, alpha);
+            pt = mix(pt, ramya, alpha);
+
+        // From t=2 to t=3 form the heart.
+        } else if (glyph_1) {
+            pt = mix(pt, glyph, clamp(time - 2.0, 0.0, 1.0));
+
+            // From t=5 to t=6 lerp the heart to Ramya.
+            alpha = clamp(time - 5.0, alpha, 1.0);
+            ramya = mix(circle, ramya, alpha);
+            pt = mix(pt, ramya, alpha);
+
+        // From t=3 to t=4 form the R.
+        } else {
+            pt = mix(pt, glyph, clamp(time - 3.0, 0.0, 1.0));
+
+            // From t=6 to t=7 lerp the heart to Ramya.
+            alpha = clamp(time - 6.0, alpha, 1.0);
+            ramya = mix(circle, ramya, alpha);
+            pt = mix(pt, ramya, alpha);
         }
+        gl_Position = vec4(pt, 0, 1);
+
+        vec2 final_uv = 0.5 + 0.5 * ramya;
+        vert_color = vec4(0, 0, 0, 1);
+        vec4 ramya_color = texture(img, final_uv);
+
+        // From t=8 to t=9, colorify the pts.
+        vert_color = mix(vert_color, ramya_color, clamp(time - 8.0, 0.0, 1.0));
+        vert_color.a = min(1.0, alpha + 0.1);
     })";
 
     constexpr char const* POINTS_FSHADER = AMBER_PREFIX_450 R"(
     layout(location = 0) out vec4 frag_color;
     layout(location = 0) in vec4 vert_color;
-    layout(location = 1) in vec2 vert_uv;
-    layout(location = 2) in vec2 final_uv;
-    layout(binding = 1) uniform sampler2D img;
-    layout(binding = 0) uniform Uniforms {
-        float time;
-        float npoints;
-    };
     void main() {
-        frag_color = mix(vert_color, texture(img, vert_uv), 
-            min(1.0, max(0.0, (time - 10.0) / 6.0)));
-        frag_color = texture(img, final_uv);
-        frag_color.a = vert_color.a;
+        frag_color = vert_color;
     })";
     struct Vertex {
         float position[2];
@@ -276,6 +308,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
                 sizeof(float) * 2 * NUM_PARTICLES / 3);
         par_bluenoise_free(bluenoise);
 
+        #if 0
         llog.info("Shuffling points");
         constexpr int overlap = NUM_PARTICLES / 6;
         float* tail_of_p = allglyphs.data() + 2 * NUM_PARTICLES / 3;
@@ -295,6 +328,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
             tail_of_heart += 2;
             start_of_r += 2;
         }
+        #endif
 
         llog.info("Uploading {} points to GPU", NUM_PARTICLES);
         const uint32_t bufsize = sizeof(float) * allglyphs.size();
@@ -514,20 +548,24 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     });
 
     glfwSetScrollCallback(window, [](GLFWwindow* window, double dx, double dy) {
-        global_time = std::max(0.0, global_time + dy * 0.1);
+        global_time = std::max(0.0, global_time + dx * 0.1);
     });
 
     // Execute the render loop, logging every second until interactive mode is enabled.
     float seconds_elapsed = 0;
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        if (getCurrentTime() < 20.0) {
-            global_time = fmod(getCurrentTime(), 20.0); 
+        double now = getCurrentTime();
+        if (now < 10) {
+            now = floor(now) + par_easings_out_cubic(fmod(now, 1.0));
+            global_time = now;
             if (global_time > seconds_elapsed) {
-                seconds_elapsed += 1.0;
-                llog.info("{} seconds", seconds_elapsed);
+                llog.debug("{} seconds", ++seconds_elapsed);
             }
-        } else {
+        } else if (now > 12 && now < 24) {
+            now = floor(now) + par_easings_out_cubic(fmod(now, 1.0));
+            global_time = 12 - fmod(now, 12); 
+        } else if (now > 24) {
             static bool first = true;
             if (first) {
                 llog.info("Now accepting scroll input.");

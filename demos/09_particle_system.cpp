@@ -31,7 +31,9 @@ using namespace std;
 namespace {
     constexpr int DEMO_WIDTH = 640;
     constexpr int DEMO_HEIGHT = 797;
-    constexpr int NUM_PARTICLES = 20000;
+    constexpr int NUM_PARTICLES = 300000;
+
+    float global_time = 0;
 
     struct Uniforms {
         float time;
@@ -51,33 +53,61 @@ namespace {
     layout(location = 0) out vec4 frag_color;
     layout(location = 0) in vec2 vert_uv;
     layout(binding = 1) uniform sampler2D img;
-    void main() {
-        frag_color = mix(texture(img, vert_uv), vec4(1), 0.9);
-    })";
-
-    constexpr char const* POINTS_VSHADER = AMBER_PREFIX_450 R"(
-    layout(location = 0) in vec2 position;
-    layout(location = 0) out vec4 vert_color;
     layout(binding = 0) uniform Uniforms {
         float time;
         float npoints;
     };
     void main() {
-        gl_Position = vec4(position * vec2(1.5, -1.25), 0, 1);
-        gl_PointSize = 4.0;
+        frag_color = vec4(0.8);
+        if (time > 16.0) {
+            float t = time - 16.0;
+            float a = min(1.0, t / 4.0);
+            frag_color = mix(frag_color, texture(img, vert_uv), a);
+        }
+    })";
+
+    constexpr char const* POINTS_VSHADER = AMBER_PREFIX_450 R"(
+    layout(location = 0) in vec2 glyphs_position;
+    layout(location = 1) in vec2 ramya_position;
+    layout(location = 0) out vec4 vert_color;
+    layout(location = 1) out vec2 vert_uv;
+    layout(location = 2) out vec2 final_uv;
+    layout(binding = 0) uniform Uniforms {
+        float time;
+        float npoints;
+    };
+    void main() {
+        vec4 a = vec4(glyphs_position * vec2(1.5, -1.25), 0, 1);
+        vec4 b = vec4(ramya_position * vec2(2.5, 2.0), 0, 1);
+
+        float minval = 0.02;
+        gl_Position = mix(a, b, min(1.0, max(minval, (time - 2.5) / 6.0)));
+        vert_uv = 0.5 + 0.5 * gl_Position.xy;
+        final_uv = 0.5 + 0.5 * b.xy;
+
+        gl_PointSize = 2.0;
         vert_color = vec4(1, 1, 1, 0);
         if (gl_VertexIndex < int(npoints * time / 3.0)) {
-            vert_color = vec4(0, 0, 0, 0.3);
+            vert_color = vec4(0, 0, 0, 0.2);
         }
     })";
 
     constexpr char const* POINTS_FSHADER = AMBER_PREFIX_450 R"(
     layout(location = 0) out vec4 frag_color;
     layout(location = 0) in vec4 vert_color;
+    layout(location = 1) in vec2 vert_uv;
+    layout(location = 2) in vec2 final_uv;
+    layout(binding = 1) uniform sampler2D img;
+    layout(binding = 0) uniform Uniforms {
+        float time;
+        float npoints;
+    };
     void main() {
-        frag_color = vert_color;
+        frag_color = mix(vert_color, texture(img, vert_uv), 
+            min(1.0, max(0.0, (time - 10.0) / 6.0)));
+        frag_color = texture(img, final_uv);
+        frag_color.a = vert_color.a;
     })";
-
     struct Vertex {
         float position[2];
         float uv[2];
@@ -143,17 +173,63 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         llog.info("Downloading {}", BLUENOISE_FILENAME);
         par_easycurl_to_file(BLUENOISE_URL, BLUENOISE_FILENAME);
     }
-    auto bluenoise = par_bluenoise_from_file(BLUENOISE_FILENAME, 0);
 
-    // Load the P ♥ R
-    auto pheartr = [bluenoise, device, gpu, context](char const* filename) {
+    // Load the Ramya
+    auto ramya_pts = [device, gpu, context](char const* filename) {
 
-        llog.info("Decoding mask texture");
+        llog.info("Decoding Ramya texture");
         int width, height;
         uint8_t* pixels = stbi_load(filename, (int*) &width, (int*) &height, 0, 1);
         assert(pixels);
 
-        llog.info("Creating glyphs {}x{}", width, height);
+        llog.info("Generating {} points", NUM_PARTICLES);
+        auto bluenoise = par_bluenoise_from_file(BLUENOISE_FILENAME, NUM_PARTICLES);
+        par_bluenoise_density_from_gray(bluenoise, pixels, width, height, 1);
+        float* pts = par_bluenoise_generate_exact(bluenoise, NUM_PARTICLES, 2);
+        int j = NUM_PARTICLES - 1;
+        for (int i = 0; i < NUM_PARTICLES / 2; i++, j--) {
+            swap(pts[i * 2], pts[j * 2]);
+            swap(pts[i * 2 + 1], pts[j * 2 + 1]);
+            pts[i * 2 + 1] *= -1;
+        }
+
+        llog.info("Uploading {} points to GPU", NUM_PARTICLES);
+        const uint32_t bufsize = sizeof(float) * 2 * NUM_PARTICLES;
+        for (int i = 0; i < 4; i++) {
+            llog.debug("\t{: .3f} {: .3f}", pts[i*2], pts[i*2+1]);
+        }
+        auto vbo = make_unique<LavaGpuBuffer>({
+            .device = device,
+            .gpu = gpu,
+            .size = bufsize,
+            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+        });
+        auto stage = make_unique<LavaCpuBuffer>({
+            .device = device,
+            .gpu = gpu,
+            .size = bufsize,
+            .source = pts,
+            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+        });
+        const VkBufferCopy region { .size = bufsize };
+        VkCommandBuffer workbuf = context->beginWork();
+        vkCmdCopyBuffer(workbuf, stage->getBuffer(), vbo->getBuffer(), 1, &region);
+        context->endWork();
+        context->waitWork();
+        par_bluenoise_free(bluenoise);
+
+        return vbo;
+    }("../extras/assets/particles2.jpg");
+
+    // Load the P ♥ R
+    auto pheartr = [device, gpu, context](char const* filename) {
+
+        llog.info("Decoding glyph texture");
+        int width, height;
+        uint8_t* pixels = stbi_load(filename, (int*) &width, (int*) &height, 0, 1);
+        assert(pixels);
+
+        llog.info("Masking glyphs {}x{}", width, height);
         vector<uint8_t> glyphs[3];
         glyphs[0].resize(width * height);
         glyphs[1].resize(width * height);
@@ -183,17 +259,48 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
             }
         }
 
-        llog.info("Pushing density function");
-        par_bluenoise_density_from_gray(bluenoise, glyphs[0].data(), width, height, 1);
-
         llog.info("Generating {} points", NUM_PARTICLES);
-        const float* cpupts = par_bluenoise_generate_exact(bluenoise, NUM_PARTICLES, 2);
-        const uint32_t bufsize = 2 * sizeof(float) * NUM_PARTICLES;
-        for (int i = 0; i < 4; i++) {
-            llog.debug("\t{: .3f} {: .3f}", cpupts[i*2], cpupts[i*2+1]);
+        vector<float> allglyphs(NUM_PARTICLES * 2);
+        auto bluenoise = par_bluenoise_from_file(BLUENOISE_FILENAME, 0);
+        par_bluenoise_density_from_gray(bluenoise, glyphs[0].data(), width, height, 1);
+        const float* glyph0_pts = par_bluenoise_generate_exact(bluenoise, NUM_PARTICLES / 3, 2);
+        memcpy(allglyphs.data(), glyph0_pts,
+                sizeof(float) * 2 * NUM_PARTICLES / 3);
+        par_bluenoise_density_from_gray(bluenoise, glyphs[1].data(), width, height, 1);
+        const float* glyph1_pts = par_bluenoise_generate_exact(bluenoise, NUM_PARTICLES / 3, 2);
+        memcpy(allglyphs.data() + 2 * NUM_PARTICLES / 3, glyph1_pts,
+                sizeof(float) * 2 * NUM_PARTICLES / 3);
+        par_bluenoise_density_from_gray(bluenoise, glyphs[2].data(), width, height, 1);
+        const float* glyph2_pts = par_bluenoise_generate_exact(bluenoise, NUM_PARTICLES / 3, 2);
+        memcpy(allglyphs.data() + 4 * NUM_PARTICLES / 3, glyph2_pts,
+                sizeof(float) * 2 * NUM_PARTICLES / 3);
+        par_bluenoise_free(bluenoise);
+
+        llog.info("Shuffling points");
+        constexpr int overlap = NUM_PARTICLES / 6;
+        float* tail_of_p = allglyphs.data() + 2 * NUM_PARTICLES / 3;
+        float* start_of_heart = allglyphs.data() + 2 * NUM_PARTICLES / 3;
+        float* tail_of_heart = allglyphs.data() + 4 * NUM_PARTICLES / 3;
+        float* start_of_r = allglyphs.data() + 4 * NUM_PARTICLES / 3;
+        tail_of_p -= 2 * overlap;
+        tail_of_heart -= 2 * overlap;
+        for (int i = 0; i < overlap / 2; i++) {
+            swap(*tail_of_p++, *start_of_heart++);
+            swap(*tail_of_p++, *start_of_heart++);
+            tail_of_p += 2;
+            start_of_heart += 2;
+
+            swap(*tail_of_heart++, *start_of_r++);
+            swap(*tail_of_heart++, *start_of_r++);
+            tail_of_heart += 2;
+            start_of_r += 2;
         }
 
         llog.info("Uploading {} points to GPU", NUM_PARTICLES);
+        const uint32_t bufsize = sizeof(float) * allglyphs.size();
+        for (int i = 0; i < 4; i++) {
+            llog.debug("\t{: .3f} {: .3f}", allglyphs[i*2], allglyphs[i*2+1]);
+        }
         auto vbo = make_unique<LavaGpuBuffer>({
             .device = device,
             .gpu = gpu,
@@ -204,7 +311,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
             .device = device,
             .gpu = gpu,
             .size = bufsize,
-            .source = cpupts,
+            .source = allglyphs.data(),
             .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
         });
         const VkBufferCopy region { .size = bufsize };
@@ -215,7 +322,6 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
 
         return vbo;
     }("../extras/assets/particles1.png");
-    par_bluenoise_free(bluenoise);
 
     // Load textures from disk.
     VkCommandBuffer workbuf = context->beginWork();
@@ -286,31 +392,29 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     const LavaPipeCache::VertexState backdrop_vertex {
         .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
         .attributes = { {
-            .binding = 0u,
             .format = VK_FORMAT_R32G32_SFLOAT,
-            .location = 0u,
-            .offset = 0u,
         }, {
-            .binding = 0u,
             .format = VK_FORMAT_R32G32_SFLOAT,
             .location = 1u,
             .offset = 8u,
         } },
         .buffers = { {
-            .binding = 0u,
             .stride = 16,
         } }
     };
     const LavaPipeCache::VertexState points_vertex {
         .topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
         .attributes = { {
-            .binding = 0u,
             .format = VK_FORMAT_R32G32_SFLOAT,
-            .location = 0u,
-            .offset = 0u,
+        }, {
+            .binding = 1u,
+            .format = VK_FORMAT_R32G32_SFLOAT,
+            .location = 1u,
         } },
         .buffers = { {
-            .binding = 0u,
+            .stride = 8,
+        },  {
+            .binding = 1u,
             .stride = 8,
         } }
     };
@@ -349,6 +453,8 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         .clearValueCount = 2
     };
     const VkDeviceSize zero_offset {};
+    const VkDeviceSize zero_offsets[2] {};
+    const VkBuffer ptbuffers[2] { pheartr->getBuffer(), ramya_pts->getBuffer() };
     constexpr auto VSHADER = VK_SHADER_STAGE_VERTEX_BIT;
     constexpr auto FSHADER = VK_SHADER_STAGE_FRAGMENT_BIT;
     auto raster_state = pipelines->getDefaultRasterState();
@@ -388,19 +494,48 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         pipelines->setShaderModule(VSHADER, points_program->getVertexShader());
         pipelines->setShaderModule(FSHADER, points_program->getFragmentShader());
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
-        vkCmdBindVertexBuffers(cmd, 0, 1, pheartr->getBufferPtr(), &zero_offset);
+        vkCmdBindVertexBuffers(cmd, 0, 2, ptbuffers, zero_offsets);
         vkCmdDraw(cmd, NUM_PARTICLES, 1, 0, 0);
 
         vkCmdEndRenderPass(cmd);
         context->endRecording();
     }
 
-    // Main render loop.
+    glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+        if (key == GLFW_KEY_RIGHT) {
+            global_time += 0.1;
+        }
+        if (key == GLFW_KEY_LEFT) {
+            global_time -= 0.1;
+        }
+        if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
+    });
+
+    glfwSetScrollCallback(window, [](GLFWwindow* window, double dx, double dy) {
+        global_time = std::max(0.0, global_time + dy * 0.1);
+    });
+
+    // Execute the render loop, logging every second until interactive mode is enabled.
+    float seconds_elapsed = 0;
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-
+        if (getCurrentTime() < 20.0) {
+            global_time = fmod(getCurrentTime(), 20.0); 
+            if (global_time > seconds_elapsed) {
+                seconds_elapsed += 1.0;
+                llog.info("{} seconds", seconds_elapsed);
+            }
+        } else {
+            static bool first = true;
+            if (first) {
+                llog.info("Now accepting scroll input.");
+                first = false;
+            }
+        }
         Uniforms uniforms {
-            .time = (float) fmod(getCurrentTime(), 3.0),
+            .time = global_time,
             .npoints = (float) NUM_PARTICLES
         };
         ubo[0]->setData(&uniforms, sizeof(uniforms));
@@ -420,19 +555,12 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
 
 int main(const int argc, const char *argv[]) {
     GLFWwindow* window;
-    {
-        glfwInit();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-        glfwWindowHint(GLFW_DECORATED, GL_FALSE);
-        glfwWindowHint(GLFW_SAMPLES, 4);
-        window = glfwCreateWindow(DEMO_WIDTH, DEMO_HEIGHT, "klein", 0, 0);
-        glfwSetKeyCallback(window, [] (GLFWwindow* window, int key, int, int action, int) {
-            if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
-                glfwSetWindowShouldClose(window, GLFW_TRUE);
-            }
-        });
-    }
+    glfwInit();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    glfwWindowHint(GLFW_DECORATED, GL_FALSE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
+    window = glfwCreateWindow(DEMO_WIDTH, DEMO_HEIGHT, "klein", 0, 0);
     LavaContext* context = LavaContext::create({
         .depthBuffer = false,
         .validation = true,

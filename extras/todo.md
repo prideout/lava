@@ -1,7 +1,7 @@
 # 09_particle_system
 
-    Split up the three glyphs, interleave them a little
-    Density with the Ramya texture
+    Cleaner timeline
+    Glyphs should individually lerp
     2D FBM noise (look at heman)
 
 # 08_klein_bottle

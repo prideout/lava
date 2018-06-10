@@ -19,7 +19,8 @@ public:
     static LavaCpuBuffer* create(Config config) noexcept;
     static void operator delete(void* );
     VkBuffer getBuffer() const noexcept;
-    void setData(void const* sourceData, uint32_t bytesToCopy) noexcept;
+    void setData(void const* sourceData, uint32_t bytesToCopy,
+            uint32_t offset = 0) noexcept;
 protected:
     LavaCpuBuffer() noexcept = default;
     // par::noncopyable

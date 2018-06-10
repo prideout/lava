@@ -48,11 +48,12 @@ LavaCpuBufferImpl::LavaCpuBufferImpl(Config config) noexcept : device(config.dev
     }
 }
 
-void LavaCpuBuffer::setData(void const* sourceData, uint32_t bytesToCopy) noexcept {
+void LavaCpuBuffer::setData(void const* sourceData, uint32_t bytesToCopy, uint32_t offset)
+        noexcept {
     auto impl = upcast(this);
-    void* mappedData;
-    vmaMapMemory(impl->vma, impl->memory, &mappedData);
-    memcpy(mappedData, sourceData, bytesToCopy);
+    uint8_t* mappedData;
+    vmaMapMemory(impl->vma, impl->memory, (void**) &mappedData);
+    memcpy(mappedData + offset, sourceData, bytesToCopy);
     vmaUnmapMemory(impl->vma, impl->memory);
 }
 

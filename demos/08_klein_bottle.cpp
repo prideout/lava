@@ -70,6 +70,7 @@ namespace {
         std::unique_ptr<LavaGpuBuffer> indices;
         std::unique_ptr<LavaCpuBuffer> vstage;
         std::unique_ptr<LavaCpuBuffer> istage;
+        size_t nverts;
         VkBufferCopy vregion = {};
         VkBufferCopy iregion = {};
     };
@@ -96,19 +97,23 @@ static Geometry load_geometry(const char* filename, VkDevice device, VkPhysicalD
         return {};
     }
     llog.info("Loaded {:2} shapes from {}", shapes.size(), filename);
-    llog.info("\tshape 0 has {} triangles", shapes[0].mesh.indices.size() / 3);
+    llog.info("\tshape 0 has {} triangles, {} verts, {} texcoords",
+            shapes[0].mesh.indices.size() / 3,
+            attrib.vertices.size() / 3,
+            attrib.texcoords.size() / 2);
 
     vector<uint16_t> indices;
     indices.reserve(shapes[0].mesh.indices.size());
     for (auto compound_index : shapes[0].mesh.indices) {
         indices.emplace_back(compound_index.vertex_index);
     }
-    
+
     assert(sizeof(attrib.vertices[0] == sizeof(float)));
-    const uint32_t vsize = (uint32_t) (sizeof(float) * attrib.vertices.size());
+    const uint32_t vsize = (uint32_t) (sizeof(float) * (attrib.vertices.size() +
+            attrib.texcoords.size()));
     const uint32_t isize = (uint32_t) (sizeof(uint16_t) * indices.size());
 
-    return Geometry {
+    Geometry geo {
         .vertices = make_unique<LavaGpuBuffer>({
             .device = device,
             .gpu = gpu,
@@ -118,14 +123,13 @@ static Geometry load_geometry(const char* filename, VkDevice device, VkPhysicalD
         .indices = make_unique<LavaGpuBuffer>({
             .device = device,
             .gpu = gpu,
-            .size = (uint32_t) (sizeof(uint16_t) * shapes[0].mesh.indices.size()),
+            .size = isize,
             .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
         }),
         .vstage = make_unique<LavaCpuBuffer>({
             .device = device,
             .gpu = gpu,
-            .size = (uint32_t) (sizeof(float) * attrib.vertices.size()),
-            .source = attrib.vertices.data(),
+            .size = vsize,
             .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
         }),
         .istage = make_unique<LavaCpuBuffer>({
@@ -135,9 +139,16 @@ static Geometry load_geometry(const char* filename, VkDevice device, VkPhysicalD
             .source = indices.data(),
             .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
         }),
+        .nverts = attrib.vertices.size() / 3,
         .vregion = { .size = vsize },
         .iregion = { .size = isize }
     };
+
+    geo.vstage->setData(attrib.vertices.data(), sizeof(float) * attrib.vertices.size());
+    geo.vstage->setData(attrib.texcoords.data(), sizeof(float) * attrib.texcoords.size(),
+            sizeof(float) * attrib.vertices.size());
+
+    return geo;
 }
 
 static unique_ptr<LavaTexture> load_texture(char const* filename, VkDevice device,
@@ -260,10 +271,18 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
             .format = VK_FORMAT_R32G32B32_SFLOAT,
             .location = 0u,
             .offset = 0u,
+        }, {
+            .binding = 1u,
+            .format = VK_FORMAT_R32G32_SFLOAT,
+            .location = 1u,
+            .offset = 0u,
         } },
         .buffers = { {
             .binding = 0u,
             .stride = 12,
+        }, {
+            .binding = 1u,
+            .stride = 8u,
         } }
     };
 
@@ -306,7 +325,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         .pClearValues = clearValues,
         .clearValueCount = 2
     };
-    const VkDeviceSize offsets[] = { 0 };
+    const VkDeviceSize zero_offset {};
 
     // Record two command buffers.
     LavaRecording* frame = context->createRecording();
@@ -323,14 +342,16 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         // Draw the backdrop.
         pipelines->setVertexState(backdrop_vertex);
         vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
-        vkCmdBindVertexBuffers(cmdbuffer, 0, 1, backdrop_vertices->getBufferPtr(), offsets);
+        vkCmdBindVertexBuffers(cmdbuffer, 0, 1, backdrop_vertices->getBufferPtr(), &zero_offset);
         vkCmdDraw(cmdbuffer, 4, 1, 0, 0);
 
         // Draw the klein bottle.
-        // pipelines->setVertexState(klein_bottle_vertex);
-        // vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
-        // vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
-        // vkCmdDraw(cmdbuffer, 4, 1, 0, 0);
+        pipelines->setVertexState(klein_bottle_vertex);
+        vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
+        const VkBuffer buffers[] { geo.vertices->getBuffer(), geo.vertices->getBuffer()};
+        const VkDeviceSize offsets[] { 0, geo.nverts * sizeof(float) * 3 };
+        vkCmdBindVertexBuffers(cmdbuffer, 0, 2, buffers, offsets);
+        vkCmdDraw(cmdbuffer, 4, 1, 0, 0);
 
         vkCmdEndRenderPass(cmdbuffer);
         context->endRecording();

@@ -17,10 +17,10 @@ namespace {
 
 struct CacheKey {
     LavaPipeCache::RasterState raster;
-    LavaPipeCache::VertexState vertex;
     VkShaderModule vshader;
     VkShaderModule fshader;
     VkRenderPass renderPass;
+    LavaPipeCache::VertexState vertex;
 };
 
 struct CacheVal {
@@ -31,6 +31,24 @@ struct CacheVal {
     CacheVal& operator=(CacheVal const&) = delete;
     CacheVal(CacheVal &&) = default;
     CacheVal& operator=(CacheVal &&) = default;
+};
+
+struct HashFn {
+    uint32_t operator()(const CacheKey& key) const {
+        uint32_t hash1 = murmurHash((uint32_t const *) &key, (
+                    sizeof(key.raster) +
+                    sizeof(key.vshader) +
+                    sizeof(key.fshader) +
+                    sizeof(key.renderPass) +
+                    sizeof(VkPrimitiveTopology)) / 4, 0u);
+        uint32_t hash2 = murmurHash((uint32_t const *) key.vertex.attributes.data(),
+                (key.vertex.attributes.size() * sizeof(VkVertexInputAttributeDescription)) / 4,
+                hash1);
+        uint32_t hash3 = murmurHash((uint32_t const *) key.vertex.buffers.data(),
+                (key.vertex.buffers.size() * sizeof(VkVertexInputBindingDescription)) / 4,
+                hash2);
+        return hash3;
+    }
 };
 
 struct IsEqual {
@@ -76,7 +94,7 @@ struct IsEqual {
     }
 };
 
-using Cache = unordered_map<CacheKey, CacheVal, MurmurHashFn<CacheKey>, IsEqual>;
+using Cache = unordered_map<CacheKey, CacheVal, HashFn, IsEqual>;
 
 namespace DirtyFlag {
     static constexpr uint8_t RASTER = 1 << 0; 
@@ -194,7 +212,6 @@ bool LavaPipeCache::getPipeline(VkPipeline* pipeline) noexcept {
         impl->currentPipeline->timestamp = getCurrentTime();
         return true;
     }
-
     auto& key = impl->currentState;
     VkPipelineVertexInputStateCreateInfo vertexInputState {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -263,10 +280,14 @@ bool LavaPipeCache::getPipeline(VkPipeline* pipeline) noexcept {
     vkCreateGraphicsPipelines(impl->device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VKALLOC, &pipe);
     *pipeline = pipe;
 
+    const size_t size0 = impl->cache.size();
     iter = impl->cache.emplace(make_pair(impl->currentState, CacheVal {
         .timestamp = getCurrentTime(),
         .handle = pipe
     })).first;
+    const size_t size1 = impl->cache.size();
+    LOG_CHECK(size1 > size0, "Hash error.");
+
     impl->currentPipeline = &(iter->second);
     return true;
 }

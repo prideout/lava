@@ -3,6 +3,7 @@
 
 #include <par/LavaLoader.h>
 #include <par/LavaDescCache.h>
+#include <par/LavaLog.h>
 
 #include <unordered_map>
 
@@ -258,8 +259,12 @@ bool LavaDescCache::getDescriptorSet(VkDescriptorSet* descriptorSet,
         vkUpdateDescriptorSets(impl.device, nwrites, impl.writes.data(), 0, nullptr);
     }
 
+    const size_t size0 = impl.cache.size();
     iter = impl.cache.emplace(make_pair(impl.currentState, CacheVal {
         *descriptorSet, getCurrentTime() })).first;
+    const size_t size1 = impl.cache.size();
+    LOG_CHECK(size1 > size0, "Hash error.");
+
     impl.currentDescriptor = &(iter->second);
     return nwrites > 0;
 }

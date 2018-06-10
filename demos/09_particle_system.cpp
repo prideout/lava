@@ -152,11 +152,39 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         int width, height;
         uint8_t* pixels = stbi_load(filename, (int*) &width, (int*) &height, 0, 1);
         assert(pixels);
-        llog.info("Loaded mask {:4}x{:4} {}", width, height, filename);
+
+        llog.info("Creating glyphs {}x{}", width, height);
+        vector<uint8_t> glyphs[3];
+        glyphs[0].resize(width * height);
+        glyphs[1].resize(width * height);
+        glyphs[2].resize(width * height);
+        memcpy(glyphs[0].data(), pixels, width * height);
+        memcpy(glyphs[1].data(), pixels, width * height);
+        memcpy(glyphs[2].data(), pixels, width * height);
+        stbi_image_free(pixels);
+        uint8_t* glyph0 = glyphs[0].data();
+        uint8_t* glyph1 = glyphs[1].data();
+        uint8_t* glyph2 = glyphs[2].data();
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                if (x > 420) {
+                    *glyph0 = 0xff;
+                    *glyph1 = 0xff;
+                } else if (x > 190) {
+                    *glyph0 = 0xff;
+                    *glyph2 = 0xff;
+                } else {
+                    *glyph1 = 0xff;
+                    *glyph2 = 0xff;
+                }
+                ++glyph0;
+                ++glyph1;
+                ++glyph2;
+            }
+        }
 
         llog.info("Pushing density function");
-        par_bluenoise_density_from_gray(bluenoise, pixels, width, height, 1);
-        stbi_image_free(pixels);
+        par_bluenoise_density_from_gray(bluenoise, glyphs[0].data(), width, height, 1);
 
         llog.info("Generating {} points", NUM_PARTICLES);
         const float* cpupts = par_bluenoise_generate_exact(bluenoise, NUM_PARTICLES, 2);

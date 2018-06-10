@@ -36,7 +36,8 @@
         "unordered_map": "cpp",
         "utility": "cpp",
         "ios": "cpp",
-        "__locale": "cpp"
+        "__locale": "cpp",
+        "iosfwd": "cpp"
     },
     "files.exclude": {
         "include/spdlog": true,

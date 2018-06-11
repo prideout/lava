@@ -37,7 +37,9 @@ namespace {
     layout(location = 1) in vec2 uv;
     layout(location = 0) out vec2 vert_uv;
     void main() {
-        gl_Position = vec4(position, 1);
+        gl_Position = vec4(position + vec3(0.0, -0.75, 0.5), 1);
+        gl_Position.y *= -1.0;
+        // gl_Position = gl_Position.xzyw;
         vert_uv = uv;
     })";
 
@@ -46,7 +48,9 @@ namespace {
     layout(location = 0) in vec2 vert_uv;
     layout(binding = 0) uniform sampler2D img;
     void main() {
-        frag_color = texture(img, vert_uv);
+        vec2 uv = vert_uv;
+        uv.y = 1.0 - uv.y;
+        frag_color = texture(img, uv);
     })";
 
     struct Vertex {
@@ -70,9 +74,10 @@ namespace {
         std::unique_ptr<LavaGpuBuffer> indices;
         std::unique_ptr<LavaCpuBuffer> vstage;
         std::unique_ptr<LavaCpuBuffer> istage;
-        size_t nverts;
         VkBufferCopy vregion = {};
         VkBufferCopy iregion = {};
+        size_t nvertices;
+        size_t ntriangles;
     };
 
     template <typename T>
@@ -106,6 +111,7 @@ static Geometry load_geometry(const char* filename, VkDevice device, VkPhysicalD
     indices.reserve(shapes[0].mesh.indices.size());
     for (auto compound_index : shapes[0].mesh.indices) {
         indices.emplace_back(compound_index.vertex_index);
+        assert(compound_index.vertex_index == compound_index.texcoord_index);
     }
 
     assert(sizeof(attrib.vertices[0] == sizeof(float)));
@@ -139,9 +145,10 @@ static Geometry load_geometry(const char* filename, VkDevice device, VkPhysicalD
             .source = indices.data(),
             .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
         }),
-        .nverts = attrib.vertices.size() / 3,
         .vregion = { .size = vsize },
-        .iregion = { .size = isize }
+        .iregion = { .size = isize },
+        .nvertices = attrib.vertices.size() / 3,
+        .ntriangles = shapes[0].mesh.indices.size() / 3,
     };
 
     geo.vstage->setData(attrib.vertices.data(), sizeof(float) * attrib.vertices.size());
@@ -236,31 +243,21 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     auto descriptors = make_unique<LavaDescCache>({
         .device = device,
         .uniformBuffers = {},
-        .imageSamplers = { {
-            .sampler = sampler,
-            .imageView = backdrop_texture->getImageView(),
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        } }
+        .imageSamplers = { {} }
     });
     const VkDescriptorSetLayout dlayout = descriptors->getLayout();
-    const VkDescriptorSet dset = descriptors->getDescriptor();
 
     // Describe the vertex configuration for all geometries.
     const LavaPipeCache::VertexState backdrop_vertex {
         .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
         .attributes = { {
-            .binding = 0u,
             .format = VK_FORMAT_R32G32B32_SFLOAT,
-            .location = 0u,
-            .offset = 0u,
         }, {
-            .binding = 0u,
             .format = VK_FORMAT_R32G32_SFLOAT,
             .location = 1u,
             .offset = 12u,
         } },
         .buffers = { {
-            .binding = 0u,
             .stride = 20,
         } }
     };
@@ -336,22 +333,35 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdSetViewport(cmdbuffer, 0, 1, &viewport);
         vkCmdSetScissor(cmdbuffer, 0, 1, &scissor);
-        vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
-                &dset, 0, 0);
 
         // Draw the backdrop.
+        descriptors->setImageSampler(0, {
+            .sampler = sampler,
+            .imageView = backdrop_texture->getImageView(),
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        });
+        vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
+                descriptors->getDescPointer(), 0, 0);
         pipelines->setVertexState(backdrop_vertex);
         vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
         vkCmdBindVertexBuffers(cmdbuffer, 0, 1, backdrop_vertices->getBufferPtr(), &zero_offset);
         vkCmdDraw(cmdbuffer, 4, 1, 0, 0);
 
         // Draw the klein bottle.
+        descriptors->setImageSampler(0, {
+            .sampler = sampler,
+            .imageView = occlusion->getImageView(),
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        });
+        vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
+                descriptors->getDescPointer(), 0, 0);
         pipelines->setVertexState(klein_bottle_vertex);
         vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
         const VkBuffer buffers[] { geo.vertices->getBuffer(), geo.vertices->getBuffer()};
-        const VkDeviceSize offsets[] { 0, geo.nverts * sizeof(float) * 3 };
+        const VkDeviceSize offsets[] { 0, geo.nvertices * sizeof(float) * 3 };
         vkCmdBindVertexBuffers(cmdbuffer, 0, 2, buffers, offsets);
-        vkCmdDraw(cmdbuffer, 4, 1, 0, 0);
+        vkCmdBindIndexBuffer(cmdbuffer, geo.indices->getBuffer(), 0, VK_INDEX_TYPE_UINT16);
+        vkCmdDrawIndexed(cmdbuffer, geo.ntriangles * 3, 1, 0, 0, 0);
 
         vkCmdEndRenderPass(cmdbuffer);
         context->endRecording();

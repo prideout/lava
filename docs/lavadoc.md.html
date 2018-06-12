@@ -279,6 +279,10 @@ shaders. For example:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
 LavaPipeCache* pipelines = LavaPipeCache::create({
     .device = device,
+    .descriptorLayouts = {},
+    .renderPass = renderPass,
+    .vshader = vertexShaderModule,
+    .fshader = fragmentShaderModule,
     .vertex = {
         .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
         .attributes = { {
@@ -291,11 +295,7 @@ LavaPipeCache* pipelines = LavaPipeCache::create({
             .binding = 0u,
             .stride = 12,
         } }
-    },
-    .descriptorLayouts = {},
-    .vshader = vertexShaderModule,
-    .fshader = fragmentShaderModule,
-    .renderPass = renderPass
+    }
 });
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

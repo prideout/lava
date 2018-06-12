@@ -434,10 +434,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     // Create the pipeline.
     auto pipelines = make_unique<LavaPipeCache>({
         .device = device,
-        .vertex = {},
         .descriptorLayouts = { dlayout },
-        .vshader = {},
-        .fshader = {},
         .renderPass = renderPass
     });
     const VkPipelineLayout playout = pipelines->getLayout();
@@ -467,8 +464,6 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     const VkDeviceSize zero_offset {};
     const VkDeviceSize zero_offsets[2] {};
     const VkBuffer ptbuffers[2] { pheartr->getBuffer(), ramya_pts->getBuffer() };
-    constexpr auto VSHADER = VK_SHADER_STAGE_VERTEX_BIT;
-    constexpr auto FSHADER = VK_SHADER_STAGE_FRAGMENT_BIT;
     auto raster_state = pipelines->getDefaultRasterState();
     raster_state.blending.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
     raster_state.blending.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -493,8 +488,8 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         raster_state.blending.blendEnable = VK_FALSE;
         pipelines->setRasterState(raster_state);
         pipelines->setVertexState(backdrop_vertex);
-        pipelines->setShaderModule(VSHADER, backdrop_program->getVertexShader());
-        pipelines->setShaderModule(FSHADER, backdrop_program->getFragmentShader());
+        pipelines->setVertexShader(backdrop_program->getVertexShader());
+        pipelines->setFragmentShader(backdrop_program->getFragmentShader());
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
         vkCmdBindVertexBuffers(cmd, 0, 1, backdrop_vertices->getBufferPtr(), &zero_offset);
         vkCmdDraw(cmd, 4, 1, 0, 0);
@@ -503,8 +498,8 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         raster_state.blending.blendEnable = VK_TRUE;
         pipelines->setRasterState(raster_state);
         pipelines->setVertexState(points_vertex);
-        pipelines->setShaderModule(VSHADER, points_program->getVertexShader());
-        pipelines->setShaderModule(FSHADER, points_program->getFragmentShader());
+        pipelines->setVertexShader(points_program->getVertexShader());
+        pipelines->setFragmentShader(points_program->getFragmentShader());
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
         vkCmdBindVertexBuffers(cmd, 0, 2, ptbuffers, zero_offsets);
         vkCmdDraw(cmd, NUM_PARTICLES, 1, 0, 0);

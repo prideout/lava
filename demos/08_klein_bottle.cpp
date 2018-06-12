@@ -53,6 +53,27 @@ namespace {
         frag_color = texture(img, uv);
     })";
 
+    constexpr char const* KLEIN_VSHADER = AMBER_PREFIX_450 R"(
+    layout(location = 0) in vec3 position;
+    layout(location = 1) in vec2 uv;
+    layout(location = 0) out vec2 vert_uv;
+    void main() {
+        gl_Position = vec4(position + vec3(0.0, -0.75, 0.5), 1);
+        gl_Position.y *= -1.0;
+        // gl_Position = gl_Position.xzyw;
+        vert_uv = uv;
+    })";
+
+    constexpr char const* KLEIN_FSHADER = AMBER_PREFIX_450 R"(
+    layout(location = 0) out vec4 frag_color;
+    layout(location = 0) in vec2 vert_uv;
+    layout(binding = 0) uniform sampler2D img;
+    void main() {
+        vec2 uv = vert_uv;
+        uv.y = 1.0 - uv.y;
+        frag_color = texture(img, uv);
+    })";
+
     struct Vertex {
         float position[3];
         float uv[2];
@@ -209,6 +230,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         return unique_ptr<AmberProgram>(ptr);
     };
     auto backdrop_program = make_program(BACKDROP_VSHADER, BACKDROP_FSHADER);
+    auto klein_program = make_program(KLEIN_VSHADER, KLEIN_FSHADER);
 
     // Create the backdrop mesh.
     auto backdrop_vertices = make_unique<LavaGpuBuffer>({
@@ -287,10 +309,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     static_assert(sizeof(Vertex) == 20, "Unexpected vertex size.");
     auto pipelines = make_unique<LavaPipeCache>({
         .device = device,
-        .vertex = {},
         .descriptorLayouts = { dlayout },
-        .vshader = backdrop_program->getVertexShader(),
-        .fshader = backdrop_program->getFragmentShader(),
         .renderPass = renderPass
     });
     const VkPipelineLayout playout = pipelines->getLayout();
@@ -343,6 +362,8 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
                 descriptors->getDescPointer(), 0, 0);
         pipelines->setVertexState(backdrop_vertex);
+        pipelines->setVertexShader(backdrop_program->getVertexShader());
+        pipelines->setFragmentShader(backdrop_program->getFragmentShader());
         vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
         vkCmdBindVertexBuffers(cmdbuffer, 0, 1, backdrop_vertices->getBufferPtr(), &zero_offset);
         vkCmdDraw(cmdbuffer, 4, 1, 0, 0);
@@ -356,6 +377,8 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
                 descriptors->getDescPointer(), 0, 0);
         pipelines->setVertexState(klein_bottle_vertex);
+        pipelines->setVertexShader(klein_program->getVertexShader());
+        pipelines->setFragmentShader(klein_program->getFragmentShader());
         vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
         const VkBuffer buffers[] { geo.vertices->getBuffer(), geo.vertices->getBuffer()};
         const VkDeviceSize offsets[] { 0, geo.nvertices * sizeof(float) * 3 };

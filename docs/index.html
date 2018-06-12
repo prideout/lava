@@ -331,6 +331,10 @@ shaders. For example:
 
 </p><pre class="listing tilde"><code>LavaPipeCache* pipelines = LavaPipeCache::create({
     .device = device,
+    .descriptorLayouts = {},
+    .renderPass = renderPass,
+    .vshader = vertexShaderModule,
+    .fshader = fragmentShaderModule,
     .vertex = {
         .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
         .attributes = { {
@@ -343,11 +347,7 @@ shaders. For example:
             .binding = 0u,
             .stride = 12,
         } }
-    },
-    .descriptorLayouts = {},
-    .vshader = vertexShaderModule,
-    .fshader = fragmentShaderModule,
-    .renderPass = renderPass
+    }
 });</code></pre><p>
 
 You can push changes to any of the above properties except the device and descriptor set layouts.

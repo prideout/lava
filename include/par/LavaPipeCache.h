@@ -31,11 +31,11 @@ public:
     };
     struct Config {
         VkDevice device;
-        VertexState vertex;
         std::vector<VkDescriptorSetLayout> descriptorLayouts;
+        VkRenderPass renderPass;
         VkShaderModule vshader;
         VkShaderModule fshader;
-        VkRenderPass renderPass;
+        VertexState vertex;
     };
     static LavaPipeCache* create(Config config) noexcept;
     static void operator delete(void* );
@@ -53,7 +53,8 @@ public:
     const RasterState& getDefaultRasterState() const noexcept;
     void setRasterState(const RasterState& rasterState) noexcept;
     void setVertexState(const VertexState& varray) noexcept;
-    void setShaderModule(VkShaderStageFlagBits stage, VkShaderModule module) noexcept;
+    void setVertexShader(VkShaderModule module) noexcept;
+    void setFragmentShader(VkShaderModule module) noexcept;
     void setRenderPass(VkRenderPass renderPass) noexcept;
 
     // Evicts pipeline objects that were last used more than N milliseconds ago.

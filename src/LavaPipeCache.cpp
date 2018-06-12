@@ -313,16 +313,18 @@ void LavaPipeCache::setVertexState(const VertexState& vstate) noexcept {
     }
 }
 
-void LavaPipeCache::setShaderModule(VkShaderStageFlagBits stage, VkShaderModule module) noexcept {
+void LavaPipeCache::setVertexShader(VkShaderModule module) noexcept {
     LavaPipeCacheImpl* impl = upcast(this);
-    VkShaderModule* pmodule;
-    if (stage == VK_SHADER_STAGE_VERTEX_BIT) {
-        pmodule = &impl->currentState.vshader;
-    } else if (stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
-        pmodule = &impl->currentState.fshader;
-    } else {
-        llog.fatal("Shader stage not supported.");
+    VkShaderModule* pmodule = &impl->currentState.vshader;
+    if (*pmodule != module) {
+        *pmodule = module;
+        impl->dirtyFlags |= DirtyFlag::SHADER;
     }
+}
+
+void LavaPipeCache::setFragmentShader(VkShaderModule module) noexcept {
+    LavaPipeCacheImpl* impl = upcast(this);
+    VkShaderModule* pmodule = &impl->currentState.fshader;
     if (*pmodule != module) {
         *pmodule = module;
         impl->dirtyFlags |= DirtyFlag::SHADER;

@@ -1,12 +1,21 @@
 
 # 08_klein_bottle
 
-    Why isn't depth testing working?
     Rotation
     Apply rust texture
     Introduce LavaGeometry
         only supports two "attribs" because it assumes non-position data is interleaved
     https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
+
+# LavaContext : recording API should take a callback instead of begin / end
+
+# LavaProgram : splitFile() static method populates a unordered_map<string, string>
+
+    Particle demo: Increase to 1M, use white bkgd, fuzzy spinning circle, remove P heart R phase
+
+# LavaCpuBuffer : remove setData in favor of persistent mapping
+
+# Add extras/android with gradle stuff
 
 # gli and ktx pipeline
 

@@ -44,6 +44,7 @@ namespace {
     layout(location = 0) out vec2 vert_uv;
     void main() {
         gl_Position = position;
+        gl_Position.z = 0.99;
         vert_uv = uv;
     })";
 
@@ -61,6 +62,7 @@ namespace {
     layout(location = 0) out vec2 vert_uv;
     layout(binding = 0) uniform Uniforms {
         mat4 mvp;
+        mat3 imv;
         float time;
     };
     void main() {
@@ -353,11 +355,12 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     // Fill in some info structs before starting the render loop.
     const VkClearValue clearValues[] = {
         { .color.float32 = {0.1, 0.2, 0.4, 1.0} },
-        { .depthStencil.depth = 0 }
+        { .depthStencil = {1, 0} }
     };
     const VkViewport viewport = {
         .width = (float) extent.width,
-        .height = (float) extent.height
+        .height = (float) extent.height,
+        .maxDepth = 1.0
     };
     const VkRect2D scissor { .extent = extent };
     VkRenderPassBeginInfo rpbi {
@@ -427,12 +430,12 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         0.0,  0.0, 0.5, 0.5,
         0.0,  0.0, 0.0, 1.0,
     };
-    constexpr float h = 1.0f;
+    constexpr float h = 0.5f;
     constexpr float w = h * DEMO_WIDTH / DEMO_HEIGHT;
     constexpr float znear = 3;
     constexpr float zfar = 10;
     constexpr float y = 0.6;
-    constexpr Point3 eye {0, y, 5};
+    constexpr Point3 eye {0, y, -7};
     constexpr Point3 target {0, y, 0};
     constexpr Vector3 up {0, 1, 0};
 

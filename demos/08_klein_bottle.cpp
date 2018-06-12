@@ -32,6 +32,11 @@ namespace {
     constexpr int DEMO_WIDTH = 512;
     constexpr int DEMO_HEIGHT = 512;
 
+    struct Uniforms {
+        float time;
+        Matrix4 mvp;
+    };
+
     constexpr char const* BACKDROP_VSHADER = AMBER_PREFIX_450 R"(
     layout(location = 0) in vec3 position;
     layout(location = 1) in vec2 uv;
@@ -46,7 +51,7 @@ namespace {
     constexpr char const* BACKDROP_FSHADER = AMBER_PREFIX_450 R"(
     layout(location = 0) out vec4 frag_color;
     layout(location = 0) in vec2 vert_uv;
-    layout(binding = 0) uniform sampler2D img;
+    layout(binding = 1) uniform sampler2D img;
     void main() {
         vec2 uv = vert_uv;
         uv.y = 1.0 - uv.y;
@@ -57,6 +62,10 @@ namespace {
     layout(location = 0) in vec3 position;
     layout(location = 1) in vec2 uv;
     layout(location = 0) out vec2 vert_uv;
+    layout(binding = 0) uniform Uniforms {
+        float time;
+        float npoints;
+    };
     void main() {
         gl_Position = vec4(position + vec3(0.0, -0.75, 0.5), 1);
         gl_Position.y *= -1.0;
@@ -67,7 +76,7 @@ namespace {
     constexpr char const* KLEIN_FSHADER = AMBER_PREFIX_450 R"(
     layout(location = 0) out vec4 frag_color;
     layout(location = 0) in vec2 vert_uv;
-    layout(binding = 0) uniform sampler2D img;
+    layout(binding = 1) uniform sampler2D img;
     void main() {
         vec2 uv = vert_uv;
         uv.y = 1.0 - uv.y;
@@ -261,10 +270,20 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     };
     vkCreateSampler(device, &samplerInfo, 0, &sampler);
 
+    // Create the double-buffered UBO.
+    LavaCpuBuffer::Config cfg {
+        .device = device, .gpu = gpu, .size = sizeof(Uniforms),
+        .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+    };
+    unique_ptr<LavaCpuBuffer> ubo[2] = {
+        make_unique<LavaCpuBuffer>(cfg),
+        make_unique<LavaCpuBuffer>(cfg)
+    };
+
     // Create the descriptor set.
     auto descriptors = make_unique<LavaDescCache>({
         .device = device,
-        .uniformBuffers = {},
+        .uniformBuffers = { {} },
         .imageSamplers = { {} }
     });
     const VkDescriptorSetLayout dlayout = descriptors->getLayout();
@@ -347,52 +366,66 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     LavaRecording* frame = context->createRecording();
     for (uint32_t i = 0; i < 2; i++) {
         rpbi.framebuffer = context->getFramebuffer(i);
-        const VkCommandBuffer cmdbuffer = context->beginRecording(frame, i);
+        const VkCommandBuffer cmd = context->beginRecording(frame, i);
 
-        vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdSetViewport(cmdbuffer, 0, 1, &viewport);
-        vkCmdSetScissor(cmdbuffer, 0, 1, &scissor);
+        vkCmdBeginRenderPass(cmd, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdSetViewport(cmd, 0, 1, &viewport);
+        vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+        // Push uniforms.
+        descriptors->setUniformBuffer(0, ubo[0]->getBuffer());
+        VkDescriptorSet dset = descriptors->getDescriptor();
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1, &dset, 0, 0);
+        swap(ubo[0], ubo[1]);
 
         // Draw the backdrop.
-        descriptors->setImageSampler(0, {
+        descriptors->setImageSampler(1, {
             .sampler = sampler,
             .imageView = backdrop_texture->getImageView(),
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         });
-        vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
                 descriptors->getDescPointer(), 0, 0);
         pipelines->setVertexState(backdrop_vertex);
         pipelines->setVertexShader(backdrop_program->getVertexShader());
         pipelines->setFragmentShader(backdrop_program->getFragmentShader());
-        vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
-        vkCmdBindVertexBuffers(cmdbuffer, 0, 1, backdrop_vertices->getBufferPtr(), &zero_offset);
-        vkCmdDraw(cmdbuffer, 4, 1, 0, 0);
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
+        vkCmdBindVertexBuffers(cmd, 0, 1, backdrop_vertices->getBufferPtr(), &zero_offset);
+        vkCmdDraw(cmd, 4, 1, 0, 0);
 
         // Draw the klein bottle.
-        descriptors->setImageSampler(0, {
+        descriptors->setImageSampler(1, {
             .sampler = sampler,
             .imageView = occlusion->getImageView(),
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         });
-        vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
                 descriptors->getDescPointer(), 0, 0);
         pipelines->setVertexState(klein_bottle_vertex);
         pipelines->setVertexShader(klein_program->getVertexShader());
         pipelines->setFragmentShader(klein_program->getFragmentShader());
-        vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
         const VkBuffer buffers[] { geo.vertices->getBuffer(), geo.vertices->getBuffer()};
         const VkDeviceSize offsets[] { 0, geo.nvertices * sizeof(float) * 3 };
-        vkCmdBindVertexBuffers(cmdbuffer, 0, 2, buffers, offsets);
-        vkCmdBindIndexBuffer(cmdbuffer, geo.indices->getBuffer(), 0, VK_INDEX_TYPE_UINT16);
-        vkCmdDrawIndexed(cmdbuffer, geo.ntriangles * 3, 1, 0, 0, 0);
+        vkCmdBindVertexBuffers(cmd, 0, 2, buffers, offsets);
+        vkCmdBindIndexBuffer(cmd, geo.indices->getBuffer(), 0, VK_INDEX_TYPE_UINT16);
+        vkCmdDrawIndexed(cmd, geo.ntriangles * 3, 1, 0, 0, 0);
 
-        vkCmdEndRenderPass(cmdbuffer);
+        vkCmdEndRenderPass(cmd);
         context->endRecording();
     }
 
     // Main render loop.
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+        Matrix4 mvp = M4MakeIdentity();
+        // TODO: camera stuff
+        Uniforms uniforms {
+            .time = (float) glfwGetTime(),
+            .mvp = mvp
+        };
+        ubo[0]->setData(&uniforms, sizeof(uniforms));
+        swap(ubo[0], ubo[1]);
         context->presentRecording(frame);
     }
 

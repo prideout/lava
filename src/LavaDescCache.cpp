@@ -284,6 +284,7 @@ VkDescriptorSet* LavaDescCache::getDescPointer() noexcept {
 
 void LavaDescCache::setUniformBuffer(uint32_t bindingIndex, VkBuffer uniformBuffer) noexcept {
     LavaDescCacheImpl* impl = upcast(this);
+    LOG_CHECK(bindingIndex < impl->numUniformBuffers, "Uniform binding out of range.");
     auto& buffers = impl->currentState.uniformBuffers;
     assert(bindingIndex < buffers.size());
     if (buffers[bindingIndex] != uniformBuffer) {
@@ -294,6 +295,10 @@ void LavaDescCache::setUniformBuffer(uint32_t bindingIndex, VkBuffer uniformBuff
 
 void LavaDescCache::setImageSampler(uint32_t bindingIndex, VkDescriptorImageInfo binding) noexcept {
     LavaDescCacheImpl* impl = upcast(this);
+    LOG_CHECK(bindingIndex >= impl->numUniformBuffers &&
+            bindingIndex < impl->numUniformBuffers + impl->numImageSamplers,
+            "Sampler binding out of range.");
+    bindingIndex -= impl->numUniformBuffers;
     auto& imageSamplers = impl->currentState.imageSamplers;
     assert(bindingIndex < imageSamplers.size());
     if (!IsEqual()(imageSamplers[bindingIndex], binding)) {

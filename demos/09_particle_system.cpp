@@ -379,7 +379,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     vkCreateSampler(device, &samplerInfo, 0, &sampler);
 
     // Create the double-buffered UBO.
-    std::unique_ptr<LavaCpuBuffer> ubo[2];
+    unique_ptr<LavaCpuBuffer> ubo[2];
     for (int i = 0; i < 2; i++) {
         ubo[i] = make_unique<LavaCpuBuffer>({
             .device = device, .gpu = gpu, .size = sizeof(Uniforms),

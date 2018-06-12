@@ -5,27 +5,27 @@ This folder contains a series of simple independent Lava demos that use
 Note that the core Lava library does not have dependencies on GLFW or glslang. **AmberProgram** and
 **AmberCompiler** depend on glslang but they live outside the core Lava library.
 
-- [01_clear_screen](clear_screen.cpp)
+- [clear_screen](01_clear_screen.cpp)
   is the simplest demo and does not draw any geometry.
   Demonstrates **LavaContext** and **AmberProgram**.
-- [02_triangle_shared](triangle_shared.cpp)
+- [triangle_shared](02_triangle_shared.cpp)
   draws a triangle using a vertex buffer that resides in shared CPU-GPU memory.
   Demonstrates **LavaPipeCache** and **LavaCpuBuffer**.
-- [03_triangle_staged](triangle_staged.cpp)
+- [triangle_staged](03_triangle_staged.cpp)
   draws a triangle a vertex buffer that is copied from a staging area.
   Demonstrates **LavaGpuBuffer** and the **work API** in LavaContext.
-- [04_triangle_recorded](triangle_recorded.cpp)
+- [triangle_recorded](04_triangle_recorded.cpp)
   draws a triangle using a recorded command buffer.
   Demonstrates the **recording API** in LavaContext.
-- [05_spinny_double](spinny_double.cpp)
+- [spinny_double](05_spinny_double.cpp)
   draws a spinning triangle with a mat4 uniform representing rotation.
   Demonstrates **LavaDescCache** and a double-buffered **LavaCpuBuffer** for uniforms.
-- [06_spinny_staged](spinny_staged.cpp)
+- [spinny_staged](06_spinny_staged.cpp)
   draws a spinning triangle with a mat4 uniform representing rotation.
   Demonstrates **LavaGpuBuffer** for uniforms and **vkCmdCopyBuffer**.
-- [07_hello_texture](hello_texture.cpp)
+- [hello_texture](07_hello_texture.cpp)
   Demonstrates **LavaTexture**.
-- [08_klein_bottle](klein_bottle.cpp)
+- [klein_bottle](08_klein_bottle.cpp)
   *This will demonstrate **LavaGeometry**, work in progress.*
-- [09_particle_system](particle_system.cpp)
+- [particle_system](09_particle_system.cpp)
   Fun with point sprites.

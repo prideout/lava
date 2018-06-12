@@ -1,5 +1,15 @@
 <meta charset="utf-8"><link rel="stylesheet" href="apidoc.css">
-<!-- http://casual-effects.com/markdeep/features.md.html -->
+<!--
+// Quick reference for markdeep:
+//    http://casual-effects.com/markdeep/features.md.html
+//
+// To bake the HTML:
+//     chrome lavadoc.md.html --headless --dump-dom --virtual-time-budget=1000 > index.html
+//
+// Baking the HTML improves load time, fixes the flash of unstyled content, and allows for
+// deep linking.
+//
+-->
 
 **Lava Vulkan Utilities**
 
@@ -424,11 +434,8 @@ imperative ("Open the file").
 
 <script>window.markdeepOptions = {tocStyle: 'none'};</script> 
 <script src="markdeep.min.js"></script>
-<script>
 
-// By providing an "export" button, we're fixing the flash of unstyled content, adding support for
-// deep anchors, augmenting the headers programatically, and baking the syntax highlighting for
-// faster load times.
+<script>
 
 window.setTimeout(function() {
 
@@ -449,12 +456,6 @@ window.setTimeout(function() {
         header.appendChild(gotop);
     }
 
-    let txt = document.querySelector('html').innerHTML;
-    let anchor = document.createElement("a"); 
-    anchor.appendChild(document.createTextNode("export DOM"));  
-    anchor.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(txt));
-    anchor.setAttribute('download', 'index.html');
-    document.body.insertBefore(anchor, document.querySelector('span')); 
 }, 100);
 
 </script>

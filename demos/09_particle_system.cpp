@@ -308,28 +308,6 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
                 sizeof(float) * 2 * NUM_PARTICLES / 3);
         par_bluenoise_free(bluenoise);
 
-        #if 0
-        llog.info("Shuffling points");
-        constexpr int overlap = NUM_PARTICLES / 6;
-        float* tail_of_p = allglyphs.data() + 2 * NUM_PARTICLES / 3;
-        float* start_of_heart = allglyphs.data() + 2 * NUM_PARTICLES / 3;
-        float* tail_of_heart = allglyphs.data() + 4 * NUM_PARTICLES / 3;
-        float* start_of_r = allglyphs.data() + 4 * NUM_PARTICLES / 3;
-        tail_of_p -= 2 * overlap;
-        tail_of_heart -= 2 * overlap;
-        for (int i = 0; i < overlap / 2; i++) {
-            swap(*tail_of_p++, *start_of_heart++);
-            swap(*tail_of_p++, *start_of_heart++);
-            tail_of_p += 2;
-            start_of_heart += 2;
-
-            swap(*tail_of_heart++, *start_of_r++);
-            swap(*tail_of_heart++, *start_of_r++);
-            tail_of_heart += 2;
-            start_of_r += 2;
-        }
-        #endif
-
         llog.info("Uploading {} points to GPU", NUM_PARTICLES);
         const uint32_t bufsize = sizeof(float) * allglyphs.size();
         for (int i = 0; i < 4; i++) {

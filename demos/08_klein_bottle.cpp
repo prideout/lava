@@ -33,18 +33,17 @@ namespace {
     constexpr int DEMO_HEIGHT = 512;
 
     struct Uniforms {
-        float time;
         Matrix4 mvp;
+        Matrix3 imv;
+        float time;
     };
 
     constexpr char const* BACKDROP_VSHADER = AMBER_PREFIX_450 R"(
-    layout(location = 0) in vec3 position;
+    layout(location = 0) in vec4 position;
     layout(location = 1) in vec2 uv;
     layout(location = 0) out vec2 vert_uv;
     void main() {
-        gl_Position = vec4(position + vec3(0.0, -0.75, 0.5), 1);
-        gl_Position.y *= -1.0;
-        // gl_Position = gl_Position.xzyw;
+        gl_Position = position;
         vert_uv = uv;
     })";
 
@@ -53,23 +52,19 @@ namespace {
     layout(location = 0) in vec2 vert_uv;
     layout(binding = 1) uniform sampler2D img;
     void main() {
-        vec2 uv = vert_uv;
-        uv.y = 1.0 - uv.y;
-        frag_color = texture(img, uv);
+        frag_color = texture(img, vert_uv);
     })";
 
     constexpr char const* KLEIN_VSHADER = AMBER_PREFIX_450 R"(
-    layout(location = 0) in vec3 position;
+    layout(location = 0) in vec4 position;
     layout(location = 1) in vec2 uv;
     layout(location = 0) out vec2 vert_uv;
     layout(binding = 0) uniform Uniforms {
+        mat4 mvp;
         float time;
-        float npoints;
     };
     void main() {
-        gl_Position = vec4(position + vec3(0.0, -0.75, 0.5), 1);
-        gl_Position.y *= -1.0;
-        // gl_Position = gl_Position.xzyw;
+        gl_Position = mvp * position;
         vert_uv = uv;
     })";
 
@@ -91,10 +86,10 @@ namespace {
     #define P +1
     #define N -1
     const Vertex BACKDROP_VERTICES[] {
-        {{P, P, 0}, {1,1}},
-        {{N, P, 0}, {0,1}},
-        {{P, N, 0}, {1,0}},
-        {{N, N, 0}, {0,0}},
+        {{P, N, 0}, {1,1}},
+        {{N, N, 0}, {0,1}},
+        {{P, P, 0}, {1,0}},
+        {{N, P, 0}, {0,0}},
     };
     #undef N
     #undef P
@@ -138,7 +133,19 @@ static Geometry load_geometry(const char* filename, VkDevice device, VkPhysicalD
             attrib.texcoords.size() / 2);
 
     vector<uint16_t> indices;
-    indices.reserve(shapes[0].mesh.indices.size());
+    const auto& obj_indices = shapes[0].mesh.indices;
+    indices.reserve(obj_indices.size());
+    for (size_t i = 0; i < obj_indices.size();) {
+        const auto& a = obj_indices[i++];
+        const auto& b = obj_indices[i++];
+        const auto& c = obj_indices[i++];
+        indices.emplace_back(a.vertex_index);
+        indices.emplace_back(b.vertex_index);
+        indices.emplace_back(c.vertex_index);
+        assert(a.vertex_index == a.texcoord_index);
+        assert(b.vertex_index == b.texcoord_index);
+        assert(c.vertex_index == c.texcoord_index);
+    }
     for (auto compound_index : shapes[0].mesh.indices) {
         indices.emplace_back(compound_index.vertex_index);
         assert(compound_index.vertex_index == compound_index.texcoord_index);
@@ -280,14 +287,6 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         make_unique<LavaCpuBuffer>(cfg)
     };
 
-    // Create the descriptor set.
-    auto descriptors = make_unique<LavaDescCache>({
-        .device = device,
-        .uniformBuffers = { {} },
-        .imageSamplers = { {} }
-    });
-    const VkDescriptorSetLayout dlayout = descriptors->getLayout();
-
     // Describe the vertex configuration for all geometries.
     const LavaPipeCache::VertexState backdrop_vertex {
         .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
@@ -324,7 +323,15 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         } }
     };
 
-    // Create the pipeline.
+    // Create the descriptor cache.
+    auto descriptors = make_unique<LavaDescCache>({
+        .device = device,
+        .uniformBuffers = {{}},
+        .imageSamplers = {{}}
+    });
+    const VkDescriptorSetLayout dlayout = descriptors->getLayout();
+
+    // Create the pipeline cache.
     static_assert(sizeof(Vertex) == 20, "Unexpected vertex size.");
     auto pipelines = make_unique<LavaPipeCache>({
         .device = device,
@@ -374,8 +381,6 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
 
         // Push uniforms.
         descriptors->setUniformBuffer(0, ubo[0]->getBuffer());
-        VkDescriptorSet dset = descriptors->getDescriptor();
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1, &dset, 0, 0);
         swap(ubo[0], ubo[1]);
 
         // Draw the backdrop.
@@ -415,14 +420,35 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         context->endRecording();
     }
 
+    // See https://matthewwellings.com/blog/the-new-vulkan-coordinate-system/
+    constexpr Matrix4 vkcorrection {
+        1.0,  0.0, 0.0, 0.0,
+        0.0, -1.0, 0.0, 0.0,
+        0.0,  0.0, 0.5, 0.5,
+        0.0,  0.0, 0.0, 1.0,
+    };
+    constexpr float h = 1.0f;
+    constexpr float w = h * DEMO_WIDTH / DEMO_HEIGHT;
+    constexpr float znear = 3;
+    constexpr float zfar = 10;
+    constexpr float y = 0.6;
+    constexpr Point3 eye {0, y, 5};
+    constexpr Point3 target {0, y, 0};
+    constexpr Vector3 up {0, 1, 0};
+
     // Main render loop.
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        Matrix4 mvp = M4MakeIdentity();
-        // TODO: camera stuff
+        Matrix4 projection = M4MakeFrustum(-w, w, -h, h, znear, zfar);
+        projection = M4Mul(vkcorrection, projection);
+        Matrix4 view = M4MakeLookAt(eye, target, up);
+        Matrix4 model = M4MakeIdentity();
+        Matrix4 modelview = M4Mul(view, model);
+        Matrix4 mvp = M4Mul(projection, modelview);
         Uniforms uniforms {
-            .time = (float) glfwGetTime(),
-            .mvp = mvp
+            .mvp = mvp,
+            .imv = M4GetUpper3x3(modelview),
+            .time = (float) glfwGetTime()
         };
         ubo[0]->setData(&uniforms, sizeof(uniforms));
         swap(ubo[0], ubo[1]);

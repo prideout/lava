@@ -9,14 +9,12 @@
 
 namespace par {
 
-// Creates and stashes descriptor sets that conform to a specific layout.
-// Also creates and stashes a set of VkSampler objects.
+// Manages a set of descriptors that all conform to a specific descriptor layout.
 //
 // Creates a single VkDescriptorSetLayout upon construction and stores it as immutable state.
-// Accepts state changes via setUniformBuffer and setSamplerBinding.
-// Creates or fetches a descriptor set when getDescriptorSet() is called.
-// Creates or fetches a sampler when getSampler() is called.
-// Can optionally free least-recently-used samplers and desc sets once per frame (releaseUnused).
+// Accepts state changes via setUniformBuffer and setImageSampler.
+// Creates or fetches a descriptor set when getDescriptor() is called.
+// Optionally frees least-recently-used descriptors via releaseUnused().
 //
 class LavaDescCache {
 public:
@@ -50,7 +48,7 @@ public:
     void unsetUniformBuffer(VkBuffer uniformBuffer) noexcept;
     void unsetImageSampler(VkDescriptorImageInfo binding) noexcept;
 
-    // Evicts descriptor sets and samplers that were last used more than N milliseconds ago.
+    // Evicts descriptor sets that were last used more than N milliseconds ago.
     void releaseUnused(uint64_t milliseconds) noexcept;
 protected:
     LavaDescCache() noexcept = default;

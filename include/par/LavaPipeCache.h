@@ -12,9 +12,9 @@ namespace par {
 // Manages a set of pipeline objects that all conform to a specific pipeline layout.
 //
 // Creates a single VkPipelineLayout upon construction and stores it as immutable state.
-// Accepts state changes via setRasterState, setVertexState, setShaderModule, and setRenderPass.
+// Accepts state changes via setRasterState, setVertexState, set*Shader, and setRenderPass.
 // Creates or fetches a pipeline when getPipeline() is called.
-// Can optionally free least-recently-used pipelines once per frame (releaseUnused).
+// Optionally frees least-recently-used pipelines via releaseUnused().
 //
 class LavaPipeCache {
 public:

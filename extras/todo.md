@@ -1,32 +1,9 @@
 
 # 08_klein_bottle
 
-    Camera and rotation
-        gl_Position = mvp * position;
-
-            const float h = 1.0f;
-            const float w = h * winwidth / winheight;
-            const float znear = 4;
-            const float zfar = 30;
-            projection = M4MakeFrustum(-w, w, -h, h, znear, zfar);
-            // See https://matthewwellings.com/blog/the-new-vulkan-coordinate-system/
-            const Matrix4 vkcorrection {
-                1.0,  0.0, 0.0, 0.0,
-                0.0, -1.0, 0.0, 0.0,
-                0.0,  0.0, 0.5, 0.5,
-                0.0,  0.0, 0.0, 1.0,
-            }
-            projection = M4Mul(projection, vkcorrection);
-            Point3 eye {0, 4, 13};
-            Point3 target {0, 0, 0};
-            Vector3 up {0, 1, 0};
-            view = M4MakeLookAt(eye, target, up);
-            model = M4MakeIdentity();
-
-            Matrix4 modelview = M4Mul(view, model);
-            Matrix3 invmodelview = M4GetUpper3x3(modelview);
-            Matrix4 mvp = M4Mul(projection, modelview);
-
+    Why isn't depth testing working?
+    Rotation
+    Apply rust texture
     Introduce LavaGeometry
         only supports two "attribs" because it assumes non-position data is interleaved
     https://github.com/tiimgreen/github-cheat-sheet#imagesgifs

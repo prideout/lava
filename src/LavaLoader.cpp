@@ -20,7 +20,6 @@ static void loadLoaderFunctions(void* context, PFN_vkVoidFunction (*loadcb)(void
 static void loadInstanceFunctions(void* context, PFN_vkVoidFunction (*loadcb)(void*, const char*));
 static void loadDeviceFunctions(void* context, PFN_vkVoidFunction (*loadcb)(void*, const char*));
 static PFN_vkVoidFunction vkGetInstanceProcAddrWrapper(void* context, const char* name);
-static PFN_vkVoidFunction vkGetDeviceProcAddrWrapper(void* context, const char* name);
 
 #ifdef __APPLE__
 static const char* VKLIBRARY_PATH = "libvulkan.1.dylib";
@@ -48,10 +47,6 @@ void LavaLoader::bind(VkInstance instance) {
 
 static PFN_vkVoidFunction vkGetInstanceProcAddrWrapper(void* context, const char* name) {
     return vkGetInstanceProcAddr((VkInstance) context, name);
-}
-
-static PFN_vkVoidFunction vkGetDeviceProcAddrWrapper(void* context, const char* name) {
-    return vkGetDeviceProcAddr((VkDevice) context, name);
 }
 
 static void loadLoaderFunctions(void* context, PFN_vkVoidFunction (*loadcb)(void*, const char*)) {

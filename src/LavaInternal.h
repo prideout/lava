@@ -3,23 +3,31 @@
 
 #pragma once
 
-#include "vk_mem_alloc.h"
-
 #include <vector>
 
 #define VKALLOC nullptr
 
+#if defined(__GNUC__)
+#  define LAVA_UNUSED __attribute__ ((unused))
+#elif defined(_MSC_VER)
+#  define LAVA_UNUSED __pragma(warning(suppress:4100))
+#else
+#  define LAVA_UNUSED
+#endif
+
+#include "vk_mem_alloc.h"
+
 #define LAVA_DEFINE_UPCAST(CLASS) \
-inline CLASS##Impl& upcast(CLASS& that) noexcept { \
+inline LAVA_UNUSED CLASS##Impl& upcast(CLASS& that) noexcept { \
     return static_cast<CLASS##Impl &>(that); \
 } \
-inline const CLASS##Impl& upcast(const CLASS& that) noexcept { \
+inline LAVA_UNUSED const CLASS##Impl& upcast(const CLASS& that) noexcept { \
     return static_cast<const CLASS##Impl &>(that); \
 } \
-inline CLASS##Impl* upcast(CLASS* that) noexcept { \
+inline LAVA_UNUSED CLASS##Impl* upcast(CLASS* that) noexcept { \
     return static_cast<CLASS##Impl *>(that); \
 } \
-inline CLASS##Impl const* upcast(CLASS const* that) noexcept { \
+inline LAVA_UNUSED CLASS##Impl const* upcast(CLASS const* that) noexcept { \
     return static_cast<CLASS##Impl const *>(that); \
 }
 

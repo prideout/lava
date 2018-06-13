@@ -122,7 +122,7 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
     vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.reserve(impl->writes.size());
     uint32_t binding = 0;
-    for (auto u : config.uniformBuffers) {
+    for (auto dummy LAVA_UNUSED : config.uniformBuffers) {
         bindings.emplace_back(VkDescriptorSetLayoutBinding {
             .binding = binding++,
             .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -130,7 +130,7 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
             .stageFlags = VK_SHADER_STAGE_ALL,
         });
     }
-    for (auto u : config.imageSamplers) {
+    for (auto dummy LAVA_UNUSED : config.imageSamplers) {
         bindings.emplace_back(VkDescriptorSetLayoutBinding {
             .binding = binding++,
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,

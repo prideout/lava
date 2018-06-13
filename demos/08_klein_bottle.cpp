@@ -425,10 +425,10 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
 
     // See https://matthewwellings.com/blog/the-new-vulkan-coordinate-system/
     constexpr Matrix4 vkcorrection {
-        1.0,  0.0, 0.0, 0.0,
-        0.0, -1.0, 0.0, 0.0,
-        0.0,  0.0, 0.5, 0.5,
-        0.0,  0.0, 0.0, 1.0,
+        {1.0,  0.0, 0.0, 0.0},
+        {0.0, -1.0, 0.0, 0.0},
+        {0.0,  0.0, 0.5, 0.5},
+        {0.0,  0.0, 0.0, 1.0},
     };
     constexpr float h = 0.5f;
     constexpr float w = h * DEMO_WIDTH / DEMO_HEIGHT;

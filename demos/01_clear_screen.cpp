@@ -40,8 +40,6 @@ int main(const int argc, const char *argv[]) {
     LOG_CHECK(glfwInit(), "Cannot initialize GLFW.");
 
     // Create the window.
-    constexpr GLFWmonitor* monitor = nullptr;
-    constexpr GLFWwindow* share = nullptr;
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
     glfwWindowHint(GLFW_DECORATED, GL_FALSE);

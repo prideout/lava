@@ -303,7 +303,6 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         } }
     });
     const VkDescriptorSetLayout dlayout = descriptors->getLayout();
-    const VkDescriptorSet dset = descriptors->getDescriptor();
 
     // Describe the vertex configuration for all geometries.
     const LavaPipeCache::VertexState backdrop_vertex {

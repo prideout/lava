@@ -11,22 +11,23 @@ endif()
 # Note that -fsanitize=undefined is also an interesting option.
 # -fsanitize=leak is also interesting, but not yet supported on MacOS.
 # set(EXTRA_SANITIZE_OPTIONS "-fsanitize=address")
-
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_SANITIZE_OPTIONS}")
-
 set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
 
-include_directories(include)
-
-file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
-
-# Build the core library (zero dependencies).
-add_library(lava SHARED ${LAVA_SOURCE})
-
-# If submodules have been initialized, then build demos too.
+# If submodules have been initialized, then build demo dependencies.
 if(EXISTS "${CMAKE_SOURCE_DIR}/extras/glfw/CMakeLists.txt")
     add_subdirectory(extras/glfw)
     add_subdirectory(extras/glslang)
     add_subdirectory(extras/SimpleFileWatcher)
+endif()
+
+# Build the core library (zero dependencies).
+include_directories(include)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
+add_library(lava STATIC ${LAVA_SOURCE})
+
+# Build demos if submodules have been initialized.
+if(EXISTS "${CMAKE_SOURCE_DIR}/extras/glfw/CMakeLists.txt")
     add_subdirectory(demos)
 endif()

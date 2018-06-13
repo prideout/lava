@@ -14,7 +14,11 @@
 #define STBI_FAILURE_USERMSG
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_JPEG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
 #include <stb_image.h>
+#pragma clang diagnostic pop
+
 #include <GLFW/glfw3.h>
 
 #include "vmath.h"
@@ -162,6 +166,10 @@ int main(const int argc, const char *argv[]) {
     static_assert(sizeof(Vertex) == 16, "Unexpected vertex size.");
     auto pipelines = LavaPipeCache::create({
         .device = device,
+        .descriptorLayouts = { dlayout },
+        .renderPass = renderPass,
+        .vshader = vshader,
+        .fshader = fshader,
         .vertex = {
             .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
             .attributes = { {
@@ -179,11 +187,7 @@ int main(const int argc, const char *argv[]) {
                 .binding = 0u,
                 .stride = sizeof(Vertex),
             } }
-        },
-        .descriptorLayouts = { dlayout },
-        .vshader = vshader,
-        .fshader = fshader,
-        .renderPass = renderPass
+        }
     });
     VkPipeline pipeline = pipelines->getPipeline();
     VkPipelineLayout playout = pipelines->getLayout();

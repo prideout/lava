@@ -114,6 +114,10 @@ int main(const int argc, const char *argv[]) {
     static_assert(sizeof(Vertex) == 12, "Unexpected vertex size.");
     auto pipelines = LavaPipeCache::create({
         .device = device,
+        .descriptorLayouts = { dlayout },
+        .renderPass = renderPass,
+        .vshader = vshader,
+        .fshader = fshader,
         .vertex = {
             .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
             .attributes = { {
@@ -131,11 +135,7 @@ int main(const int argc, const char *argv[]) {
                 .binding = 0u,
                 .stride = 12,
             } }
-        },
-        .descriptorLayouts = { dlayout },
-        .vshader = vshader,
-        .fshader = fshader,
-        .renderPass = renderPass
+        }
     });
     VkPipeline pipeline = pipelines->getPipeline();
     VkPipelineLayout playout = pipelines->getLayout();

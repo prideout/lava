@@ -3,19 +3,30 @@
 
 #pragma once
 
-#include <vulkan/vulkan.h>
-
+#include <functional>
 #include <string>
+
+#include <vulkan/vulkan.h>
 
 namespace par {
 
 class AmberProgram {
 public:
-    static AmberProgram* create(const std::string& vshader, const std::string& fshader) noexcept;
+    using string = std::string;
+    static AmberProgram* create(const string& vshader, const string& fshader) noexcept;
     static void operator delete(void* ptr) noexcept;
     bool compile(VkDevice device) noexcept;
     VkShaderModule getVertexShader() const noexcept;
     VkShaderModule getFragmentShader() const noexcept;
+
+    // Extracts a range of text from a file, spanning from "-- chunkName" until the next "--", or
+    // until the end of the file.
+    static string getChunk(const string& filename, const string& chunkName) noexcept;
+
+    // Monitor a file for changes. Useful for hot-loading.
+    using FileListener = std::function<void(string)>;
+    static void watchFile(const string& filename, FileListener onChange) noexcept;
+
 protected:
     AmberProgram() noexcept = default;
     // par::noncopyable

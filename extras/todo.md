@@ -1,3 +1,6 @@
+# AmberProgram::watchFile
+
+    Particle demo: Increase to 1M, use white bkgd, fuzzy spinning circle, remove P heart R phase
 
 # 08_klein_bottle
 
@@ -8,10 +11,6 @@
     https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
 
 # LavaContext : recording API should take a callback instead of begin / end
-
-# LavaProgram : splitFile() static method populates a unordered_map<string, string>
-
-    Particle demo: Increase to 1M, use white bkgd, fuzzy spinning circle, remove P heart R phase
 
 # LavaCpuBuffer : remove setData in favor of persistent mapping
 

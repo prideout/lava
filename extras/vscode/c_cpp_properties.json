@@ -11,7 +11,7 @@
             "includePath": [
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/extras/glfw/include",
-                "${workspaceFolder}/extras/glfw/deps",
+                "${workspaceFolder}/extras/SimpleFileWatcher/include",
                 "${workspaceFolder}/extras/stb",
                 "${workspaceFolder}/extras/par",
                 "${workspaceFolder}/extras/tinyobjloader",

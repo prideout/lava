@@ -43,103 +43,6 @@ namespace {
         float npoints;
     };
 
-    constexpr char const* BACKDROP_VSHADER = AMBER_PREFIX_450 R"(
-    layout(location = 0) in vec3 position;
-    layout(location = 1) in vec2 uv;
-    layout(location = 0) out vec2 vert_uv;
-    void main() {
-        gl_Position = vec4(position, 1);
-        vert_uv = uv;
-    })";
-
-    constexpr char const* BACKDROP_FSHADER = AMBER_PREFIX_450 R"(
-    layout(location = 0) out vec4 frag_color;
-    layout(location = 0) in vec2 vert_uv;
-    layout(binding = 1) uniform sampler2D img;
-    layout(binding = 0) uniform Uniforms {
-        float time;
-        float npoints;
-    };
-    void main() {
-        frag_color = vec4(0.8);
-        vec4 tex_color = texture(img, vert_uv);
-
-        // From t=9 to t=10, fade in the background.
-        frag_color = mix(frag_color, tex_color, clamp(time - 9.0, 0.0, 1.0));
-
-    })";
-
-    constexpr char const* POINTS_VSHADER = AMBER_PREFIX_450 R"(
-    layout(location = 0) in vec2 glyphs_position;
-    layout(location = 1) in vec2 ramya_position;
-    layout(location = 0) out vec4 vert_color;
-    layout(binding = 0) uniform Uniforms {
-        float time;
-        float npoints;
-    };
-    layout(binding = 1) uniform sampler2D img;
-    void main() {
-
-        gl_PointSize = 2.0;
-
-        float aspect = 640.0 / 797.0;
-        vec2 glyph = glyphs_position * vec2(1.5, -1.25);
-        vec2 ramya = ramya_position * vec2(2.5, 2.0);
-        float t = float(gl_VertexIndex) / npoints;
-        vec2 circle = 0.7 * vec2(sin(t * 6.28) / aspect, cos(t * 6.28));
-
-        int verts_per_glyph = int(npoints) / 3;
-        bool glyph_0 = gl_VertexIndex < verts_per_glyph;
-        bool glyph_1 = !glyph_0 && gl_VertexIndex < 2 * verts_per_glyph;
-        bool glyph_2 = !glyph_0 && !glyph_1;
-
-        vec2 pt = circle;
-        float alpha = 0.01;
-
-        // From t=1 to t=2, form the P.
-        if (glyph_0) {
-            pt = mix(pt, glyph, clamp(time - 1.0, 0.0, 1.0));
-
-            // From t=4 to t=5 lerp the R to Ramya.
-            alpha = clamp(time - 4.0, alpha, 1.0);
-            ramya = mix(circle, ramya, alpha);
-            pt = mix(pt, ramya, alpha);
-
-        // From t=2 to t=3 form the heart.
-        } else if (glyph_1) {
-            pt = mix(pt, glyph, clamp(time - 2.0, 0.0, 1.0));
-
-            // From t=5 to t=6 lerp the heart to Ramya.
-            alpha = clamp(time - 5.0, alpha, 1.0);
-            ramya = mix(circle, ramya, alpha);
-            pt = mix(pt, ramya, alpha);
-
-        // From t=3 to t=4 form the R.
-        } else {
-            pt = mix(pt, glyph, clamp(time - 3.0, 0.0, 1.0));
-
-            // From t=6 to t=7 lerp the heart to Ramya.
-            alpha = clamp(time - 6.0, alpha, 1.0);
-            ramya = mix(circle, ramya, alpha);
-            pt = mix(pt, ramya, alpha);
-        }
-        gl_Position = vec4(pt, 0, 1);
-
-        vec2 final_uv = 0.5 + 0.5 * ramya;
-        vert_color = vec4(0, 0, 0, 1);
-        vec4 ramya_color = texture(img, final_uv);
-
-        // From t=8 to t=9, colorify the pts.
-        vert_color = mix(vert_color, ramya_color, clamp(time - 8.0, 0.0, 1.0));
-        vert_color.a = min(1.0, alpha + 0.1);
-    })";
-
-    constexpr char const* POINTS_FSHADER = AMBER_PREFIX_450 R"(
-    layout(location = 0) out vec4 frag_color;
-    layout(location = 0) in vec4 vert_color;
-    void main() {
-        frag_color = vert_color;
-    })";
     struct Vertex {
         float position[2];
         float uv[2];
@@ -341,13 +244,15 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     particles2_texture->uploadStage(workbuf);
 
     // Create shader modules.
-    auto make_program = [device](char const* vshader, char const* fshader) {
-        auto ptr = AmberProgram::create(vshader, fshader);
+    auto make_program = [device](string vshader, string fshader) {
+        const string vs = AmberProgram::getChunk(__FILE__, vshader);
+        const string fs = AmberProgram::getChunk(__FILE__, fshader);
+        auto ptr = AmberProgram::create(vs, fs);
         ptr->compile(device);
         return unique_ptr<AmberProgram>(ptr);
     };
-    auto backdrop_program = make_program(BACKDROP_VSHADER, BACKDROP_FSHADER);
-    auto points_program = make_program(POINTS_VSHADER, POINTS_FSHADER);
+    auto backdrop_program = make_program("backdrop.vs", "backdrop.fs");
+    auto points_program = make_program("points.vs", "points.fs");
 
     // Create the backdrop mesh.
     auto backdrop_vertices = make_unique<LavaGpuBuffer>({
@@ -585,3 +490,108 @@ int main(const int argc, const char *argv[]) {
     delete context;
     return 0;
 }
+
+#if 0
+-- backdrop.vs -------------------------------------------------------------------------------------
+
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec2 uv;
+layout(location = 0) out vec2 vert_uv;
+void main() {
+    gl_Position = vec4(position, 1);
+    vert_uv = uv;
+}
+
+-- backdrop.fs -------------------------------------------------------------------------------------
+
+layout(location = 0) out vec4 frag_color;
+layout(location = 0) in vec2 vert_uv;
+layout(binding = 1) uniform sampler2D img;
+layout(binding = 0) uniform Uniforms {
+    float time;
+    float npoints;
+};
+void main() {
+    frag_color = vec4(0.8);
+    vec4 tex_color = texture(img, vert_uv);
+
+    // From t=9 to t=10, fade in the background.
+    frag_color = mix(frag_color, tex_color, clamp(time - 9.0, 0.0, 1.0));
+}
+
+-- points.vs ---------------------------------------------------------------------------------------
+
+layout(location = 0) in vec2 glyphs_position;
+layout(location = 1) in vec2 ramya_position;
+layout(location = 0) out vec4 vert_color;
+layout(binding = 0) uniform Uniforms {
+    float time;
+    float npoints;
+};
+layout(binding = 1) uniform sampler2D img;
+
+void main() {
+    gl_PointSize = 2.0;
+
+    float aspect = 640.0 / 797.0;
+    vec2 glyph = glyphs_position * vec2(1.5, -1.25);
+    vec2 ramya = ramya_position * vec2(2.5, 2.0);
+    float t = float(gl_VertexIndex) / npoints;
+    vec2 circle = 0.7 * vec2(sin(t * 6.28) / aspect, cos(t * 6.28));
+
+    int verts_per_glyph = int(npoints) / 3;
+    bool glyph_0 = gl_VertexIndex < verts_per_glyph;
+    bool glyph_1 = !glyph_0 && gl_VertexIndex < 2 * verts_per_glyph;
+    bool glyph_2 = !glyph_0 && !glyph_1;
+
+    vec2 pt = circle;
+    float alpha = 0.01;
+
+    // From t=1 to t=2, form the P.
+    if (glyph_0) {
+        pt = mix(pt, glyph, clamp(time - 1.0, 0.0, 1.0));
+
+        // From t=4 to t=5 lerp the R to Ramya.
+        alpha = clamp(time - 4.0, alpha, 1.0);
+        ramya = mix(circle, ramya, alpha);
+        pt = mix(pt, ramya, alpha);
+
+    // From t=2 to t=3 form the heart.
+    } else if (glyph_1) {
+        pt = mix(pt, glyph, clamp(time - 2.0, 0.0, 1.0));
+
+        // From t=5 to t=6 lerp the heart to Ramya.
+        alpha = clamp(time - 5.0, alpha, 1.0);
+        ramya = mix(circle, ramya, alpha);
+        pt = mix(pt, ramya, alpha);
+
+    // From t=3 to t=4 form the R.
+    } else {
+        pt = mix(pt, glyph, clamp(time - 3.0, 0.0, 1.0));
+
+        // From t=6 to t=7 lerp the heart to Ramya.
+        alpha = clamp(time - 6.0, alpha, 1.0);
+        ramya = mix(circle, ramya, alpha);
+        pt = mix(pt, ramya, alpha);
+    }
+    gl_Position = vec4(pt, 0, 1);
+
+    vec2 final_uv = 0.5 + 0.5 * ramya;
+    vert_color = vec4(0, 0, 0, 1);
+    vec4 ramya_color = texture(img, final_uv);
+
+    // From t=8 to t=9, colorify the pts.
+    vert_color = mix(vert_color, ramya_color, clamp(time - 8.0, 0.0, 1.0));
+    vert_color.a = min(1.0, alpha + 0.1);
+}
+
+-- points.fs ---------------------------------------------------------------------------------------
+
+layout(location = 0) out vec4 frag_color;
+layout(location = 0) in vec4 vert_color;
+void main() {
+    frag_color = vert_color;
+}
+
+----------------------------------------------------------------------------------------------------
+#endif

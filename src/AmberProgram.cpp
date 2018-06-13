@@ -6,6 +6,11 @@
 #include <par/LavaLog.h>
 #include <par/AmberProgram.h>
 
+#include <vector>
+#include <fstream>
+
+#include <FileWatcher/FileWatcher.h>
+
 #include "LavaInternal.h"
 
 using namespace par;
@@ -94,4 +99,31 @@ VkShaderModule AmberProgram::getVertexShader() const noexcept {
 
 VkShaderModule AmberProgram::getFragmentShader() const noexcept {
     return upcast(this)->mFragModule;
+}
+
+string AmberProgram::getChunk(const string& filename, const string& chunkName) noexcept {
+    string chunk = "#version 450\n#line ";
+    ifstream ifs(filename);
+    const string prefix = "-- " + chunkName;
+    bool extracting = false;
+    int lineno = 1;
+    for (string line; getline(ifs, line); ++lineno) {
+        if (!line.compare(0, prefix.size(), prefix)) {
+            chunk += to_string(lineno + 1) + "\n";
+            extracting = true;
+            continue;
+        } else if (!extracting) {
+            continue;
+        }
+        if (!line.compare(0, 2, "--")) {
+            extracting = false;
+        } else {
+            chunk += line + "\n";
+        }
+    }
+    return chunk;
+}
+
+void AmberProgram::watchFile(const string& filename, FileListener onChange) noexcept {
+
 }

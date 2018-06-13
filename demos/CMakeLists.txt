@@ -18,6 +18,7 @@ include_directories(
     ../extras/par
     ../extras/stb
     ../extras/tinyobjloader
+    ../extras/SimpleFileWatcher/include
     ../include)
 
 set(DEMO_NAMES

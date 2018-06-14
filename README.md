@@ -21,5 +21,5 @@ are included in the repo for convenience.
 
 ## Supported platforms
 
-Lava supports Linux as well as MacOS (via MoltenVK). It should be easy to extend to other platforms
-in the future.
+Lava supports macOS via MoltenVK, as well as Linux and Android. It should be easy to extend to other
+platforms in the future.

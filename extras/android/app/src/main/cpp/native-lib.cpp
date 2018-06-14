@@ -1,5 +1,6 @@
 #include <jni.h>
 #include <string>
+#include <vulkan/vulkan.h>
 
 extern "C" JNIEXPORT jstring
 

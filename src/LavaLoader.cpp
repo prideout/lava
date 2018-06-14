@@ -32,7 +32,7 @@ bool LavaLoader::init() {
     const std::string dylibPath = VKLIBRARY_PATH;
     void* module = dlopen(dylibPath.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (!module) {
-        std::cerr << "Unable to load " << dylibPath << std::endl;
+        printf("Unable to load %s\n", dylibPath.c_str());
         return false;
     }
     vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr) dlsym(module, "vkGetInstanceProcAddr");

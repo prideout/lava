@@ -66,10 +66,10 @@ struct LavaContextImpl : LavaContext {
     void initDepthBuffer() noexcept;
     bool determineMemoryType(uint32_t typeBits, VkFlags requirements,
             uint32_t *typeIndex) const noexcept;
-    VkInstance mInstance = VK_NULL_HANDLE;
-    VkDevice mDevice = VK_NULL_HANDLE;
-    VkCommandPool mCommandPool = VK_NULL_HANDLE;
-    VkPhysicalDevice mGpu = VK_NULL_HANDLE;
+    VkInstance mInstance {};
+    VkDevice mDevice {};
+    VkCommandPool mCommandPool {};
+    VkPhysicalDevice mGpu {};
     VkPhysicalDeviceProperties mGpuProps;
     VkPhysicalDeviceFeatures mGpuFeatures;
     VkQueue mQueue;
@@ -79,8 +79,8 @@ struct LavaContextImpl : LavaContext {
     LavaVector<VkQueueFamilyProperties> mQueueProps;
     LavaVector<const char*> mEnabledExtensions;
     LavaVector<const char*> mEnabledLayers;
-    VkRenderPass mRenderPass = VK_NULL_HANDLE;
-    VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
+    VkRenderPass mRenderPass {};
+    VkSwapchainKHR mSwapchain {};
     SwapchainBundle mSwap[2] {};
     VkExtent2D mExtent;
     DepthBundle mDepth;
@@ -90,8 +90,8 @@ struct LavaContextImpl : LavaContext {
     VkCommandBuffer mWorkCmd;
     VkFence mWorkFence;
     uint32_t mCurrentSwapIndex = ~0u;
-    LavaRecording* mCurrentRecording = nullptr;
-    VkDebugReportCallbackEXT mDebugCallback = nullptr;
+    LavaRecording* mCurrentRecording {};
+    VkDebugReportCallbackEXT mDebugCallback  {};
 };
 
 namespace LavaLoader {
@@ -286,7 +286,8 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     vkGetPhysicalDeviceMemoryProperties(mGpu, &mMemoryProperties);
     vkGetDeviceQueue(mDevice, graphicsQueueNodeIndex, 0, &mQueue);
 
-    // Debug callbacks.
+    // Debug callbacks. This doesn't build on 32-bit Android.
+    #if ULONG_MAX != UINT_MAX
     if (vkCreateDebugReportCallbackEXT) {
         VkDebugReportCallbackCreateInfoEXT cbinfo {
             .sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -304,6 +305,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
         };
         vkCreateDebugReportCallbackEXT(mInstance, &cbinfo, VKALLOC, &mDebugCallback);
     }
+    #endif
 
     // Create the GPU memory allocator.
     createVma(mDevice, mGpu);

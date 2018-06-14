@@ -19,6 +19,13 @@ android {
             path "CMakeLists.txt"
         }
     }
+    sourceSets {
+        debug {
+            jniLibs {
+                srcDirs = ["${android.ndkDirectory}/sources/third_party/vulkan/src/build-android/jniLibs"]
+            }
+        }
+    }
 }
 
 dependencies {

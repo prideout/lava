@@ -4,6 +4,10 @@
 #error Please do not include vulkan.h before LavaLoader
 #endif
 
+#if defined(__ANDROID__) && !defined(VK_USE_PLATFORM_ANDROID_KHR)
+#define VK_USE_PLATFORM_ANDROID_KHR
+#endif
+
 #ifndef VULKAN_H_
     #ifndef VK_NO_PROTOTYPES
     #define VK_NO_PROTOTYPES

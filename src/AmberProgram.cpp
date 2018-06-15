@@ -8,8 +8,6 @@
 
 #include <vector>
 #include <fstream>
-#include <functional>
-#include <thread>
 
 #include <FileWatcher/FileWatcher.h>
 
@@ -33,7 +31,8 @@ struct AmberProgramImpl : AmberProgram {
     FileWatcher mFileWatcher;
     struct : FileWatchListener {
         FileListener callback;
-        void handleFileAction(WatchID watchid, const String& dir, const String& filename, Action action) override {
+        void handleFileAction(WatchID watchid, const String& dir, const String& filename,
+                Action action) override {
             if (action == Actions::Modified) {
                 if (callback) {
                     callback(filename);

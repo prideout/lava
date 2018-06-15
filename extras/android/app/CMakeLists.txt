@@ -10,11 +10,20 @@ elseif (${ANDROID_ABI} STREQUAL "armeabi-v7a")
     include_directories(${ANDROID_SYSROOT}/usr/include/arm-linux-androideabi)
 endif()
 
+set(APP_GLUE_DIR ${ANDROID_NDK}/sources/android/native_app_glue)
+include_directories(${APP_GLUE_DIR})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Werror")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_ANDROID_KHR")
+add_library(appglue STATIC ${APP_GLUE_DIR}/android_native_app_glue.c)
+
 add_subdirectory(lava)
 
-add_library(native-lib SHARED src/main/cpp/native-lib.cpp)
+set(SRC_DIR src/main/cpp)
+include_directories(lava/include)
 
-find_library(log-lib log)
-find_library(vulkan-lib vulkan)
+add_library(lavademos SHARED
+        ${SRC_DIR}/VulkanMain.cpp
+        ${SRC_DIR}/AndroidMain.cpp)
 
-target_link_libraries(native-lib ${log-lib} ${vulkan-lib} lava)
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
+target_link_libraries(lavademos log android appglue lava)

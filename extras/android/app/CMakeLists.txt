@@ -23,6 +23,7 @@ include_directories(lava/include)
 
 add_library(lavademos SHARED
         ${SRC_DIR}/VulkanMain.cpp
+        #${SRC_DIR}/CreateShaderModule.cpp
         ${SRC_DIR}/AndroidMain.cpp)
 
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")

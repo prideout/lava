@@ -1,20 +1,32 @@
 # AmberProgram::watchFile
 
-    Particle demo: Increase to 1M, use white bkgd, fuzzy spinning circle, remove P heart R phase
+    Particle demo should listen for spacebar and restart
+    Rebuild the particle shader in response
+    Point to my repo, remove the CMake hack
+    Handle shader errors gracefully
+
+# Particle demo
+
+    Increase to 1M, use white bkgd, fuzzy spinning circle, remove P heart R phase, new photo
 
 # 08_klein_bottle
 
     Rotation
     Apply rust texture
+
+# LavaContext
+
+    recording API should take a callback instead of begin / end
+
+# LavaCpuBuffer
+
+    remove setData in favor of persistent mapping
+
+# 08_klein_bottle
+
     Introduce LavaGeometry
         only supports two "attribs" because it assumes non-position data is interleaved
     https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
-
-# LavaContext : recording API should take a callback instead of begin / end
-
-# LavaCpuBuffer : remove setData in favor of persistent mapping
-
-# Add extras/android with gradle stuff
 
 # gli and ktx pipeline
 
@@ -24,8 +36,6 @@
 
     .clang-format
         AlignAfterOpenBracket: BAS_DontAlign
-
-# Investigate lavalib crash on Linux
 
 # lavaray
 

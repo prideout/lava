@@ -4,7 +4,7 @@ project(LavaDemos)
 
 file(GLOB_RECURSE AMBER_SOURCE "../src/Amber*.cpp")
 
-set(DEMO_LIBS glfw glslang SPIRV curl lava)
+set(DEMO_LIBS glfw glslang SPIRV curl sfw_lib lava)
 
 if (APPLE)
     list(APPEND DEMO_LIBS "$ENV{VULKAN_SDK}/macOS/lib/libvulkan.1.dylib")

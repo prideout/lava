@@ -253,6 +253,9 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     };
     auto backdrop_program = make_program("backdrop.vs", "backdrop.fs");
     auto points_program = make_program("points.vs", "points.fs");
+    backdrop_program->watchDirectory("../demos", [] (const string& filename) {
+        llog.warn("{} has been modified", filename);
+    });
 
     // Create the backdrop mesh.
     auto backdrop_vertices = make_unique<LavaGpuBuffer>({
@@ -457,6 +460,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         swap(ubo[0], ubo[1]);
 
         context->presentRecording(frame);
+        backdrop_program->checkDirectory();
     }
 
     // Wait for the command buffer to finish before deleting any Vulkan objects.

@@ -37,7 +37,8 @@
         "utility": "cpp",
         "ios": "cpp",
         "__locale": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "__string": "cpp"
     },
     "files.exclude": {
         "include/spdlog": true,

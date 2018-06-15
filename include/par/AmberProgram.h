@@ -23,9 +23,10 @@ public:
     // until the end of the file.
     static string getChunk(const string& filename, const string& chunkName) noexcept;
 
-    // Monitor a file for changes. Useful for hot-loading.
+    // Monitors a file for changes. Useful for hot-loading.
     using FileListener = std::function<void(string)>;
-    static void watchFile(const string& filename, FileListener onChange) noexcept;
+    void watchDirectory(const string& folder, FileListener onChange) noexcept;
+    void checkDirectory() noexcept;
 
 protected:
     AmberProgram() noexcept = default;

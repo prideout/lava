@@ -18,7 +18,16 @@ set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
 if(EXISTS "${CMAKE_SOURCE_DIR}/extras/glfw/CMakeLists.txt")
     add_subdirectory(extras/glfw)
     add_subdirectory(extras/glslang)
+
+    # Workaround an error in the SimpleFileWatcher build system
+    if(APPLE)
+        unset(UNIX)
+    endif()
     add_subdirectory(extras/SimpleFileWatcher)
+    if(APPLE)
+        set(UNIX 1)
+    endif()
+
 endif()
 
 # Build the core library (zero dependencies).

@@ -11,6 +11,15 @@
 
 #include <string>
 
+#if defined(__ANDROID__)
+#include <android/log.h>
+#define LOGE(...) \
+  ((void)__android_log_print(ANDROID_LOG_ERROR, "LavaLoader", __VA_ARGS__))
+#else
+#define LOGE(...) \
+    fprintf(stderr, __VA_ARGS__)
+#endif
+
 namespace LavaLoader {
     bool init();
     void bind(VkInstance instance);
@@ -21,20 +30,20 @@ static void loadInstanceFunctions(void* context, PFN_vkVoidFunction (*loadcb)(vo
 static void loadDeviceFunctions(void* context, PFN_vkVoidFunction (*loadcb)(void*, const char*));
 static PFN_vkVoidFunction vkGetInstanceProcAddrWrapper(void* context, const char* name);
 
-#ifdef __APPLE__
-static const char* VKLIBRARY_PATH = "libvulkan.1.dylib";
-#else
-static const char* VKLIBRARY_PATH = "libvulkan.so.1";
-#endif
-
-
 bool LavaLoader::init() {
-    const std::string dylibPath = VKLIBRARY_PATH;
-    void* module = dlopen(dylibPath.c_str(), RTLD_NOW | RTLD_LOCAL);
-    if (!module) {
-        printf("Unable to load %s\n", dylibPath.c_str());
+    constexpr int flags = RTLD_NOW | RTLD_LOCAL;
+    void* module;
+    #ifdef __APPLE__
+    if (!dlopen("libvulkan.1.dylib", flags)) {
+        LOGE("Unable to load Vulkan dylib.");
         return false;
     }
+    #else
+    if (!(module = dlopen("libvulkan.so", flags)) && !(module = dlopen("libvulkan.1.so", flags))) {
+        LOGE("Unable to load Vulkan dso.");
+        return false;
+    }
+    #endif
     vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr) dlsym(module, "vkGetInstanceProcAddr");
     loadLoaderFunctions(nullptr, vkGetInstanceProcAddrWrapper);
     return true;

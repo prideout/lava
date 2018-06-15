@@ -27,7 +27,7 @@ namespace LavaLoader {
 }
 
 // Android log function wrappers
-static const char* kTAG = "Vulkan-Tutorial04";
+static const char* kTAG = "VulkanMain";
 #define LOGI(...) \
   ((void)__android_log_print(ANDROID_LOG_INFO, kTAG, __VA_ARGS__))
 #define LOGW(...) \
@@ -118,7 +118,9 @@ void CreateVulkanDevice(ANativeWindow* platformWindow,
       .ppEnabledLayerNames = nullptr,
   };
 
-  CALL_VK(vkCreateInstance(&instanceCreateInfo, nullptr, &device.instance_));
+    LavaLoader::init();
+
+    CALL_VK(vkCreateInstance(&instanceCreateInfo, nullptr, &device.instance_));
 
     LavaLoader::bind(device.instance_);
 
@@ -130,6 +132,9 @@ void CreateVulkanDevice(ANativeWindow* platformWindow,
 
   CALL_VK(vkCreateAndroidSurfaceKHR(device.instance_, &createInfo, nullptr,
                                     &device.surface_));
+
+LOGE("prideout %d", __LINE__);
+
   // Find one GPU to use:
   // On Android, every GPU device is equal -- supporting
   // graphics/compute/present
@@ -330,8 +335,6 @@ void CreateFrameBuffers(VkRenderPass& renderPass,
 bool InitVulkan(android_app* app) {
 
     androidAppCtx = app;
-
-    LavaLoader::init();
 
     VkApplicationInfo appInfo = {
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,

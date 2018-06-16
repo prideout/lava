@@ -1,22 +1,11 @@
-# Android
-
-    https://github.com/googlesamples/android-vulkan-tutorials
-
-# AmberProgram::watchFile
-
-    Particle demo should listen for spacebar and restart
-    Rebuild the particle shader in response
-    Point to my repo, remove the CMake hack
-    Handle shader errors gracefully
-
-# Particle demo
-
-    Increase to 1M, use white bkgd, fuzzy spinning circle, remove P heart R phase, new photo
-
 # 08_klein_bottle
 
     Rotation
     Apply rust texture
+
+# Android
+
+    https://github.com/googlesamples/android-vulkan-tutorials
 
 # LavaContext
 

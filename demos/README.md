@@ -27,5 +27,5 @@ Note that the core Lava library does not have dependencies on GLFW or glslang. *
   Demonstrates **LavaTexture**.
 - [klein_bottle](08_klein_bottle.cpp)
   *This will demonstrate **LavaGeometry**, work in progress.*
-- [particle_system](09_particle_system.cpp)
+- [particle_system](0a_particle_system.cpp)
   Fun with point sprites.

@@ -442,9 +442,12 @@ layout(binding = 0) uniform Uniforms {
     float npoints;
 };
 void main() {
+    float recording_delay = 0.5;
+    float time = max(0.0, original_time - recording_delay);
+
     frag_color = vec4(0.92);
     vec4 tex_color = texture(img, vert_uv);
-    float t = clamp(original_time - 5.0, 0.0, 1.0);
+    float t = clamp(time - 5.0, 0.0, 1.0);
     frag_color = mix(frag_color, tex_color, t);
 }
 
@@ -459,19 +462,23 @@ layout(binding = 0) uniform Uniforms {
 layout(binding = 1) uniform sampler2D img;
 
 void main() {
-    gl_PointSize = 2.0;
+    float recording_delay = 0.5;
+    float time = max(0.0, original_time - recording_delay);
+
+    float a = 5.0 - time;
+    gl_PointSize = clamp(a, 2.0, 5.0);
 
     float aspect = 640.0 / 718.0;
     vec2 gibbons = gibbons_position * vec2(2.25, 2.0);
     float n = float(gl_VertexIndex) / npoints;
 
     float t = 3.14 * 2.0 * n * 0.6;
-    float t2 = 1.0 * (t + original_time);
+    float t2 = 1.0 * (t + time);
     float s2 = sin(t2);
     vec2 pt = -0.05 * vec2(16 * s2*s2*s2, 13*cos(t2)-5*cos(2*t2)-2*cos(3*t2)-cos(4*t2));
     pt += vec2(0.0, -0.1);
 
-    t = clamp((original_time - n * 10.0) * 0.5, 0.02, 1.0);
+    t = clamp((time - n * 10.0) * 0.5, 0.02, 1.0);
     pt = mix(pt, gibbons, t);
 
     gl_Position = vec4(pt, 0, 1);

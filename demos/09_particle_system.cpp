@@ -37,6 +37,7 @@ namespace {
     constexpr int NUM_PARTICLES = 300000;
 
     float global_time = 0;
+    bool global_refresh_signal = false;
 
     struct Uniforms {
         float time;
@@ -79,7 +80,7 @@ static unique_ptr<LavaTexture> load_texture(char const* filename, VkDevice devic
         llog.error("{}: {}.", filename, stbi_failure_reason());
         exit(1);
     }
-    llog.info("Loading texture {:4}x{:4} {}", width, height, filename);
+    llog.info("Loading texture from {} ({}x{})", filename, width, height);
     uint8_t* texels = stbi_load(filename, (int*) &width, (int*) &height, 0, 4);
     auto texture = LavaTexture::create({
         .device = device, .gpu = gpu,
@@ -243,20 +244,6 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     auto particles2_texture = load_texture("../extras/assets/particles2.jpg", device, gpu);
     particles2_texture->uploadStage(workbuf);
 
-    // Create shader modules.
-    auto make_program = [device](string vshader, string fshader) {
-        const string vs = AmberProgram::getChunk(__FILE__, vshader);
-        const string fs = AmberProgram::getChunk(__FILE__, fshader);
-        auto ptr = AmberProgram::create(vs, fs);
-        ptr->compile(device);
-        return unique_ptr<AmberProgram>(ptr);
-    };
-    auto backdrop_program = make_program("backdrop.vs", "backdrop.fs");
-    auto points_program = make_program("points.vs", "points.fs");
-    backdrop_program->watchDirectory("../demos", [] (const string& filename) {
-        llog.warn("{} has been modified", filename);
-    });
-
     // Create the backdrop mesh.
     auto backdrop_vertices = make_unique<LavaGpuBuffer>({
         .device = device,
@@ -375,100 +362,130 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     raster_state.blending.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
     raster_state.blending.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 
-    // Record two command buffers.
-    LavaRecording* frame = context->createRecording();
-    for (uint32_t i = 0; i < 2; i++) {
-        rpbi.framebuffer = context->getFramebuffer(i);
-        const VkCommandBuffer cmd = context->beginRecording(frame, i);
-
-        vkCmdBeginRenderPass(cmd, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdSetViewport(cmd, 0, 1, &viewport);
-        vkCmdSetScissor(cmd, 0, 1, &scissor);
-
-        // Push uniforms.
-        descriptors->setUniformBuffer(0, ubo[0]->getBuffer());
-        VkDescriptorSet dset = descriptors->getDescriptor();
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1, &dset, 0, 0);
-        swap(ubo[0], ubo[1]);
-
-        // Draw the backdrop.
-        raster_state.blending.blendEnable = VK_FALSE;
-        pipelines->setRasterState(raster_state);
-        pipelines->setVertexState(backdrop_vertex);
-        pipelines->setVertexShader(backdrop_program->getVertexShader());
-        pipelines->setFragmentShader(backdrop_program->getFragmentShader());
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
-        vkCmdBindVertexBuffers(cmd, 0, 1, backdrop_vertices->getBufferPtr(), &zero_offset);
-        vkCmdDraw(cmd, 4, 1, 0, 0);
-
-        // Draw the points.
-        raster_state.blending.blendEnable = VK_TRUE;
-        pipelines->setRasterState(raster_state);
-        pipelines->setVertexState(points_vertex);
-        pipelines->setVertexShader(points_program->getVertexShader());
-        pipelines->setFragmentShader(points_program->getFragmentShader());
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
-        vkCmdBindVertexBuffers(cmd, 0, 2, ptbuffers, zero_offsets);
-        vkCmdDraw(cmd, NUM_PARTICLES, 1, 0, 0);
-
-        vkCmdEndRenderPass(cmd);
-        context->endRecording();
-    }
-
+    // Set up some UI handlers.
     glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-        if (key == GLFW_KEY_RIGHT) {
-            global_time += 0.1;
+        if (action != GLFW_PRESS) {
+            return;
         }
-        if (key == GLFW_KEY_LEFT) {
-            global_time -= 0.1;
-        }
-        if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        switch (key) {
+            case GLFW_KEY_RIGHT:
+                global_time += 0.1;
+                break;
+            case GLFW_KEY_LEFT:
+                global_time -= 0.1;
+                break;
+            case GLFW_KEY_SPACE:
+                global_refresh_signal = true;
+                break;
+            case GLFW_KEY_ESCAPE:
+                glfwSetWindowShouldClose(window, GLFW_TRUE);
+                break;
         }
     });
-
     glfwSetScrollCallback(window, [](GLFWwindow* window, double dx, double dy) {
         global_time = std::max(0.0, global_time + dx * 0.1);
     });
 
-    // Execute the render loop, logging every second until interactive mode is enabled.
-    float seconds_elapsed = 0;
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
-        double now = getCurrentTime();
-        if (now < 10) {
-            now = floor(now) + par_easings_out_cubic(fmod(now, 1.0));
-            global_time = now;
-            if (global_time > seconds_elapsed) {
-                llog.debug("{} seconds", ++seconds_elapsed);
-            }
-        } else if (now > 12 && now < 24) {
-            now = floor(now) + par_easings_out_cubic(fmod(now, 1.0));
-            global_time = 12 - fmod(now, 12); 
-        } else if (now > 24) {
-            static bool first = true;
-            if (first) {
-                llog.info("Now accepting scroll input.");
-                first = false;
-            }
-        }
-        Uniforms uniforms {
-            .time = global_time,
-            .npoints = (float) NUM_PARTICLES
-        };
-        ubo[0]->setData(&uniforms, sizeof(uniforms));
-        swap(ubo[0], ubo[1]);
+    // Create shader modules.
+    auto make_program = [device](string vshader, string fshader) {
+        const string vs = AmberProgram::getChunk(__FILE__, vshader);
+        const string fs = AmberProgram::getChunk(__FILE__, fshader);
+        auto ptr = AmberProgram::create(vs, fs);
+        ptr->compile(device);
+        return unique_ptr<AmberProgram>(ptr);
+    };
+    auto backdrop_program = make_program("backdrop.vs", "backdrop.fs");
+    backdrop_program->watchDirectory("../demos", [] (const string& filename) {
+        llog.warn("{} has been modified", filename);
+    });
 
-        context->presentRecording(frame);
-        backdrop_program->checkDirectory();
+    while (!glfwWindowShouldClose(window)) {
+
+        auto points_program = make_program("points.vs", "points.fs");
+
+        // Record two command buffers.
+        LavaRecording* frame = context->createRecording();
+        for (uint32_t i = 0; i < 2; i++) {
+            rpbi.framebuffer = context->getFramebuffer(i);
+            const VkCommandBuffer cmd = context->beginRecording(frame, i);
+
+            vkCmdBeginRenderPass(cmd, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdSetViewport(cmd, 0, 1, &viewport);
+            vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+            // Push uniforms.
+            descriptors->setUniformBuffer(0, ubo[0]->getBuffer());
+            VkDescriptorSet dset = descriptors->getDescriptor();
+            vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1, &dset, 0, 0);
+            swap(ubo[0], ubo[1]);
+
+            // Draw the backdrop.
+            raster_state.blending.blendEnable = VK_FALSE;
+            pipelines->setRasterState(raster_state);
+            pipelines->setVertexState(backdrop_vertex);
+            pipelines->setVertexShader(backdrop_program->getVertexShader());
+            pipelines->setFragmentShader(backdrop_program->getFragmentShader());
+            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
+            vkCmdBindVertexBuffers(cmd, 0, 1, backdrop_vertices->getBufferPtr(), &zero_offset);
+            vkCmdDraw(cmd, 4, 1, 0, 0);
+
+            // Draw the points.
+            raster_state.blending.blendEnable = VK_TRUE;
+            pipelines->setRasterState(raster_state);
+            pipelines->setVertexState(points_vertex);
+            pipelines->setVertexShader(points_program->getVertexShader());
+            pipelines->setFragmentShader(points_program->getFragmentShader());
+            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
+            vkCmdBindVertexBuffers(cmd, 0, 2, ptbuffers, zero_offsets);
+            vkCmdDraw(cmd, NUM_PARTICLES, 1, 0, 0);
+
+            vkCmdEndRenderPass(cmd);
+            context->endRecording();
+        }
+
+        llog.info("Starting animation");
+        const double start = getCurrentTime();
+        float seconds_elapsed = 1;
+        global_refresh_signal = false;
+
+        // Execute the render loop, logging every second until interactive mode is enabled.
+        while (!glfwWindowShouldClose(window) && !global_refresh_signal) {
+            glfwPollEvents();
+            double now = getCurrentTime() - start;
+            if (now < 10) {
+                now = floor(now) + par_easings_out_cubic(fmod(now, 1.0));
+                global_time = now;
+                if (global_time > seconds_elapsed) {
+                    llog.debug("\t{} seconds", seconds_elapsed++);
+                }
+            } else if (now > 12 && now < 24) {
+                now = floor(now) + par_easings_out_cubic(fmod(now, 1.0));
+                global_time = 12 - fmod(now, 12); 
+            } else if (now > 24) {
+                static bool first = true;
+                if (first) {
+                    llog.info("Now accepting scroll input.");
+                    first = false;
+                }
+            }
+            Uniforms uniforms {
+                .time = global_time,
+                .npoints = (float) NUM_PARTICLES
+            };
+            ubo[0]->setData(&uniforms, sizeof(uniforms));
+            swap(ubo[0], ubo[1]);
+            context->presentRecording(frame);
+            backdrop_program->checkDirectory();
+        }
+
+        // Wait for the command buffer to finish before deleting any Vulkan objects.
+        context->waitRecording(frame);
+
+        // Cleanup. All Vulkan objects except the sampler and recorded command buffers are stored
+        // unique_ptr so they self-destruct when the scope ends.
+        context->freeRecording(frame);
     }
 
-    // Wait for the command buffer to finish before deleting any Vulkan objects.
-    context->waitRecording(frame);
-
-    // Cleanup. All Vulkan objects except the sampler and recorded command buffers are stored
-    // unique_ptr so they self-destruct when the scope ends.
-    context->freeRecording(frame);
     vkDestroySampler(device, sampler, 0);
 }
 

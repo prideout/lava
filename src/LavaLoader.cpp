@@ -34,7 +34,7 @@ bool LavaLoader::init() {
     constexpr int flags = RTLD_NOW | RTLD_LOCAL;
     void* module;
     #ifdef __APPLE__
-    if (!dlopen("libvulkan.1.dylib", flags)) {
+    if (!(module = dlopen("libvulkan.1.dylib", flags))) {
         LOGE("Unable to load Vulkan dylib.");
         return false;
     }

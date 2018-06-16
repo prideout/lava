@@ -30,7 +30,8 @@ set(DEMO_NAMES
     06_spinny_staged
     07_hello_texture
     08_klein_bottle
-    09_particle_system)
+    09_particle_system
+    0a_particle_system)
 
 foreach(DEMO ${DEMO_NAMES})
     add_executable(${DEMO} ${DEMO}.cpp ${AMBER_SOURCE})

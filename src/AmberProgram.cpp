@@ -54,8 +54,10 @@ void AmberProgram::operator delete(void* ptr) noexcept {
 }
 
 AmberProgramImpl::~AmberProgramImpl() noexcept {
-    if (mDevice) {
+    if (mDevice && mVertModule) {
         vkDestroyShaderModule(mDevice, mVertModule, VKALLOC);
+    }
+    if (mDevice && mFragModule) {
         vkDestroyShaderModule(mDevice, mFragModule, VKALLOC);
     }
     delete mCompiler;
@@ -69,8 +71,10 @@ VkShaderModule AmberProgramImpl::compileVertexShader(VkDevice device) noexcept {
         return mVertModule;
     }
     std::vector<uint32_t> spirv;
-    bool success = mCompiler->compile(AmberCompiler::VERTEX, mVertShader, &spirv);
-    LOG_CHECK(success, "Unable to compile vertex shader.");
+    if (!mCompiler->compile(AmberCompiler::VERTEX, mVertShader, &spirv)) {
+        llog.error("Unable to compile vertex shader.");
+        return VK_NULL_HANDLE;
+    }
     VkShaderModuleCreateInfo moduleCreateInfo {
         .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         .codeSize = spirv.size() * 4,
@@ -86,8 +90,10 @@ VkShaderModule AmberProgramImpl::compileFragmentShader(VkDevice device) noexcept
         return mFragModule;
     }
     std::vector<uint32_t> spirv;
-    bool success = mCompiler->compile(AmberCompiler::FRAGMENT, mFragShader, &spirv);
-    LOG_CHECK(success, "Unable to compile fragment shader.");
+    if (!mCompiler->compile(AmberCompiler::FRAGMENT, mFragShader, &spirv)) {
+        llog.error("Unable to compile fragment shader.");
+        return VK_NULL_HANDLE;
+    }
     VkShaderModuleCreateInfo moduleCreateInfo {
         .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         .codeSize = spirv.size() * 4,

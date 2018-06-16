@@ -28,13 +28,10 @@ using namespace std;
 #define PAR_BLUENOISE_IMPLEMENTATION
 #include <par_bluenoise.h>
 
-#define PAR_EASINGS_IMPLEMENTATION
-#include <par_easings.h>
-
 namespace {
-    constexpr int DEMO_WIDTH = 640;
-    constexpr int DEMO_HEIGHT = 797;
-    constexpr int NUM_PARTICLES = 300000;
+    constexpr int DEMO_WIDTH = 640 / 2;
+    constexpr int DEMO_HEIGHT = 718 / 2;
+    constexpr int NUM_PARTICLES = 100000;
 
     float global_time = 0;
     bool global_refresh_signal = false;
@@ -110,10 +107,10 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         par_easycurl_to_file(BLUENOISE_URL, BLUENOISE_FILENAME);
     }
 
-    // Load the Ramya
-    auto ramya_pts = [device, gpu, context](char const* filename) {
+    // Load the Gibbons
+    auto gibbons_pts = [device, gpu, context](char const* filename) {
 
-        llog.info("Decoding Ramya texture");
+        llog.info("Decoding Gibbons texture");
         int width, height;
         uint8_t* pixels = stbi_load(filename, (int*) &width, (int*) &height, 0, 1);
         assert(pixels);
@@ -155,93 +152,11 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         par_bluenoise_free(bluenoise);
 
         return vbo;
-    }("../extras/assets/particles2.jpg");
-
-    // Load the P ♥ R
-    auto pheartr = [device, gpu, context](char const* filename) {
-
-        llog.info("Decoding glyph texture");
-        int width, height;
-        uint8_t* pixels = stbi_load(filename, (int*) &width, (int*) &height, 0, 1);
-        assert(pixels);
-
-        llog.info("Masking glyphs {}x{}", width, height);
-        vector<uint8_t> glyphs[3];
-        glyphs[0].resize(width * height);
-        glyphs[1].resize(width * height);
-        glyphs[2].resize(width * height);
-        memcpy(glyphs[0].data(), pixels, width * height);
-        memcpy(glyphs[1].data(), pixels, width * height);
-        memcpy(glyphs[2].data(), pixels, width * height);
-        stbi_image_free(pixels);
-        uint8_t* glyph0 = glyphs[0].data();
-        uint8_t* glyph1 = glyphs[1].data();
-        uint8_t* glyph2 = glyphs[2].data();
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                if (x > 420) {
-                    *glyph0 = 0xff;
-                    *glyph1 = 0xff;
-                } else if (x > 190) {
-                    *glyph0 = 0xff;
-                    *glyph2 = 0xff;
-                } else {
-                    *glyph1 = 0xff;
-                    *glyph2 = 0xff;
-                }
-                ++glyph0;
-                ++glyph1;
-                ++glyph2;
-            }
-        }
-
-        llog.info("Generating {} points", NUM_PARTICLES);
-        vector<float> allglyphs(NUM_PARTICLES * 2);
-        auto bluenoise = par_bluenoise_from_file(BLUENOISE_FILENAME, 0);
-        par_bluenoise_density_from_gray(bluenoise, glyphs[0].data(), width, height, 1);
-        const float* glyph0_pts = par_bluenoise_generate_exact(bluenoise, NUM_PARTICLES / 3, 2);
-        memcpy(allglyphs.data(), glyph0_pts,
-                sizeof(float) * 2 * NUM_PARTICLES / 3);
-        par_bluenoise_density_from_gray(bluenoise, glyphs[1].data(), width, height, 1);
-        const float* glyph1_pts = par_bluenoise_generate_exact(bluenoise, NUM_PARTICLES / 3, 2);
-        memcpy(allglyphs.data() + 2 * NUM_PARTICLES / 3, glyph1_pts,
-                sizeof(float) * 2 * NUM_PARTICLES / 3);
-        par_bluenoise_density_from_gray(bluenoise, glyphs[2].data(), width, height, 1);
-        const float* glyph2_pts = par_bluenoise_generate_exact(bluenoise, NUM_PARTICLES / 3, 2);
-        memcpy(allglyphs.data() + 4 * NUM_PARTICLES / 3, glyph2_pts,
-                sizeof(float) * 2 * NUM_PARTICLES / 3);
-        par_bluenoise_free(bluenoise);
-
-        llog.info("Uploading {} points to GPU", NUM_PARTICLES);
-        const uint32_t bufsize = sizeof(float) * allglyphs.size();
-        for (int i = 0; i < 4; i++) {
-            llog.debug("\t{: .3f} {: .3f}", allglyphs[i*2], allglyphs[i*2+1]);
-        }
-        auto vbo = make_unique<LavaGpuBuffer>({
-            .device = device,
-            .gpu = gpu,
-            .size = bufsize,
-            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
-        });
-        auto stage = make_unique<LavaCpuBuffer>({
-            .device = device,
-            .gpu = gpu,
-            .size = bufsize,
-            .source = allglyphs.data(),
-            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-        });
-        const VkBufferCopy region { .size = bufsize };
-        VkCommandBuffer workbuf = context->beginWork();
-        vkCmdCopyBuffer(workbuf, stage->getBuffer(), vbo->getBuffer(), 1, &region);
-        context->endWork();
-        context->waitWork();
-
-        return vbo;
-    }("../extras/assets/particles1.png");
+    }("../extras/assets/particles3.jpg");
 
     // Load textures from disk.
     VkCommandBuffer workbuf = context->beginWork();
-    auto particles2_texture = load_texture("../extras/assets/particles2.jpg", device, gpu);
+    auto particles2_texture = load_texture("../extras/assets/particles3.jpg", device, gpu);
     particles2_texture->uploadStage(workbuf);
 
     // Create the backdrop mesh.
@@ -357,7 +272,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     };
     const VkDeviceSize zero_offset {};
     const VkDeviceSize zero_offsets[2] {};
-    const VkBuffer ptbuffers[2] { pheartr->getBuffer(), ramya_pts->getBuffer() };
+    const VkBuffer ptbuffers[2] { gibbons_pts->getBuffer(), gibbons_pts->getBuffer() };
     auto raster_state = pipelines->getDefaultRasterState();
     raster_state.blending.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
     raster_state.blending.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -391,7 +306,10 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         const string vs = AmberProgram::getChunk(__FILE__, vshader);
         const string fs = AmberProgram::getChunk(__FILE__, fshader);
         auto ptr = AmberProgram::create(vs, fs);
-        ptr->compile(device);
+        if (!ptr->compile(device)) {
+            delete ptr;
+            ptr = nullptr; 
+        }
         return unique_ptr<AmberProgram>(ptr);
     };
     auto backdrop_program = make_program("backdrop.vs", "backdrop.fs");
@@ -403,6 +321,10 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     while (!glfwWindowShouldClose(window)) {
 
         auto points_program = make_program("points.vs", "points.fs");
+        if (!points_program) {
+            sleep(1);
+            continue;
+        }
 
         // Record two command buffers.
         LavaRecording* frame = context->createRecording();
@@ -454,21 +376,9 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         while (!glfwWindowShouldClose(window) && !global_refresh_signal) {
             glfwPollEvents();
             double now = getCurrentTime() - start;
-            if (now < 10) {
-                now = floor(now) + par_easings_out_cubic(fmod(now, 1.0));
-                global_time = now;
-                if (global_time > seconds_elapsed) {
-                    llog.debug("\t{} seconds", seconds_elapsed++);
-                }
-            } else if (now > 12 && now < 24) {
-                now = floor(now) + par_easings_out_cubic(fmod(now, 1.0));
-                global_time = 12 - fmod(now, 12); 
-            } else if (now > 24) {
-                static bool first = true;
-                if (first) {
-                    llog.info("Now accepting scroll input.");
-                    first = false;
-                }
+            global_time = now;
+            if (global_time > seconds_elapsed) {
+                llog.debug("\t{} seconds", seconds_elapsed++);
             }
             Uniforms uniforms {
                 .time = global_time,
@@ -496,7 +406,7 @@ int main(const int argc, const char *argv[]) {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    window = glfwCreateWindow(DEMO_WIDTH, DEMO_HEIGHT, "ramya", 0, 0);
+    window = glfwCreateWindow(DEMO_WIDTH, DEMO_HEIGHT, "gibbons", 0, 0);
     LavaContext* context = LavaContext::create({
         .depthBuffer = false,
         .validation = true,
@@ -528,81 +438,46 @@ layout(location = 0) out vec4 frag_color;
 layout(location = 0) in vec2 vert_uv;
 layout(binding = 1) uniform sampler2D img;
 layout(binding = 0) uniform Uniforms {
-    float time;
+    float original_time;
     float npoints;
 };
 void main() {
-    frag_color = vec4(0.8);
+    frag_color = vec4(0.92);
     vec4 tex_color = texture(img, vert_uv);
-
-    // From t=9 to t=10, fade in the background.
-    frag_color = mix(frag_color, tex_color, clamp(time - 9.0, 0.0, 1.0));
+    float t = clamp(original_time - 5.0, 0.0, 1.0);
+    frag_color = mix(frag_color, tex_color, t);
 }
 
 -- points.vs ---------------------------------------------------------------------------------------
 
-layout(location = 0) in vec2 glyphs_position;
-layout(location = 1) in vec2 ramya_position;
+layout(location = 1) in vec2 gibbons_position;
 layout(location = 0) out vec4 vert_color;
 layout(binding = 0) uniform Uniforms {
-    float time;
+    float original_time;
     float npoints;
 };
 layout(binding = 1) uniform sampler2D img;
 
 void main() {
-    gl_PointSize = 1.5;
+    gl_PointSize = 2.0;
 
-    float aspect = 640.0 / 797.0;
-    vec2 glyph = glyphs_position * vec2(1.5, -1.25);
-    vec2 ramya = ramya_position * vec2(2.5, 2.0);
-    float t = float(gl_VertexIndex) / npoints;
-    vec2 circle = 0.7 * vec2(sin(t * 6.28) / aspect, cos(t * 6.28));
+    float aspect = 640.0 / 718.0;
+    vec2 gibbons = gibbons_position * vec2(2.25, 2.0);
+    float n = float(gl_VertexIndex) / npoints;
 
-    int verts_per_glyph = int(npoints) / 3;
-    bool glyph_0 = gl_VertexIndex < verts_per_glyph;
-    bool glyph_1 = !glyph_0 && gl_VertexIndex < 2 * verts_per_glyph;
-    bool glyph_2 = !glyph_0 && !glyph_1;
+    float t = 3.14 * 2.0 * n * 0.6;
+    float t2 = 1.0 * (t + original_time);
+    float s2 = sin(t2);
+    vec2 pt = -0.05 * vec2(16 * s2*s2*s2, 13*cos(t2)-5*cos(2*t2)-2*cos(3*t2)-cos(4*t2));
+    pt += vec2(0.0, -0.1);
 
-    vec2 pt = circle;
-    float alpha = 0.01;
+    t = clamp((original_time - n * 10.0) * 0.5, 0.02, 1.0);
+    pt = mix(pt, gibbons, t);
 
-    // From t=1 to t=2, form the P.
-    if (glyph_0) {
-        pt = mix(pt, glyph, clamp(time - 1.0, 0.0, 1.0));
-
-        // From t=4 to t=5 lerp the R to Ramya.
-        alpha = clamp(time - 4.0, alpha, 1.0);
-        ramya = mix(circle, ramya, alpha);
-        pt = mix(pt, ramya, alpha);
-
-    // From t=2 to t=3 form the heart.
-    } else if (glyph_1) {
-        pt = mix(pt, glyph, clamp(time - 2.0, 0.0, 1.0));
-
-        // From t=5 to t=6 lerp the heart to Ramya.
-        alpha = clamp(time - 5.0, alpha, 1.0);
-        ramya = mix(circle, ramya, alpha);
-        pt = mix(pt, ramya, alpha);
-
-    // From t=3 to t=4 form the R.
-    } else {
-        pt = mix(pt, glyph, clamp(time - 3.0, 0.0, 1.0));
-
-        // From t=6 to t=7 lerp the heart to Ramya.
-        alpha = clamp(time - 6.0, alpha, 1.0);
-        ramya = mix(circle, ramya, alpha);
-        pt = mix(pt, ramya, alpha);
-    }
     gl_Position = vec4(pt, 0, 1);
-
-    vec2 final_uv = 0.5 + 0.5 * ramya;
-    vert_color = vec4(0, 0, 0, 1);
-    vec4 ramya_color = texture(img, final_uv);
-
-    // From t=8 to t=9, colorify the pts.
-    vert_color = mix(vert_color, ramya_color, clamp(time - 8.0, 0.0, 1.0));
-    vert_color.a = min(1.0, alpha + 0.1);
+    vec3 red = vec3(0.6, 0.2, 0.2);
+    vert_color = vec4(red, 1);
+    vert_color.a = min(0.04 + t, 0.3);
 }
 
 -- points.fs ---------------------------------------------------------------------------------------

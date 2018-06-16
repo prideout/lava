@@ -29,11 +29,14 @@ using namespace std;
 #include <stb_image.h>
 
 namespace {
-    constexpr int DEMO_WIDTH = 512;
-    constexpr int DEMO_HEIGHT = 512;
+    constexpr int DEMO_WIDTH = 256;
+    constexpr int DEMO_HEIGHT = 256;
 
     struct Uniforms {
         Matrix4 mvp;
+        Matrix4 model;
+        Matrix4 view;
+        Matrix4 projection;
         Matrix3 imv;
         float time;
     };
@@ -51,7 +54,7 @@ namespace {
     constexpr char const* BACKDROP_FSHADER = AMBER_PREFIX_450 R"(
     layout(location = 0) out vec4 frag_color;
     layout(location = 0) in vec2 vert_uv;
-    layout(binding = 1) uniform sampler2D img;
+    layout(binding = 3) uniform sampler2D img;
     void main() {
         frag_color = texture(img, vert_uv);
     })";
@@ -62,11 +65,14 @@ namespace {
     layout(location = 0) out vec2 vert_uv;
     layout(binding = 0) uniform Uniforms {
         mat4 mvp;
+        mat4 model;
+        mat4 view;
+        mat4 projection;
         mat3 imv;
         float time;
     };
     void main() {
-        gl_Position = mvp * position;
+        gl_Position = projection * view * model * position;
         vert_uv = uv;
     })";
 
@@ -78,6 +84,53 @@ namespace {
         vec2 uv = vert_uv;
         uv.y = 1.0 - uv.y;
         frag_color = texture(img, uv);
+    })";
+
+    constexpr char const* PODIUM_FSHADER = AMBER_PREFIX_450 R"(
+    layout(location = 0) out vec4 frag_color;
+    layout(location = 0) in vec2 vert_uv;
+    layout(binding = 1) uniform sampler2D occlusion;
+    layout(binding = 2) uniform sampler2D rust;
+    void main() {
+        vec2 uv = vert_uv;
+        uv.y = 1.0 - uv.y;
+        frag_color = texture(occlusion, uv) * texture(rust, uv * 2.0);
+        frag_color.a = 0.5;
+        frag_color.rgb *= 1.75;
+    })";
+
+    constexpr char const* REFLECTION_VSHADER = AMBER_PREFIX_450 R"(
+    layout(location = 0) in vec4 position;
+    layout(location = 1) in vec2 uv;
+    layout(location = 0) out vec2 vert_uv;
+    layout(location = 1) out vec3 vert_mp;
+    layout(binding = 0) uniform Uniforms {
+        mat4 mvp;
+        mat4 model;
+        mat4 view;
+        mat4 projection;
+        mat3 imv;
+        float time;
+    };
+    void main() {
+        vec4 p = model * position;
+        vert_mp = p.xyz;
+        p.y *= -1;
+        gl_Position = projection * view * p;
+        vert_uv = uv;
+    })";
+
+    constexpr char const* REFLECTION_FSHADER = AMBER_PREFIX_450 R"(
+    layout(location = 0) out vec4 frag_color;
+    layout(location = 0) in vec2 vert_uv;
+    layout(location = 1) in vec3 vert_mp;
+    layout(binding = 1) uniform sampler2D occlusion;
+    void main() {
+        vec2 uv = vert_uv;
+        uv.y = 1.0 - uv.y;
+        frag_color = texture(occlusion, uv);
+        frag_color.rgb *= smoothstep(0.3, 0.0, vert_mp.y);
+        if (frag_color.r == 0.0) discard;
     })";
 
     struct Vertex {
@@ -249,6 +302,8 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     };
     auto backdrop_program = make_program(BACKDROP_VSHADER, BACKDROP_FSHADER);
     auto klein_program = make_program(KLEIN_VSHADER, KLEIN_FSHADER);
+    auto reflection_program = make_program(REFLECTION_VSHADER, REFLECTION_FSHADER);
+    auto podium_program = make_program(KLEIN_VSHADER, PODIUM_FSHADER);
 
     // Create the backdrop mesh.
     auto backdrop_vertices = make_unique<LavaGpuBuffer>({
@@ -329,7 +384,19 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     auto descriptors = make_unique<LavaDescCache>({
         .device = device,
         .uniformBuffers = {{}},
-        .imageSamplers = {{}}
+        .imageSamplers = { {
+            .sampler = sampler,
+            .imageView = occlusion->getImageView(),
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        }, {
+            .sampler = sampler,
+            .imageView = rust->getImageView(),
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        }, {
+            .sampler = sampler,
+            .imageView = backdrop_texture->getImageView(),
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        } }
     });
     const VkDescriptorSetLayout dlayout = descriptors->getLayout();
 
@@ -354,7 +421,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
 
     // Fill in some info structs before starting the render loop.
     const VkClearValue clearValues[] = {
-        { .color.float32 = {0.1, 0.2, 0.4, 1.0} },
+        { .color.float32 = { 0, 0, 0, 0 } },
         { .depthStencil = {1, 0} }
     };
     const VkViewport viewport = {
@@ -371,6 +438,16 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         .clearValueCount = 2
     };
     const VkDeviceSize zero_offset {};
+    auto default_raster = pipelines->getDefaultRasterState();
+    // default_raster.multisampling.rasterizationSamples = VK_SAMPLE_COUNT_4_BIT;
+    auto blended_raster = default_raster;
+    auto no_z_raster = default_raster;
+    no_z_raster.depthStencil.depthWriteEnable = VK_FALSE;
+    blended_raster.blending.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    blended_raster.blending.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    blended_raster.blending.blendEnable = VK_TRUE;
+    constexpr uint32_t podium_begin = 273;
+    constexpr uint32_t podium_end = 305;
 
     // Record two command buffers.
     LavaRecording* frame = context->createRecording();
@@ -385,39 +462,47 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         // Push uniforms.
         descriptors->setUniformBuffer(0, ubo[0]->getBuffer());
         swap(ubo[0], ubo[1]);
-
-        // Draw the backdrop.
-        descriptors->setImageSampler(1, {
-            .sampler = sampler,
-            .imageView = backdrop_texture->getImageView(),
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        });
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
                 descriptors->getDescPointer(), 0, 0);
+
+        // Set up geometry for klein bottle and podium.
+        pipelines->setVertexState(klein_bottle_vertex);
+        const VkBuffer buffers[] { geo.vertices->getBuffer(), geo.vertices->getBuffer()};
+        const VkDeviceSize offsets[] { 0, geo.nvertices * sizeof(float) * 3 };
+        vkCmdBindVertexBuffers(cmd, 0, 2, buffers, offsets);
+        vkCmdBindIndexBuffer(cmd, geo.indices->getBuffer(), 0, VK_INDEX_TYPE_UINT16);
+
+        // Draw the klein bottle.
+        pipelines->setVertexShader(klein_program->getVertexShader());
+        pipelines->setFragmentShader(klein_program->getFragmentShader());
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
+        vkCmdDrawIndexed(cmd, podium_begin * 3, 1, 0, 0, 0);
+        vkCmdDrawIndexed(cmd, (geo.ntriangles - podium_end) * 3, 1, podium_end * 3, 0, 0);
+
+        // Draw the reflection.
+        pipelines->setRasterState(blended_raster);
+        pipelines->setVertexShader(reflection_program->getVertexShader());
+        pipelines->setFragmentShader(reflection_program->getFragmentShader());
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
+        vkCmdDrawIndexed(cmd, podium_begin * 3, 1, 0, 0, 0);
+        vkCmdDrawIndexed(cmd, (geo.ntriangles - podium_end) * 3, 1, podium_end * 3, 0, 0);
+
+        // Drop the podium.
+        pipelines->setVertexShader(podium_program->getVertexShader());
+        pipelines->setFragmentShader(podium_program->getFragmentShader());
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
+        vkCmdDrawIndexed(cmd, (podium_end - podium_begin) * 3, 1, podium_begin * 3, 0, 0);
+        pipelines->setRasterState(default_raster);
+
+        // Draw the backdrop.
+        // vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
+        //         descriptors->getDescPointer(), 0, 0);
         pipelines->setVertexState(backdrop_vertex);
         pipelines->setVertexShader(backdrop_program->getVertexShader());
         pipelines->setFragmentShader(backdrop_program->getFragmentShader());
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
         vkCmdBindVertexBuffers(cmd, 0, 1, backdrop_vertices->getBufferPtr(), &zero_offset);
         vkCmdDraw(cmd, 4, 1, 0, 0);
-
-        // Draw the klein bottle.
-        descriptors->setImageSampler(1, {
-            .sampler = sampler,
-            .imageView = occlusion->getImageView(),
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        });
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
-                descriptors->getDescPointer(), 0, 0);
-        pipelines->setVertexState(klein_bottle_vertex);
-        pipelines->setVertexShader(klein_program->getVertexShader());
-        pipelines->setFragmentShader(klein_program->getFragmentShader());
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines->getPipeline());
-        const VkBuffer buffers[] { geo.vertices->getBuffer(), geo.vertices->getBuffer()};
-        const VkDeviceSize offsets[] { 0, geo.nvertices * sizeof(float) * 3 };
-        vkCmdBindVertexBuffers(cmd, 0, 2, buffers, offsets);
-        vkCmdBindIndexBuffer(cmd, geo.indices->getBuffer(), 0, VK_INDEX_TYPE_UINT16);
-        vkCmdDrawIndexed(cmd, geo.ntriangles * 3, 1, 0, 0, 0);
 
         vkCmdEndRenderPass(cmd);
         context->endRecording();
@@ -430,26 +515,30 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         {0.0,  0.0, 0.5, 0.5},
         {0.0,  0.0, 0.0, 1.0},
     };
-    constexpr float h = 0.5f;
+    constexpr float h = 0.4f;
     constexpr float w = h * DEMO_WIDTH / DEMO_HEIGHT;
     constexpr float znear = 3;
     constexpr float zfar = 10;
-    constexpr float y = 0.6;
-    constexpr Point3 eye {0, y, -7};
-    constexpr Point3 target {0, y, 0};
+    constexpr float y = 1;
+    constexpr float yo = -0.6;
+    constexpr Point3 eye {0, 2 + y, -7};
+    constexpr Point3 target {0, 1 + y, 0};
     constexpr Vector3 up {0, 1, 0};
 
     // Main render loop.
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        Matrix4 projection = M4MakeFrustum(-w, w, -h, h, znear, zfar);
+        Matrix4 projection = M4MakeFrustum(-w, w, -h + yo, h + yo, znear, zfar);
         projection = M4Mul(vkcorrection, projection);
         Matrix4 view = M4MakeLookAt(eye, target, up);
-        Matrix4 model = M4MakeIdentity();
+        Matrix4 model = M4MakeRotationY(2 * glfwGetTime());
         Matrix4 modelview = M4Mul(view, model);
         Matrix4 mvp = M4Mul(projection, modelview);
         Uniforms uniforms {
             .mvp = mvp,
+            .model = model,
+            .view = view,
+            .projection = projection,
             .imv = M4GetUpper3x3(modelview),
             .time = (float) glfwGetTime()
         };
@@ -473,8 +562,6 @@ int main(const int argc, const char *argv[]) {
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-        glfwWindowHint(GLFW_DECORATED, GL_FALSE);
-        glfwWindowHint(GLFW_SAMPLES, 4);
         window = glfwCreateWindow(DEMO_WIDTH, DEMO_HEIGHT, "klein", 0, 0);
         glfwSetKeyCallback(window, [] (GLFWwindow* window, int key, int, int action, int) {
             if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {

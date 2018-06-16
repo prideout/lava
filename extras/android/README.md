@@ -14,6 +14,7 @@ gradle build
 
 To verify:
 ```
+ls -l app/build/outputs/apk/debug/app-debug.apk
 jar -tvf app/build/outputs/apk/debug/app-debug.apk | grep .so$
 jar -tvf app/build/outputs/apk/release/app-release-unsigned.apk | grep .so$
 ```

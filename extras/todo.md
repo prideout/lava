@@ -1,7 +1,12 @@
 # 08_klein_bottle
 
-    Rotation
-    Apply rust texture
+    Multisampling
+       https://github.com/SaschaWillems/Vulkan/blob/master/examples/multisampling/multisampling.cpp
+
+# Screenshots, gif, and Blog
+
+       Lava Vulkan Library
+       Lightweight C++ library for doing Vulkan stuff. It's just a toy!
 
 # Android
 

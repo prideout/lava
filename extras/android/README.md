@@ -23,7 +23,12 @@ To install, wake device, and launch:
 ```
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell input keyevent 26 ; adb shell input keyevent 82
-adb shell am start -n net.prideout.lava.lavademo/android.app.NativeActivity
+adb logcat -c ; adb shell am start -n net.prideout.lava.lavademo/android.app.NativeActivity
+```
+
+To dump the logs:
+```
+adb logcat | grep -F "`adb shell ps | grep net.prideout.lava.lavademo | tr -s [:space:] ' ' | cut -d' ' -f2`"
 ```
 
 To clobber:

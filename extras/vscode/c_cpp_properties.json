@@ -15,7 +15,10 @@
                 "${workspaceFolder}/extras/stb",
                 "${workspaceFolder}/extras/par",
                 "${workspaceFolder}/extras/tinyobjloader",
-                "${workspaceFolder}/extras/glslang"
+                "${workspaceFolder}/extras/glslang",
+                "${ANDROID_HOME}/ndk-bundle/sources/android/native_app_glue",
+                "${ANDROID_HOME}/ndk-bundle/sysroot/usr/include",
+                "${ANDROID_HOME}/ndk-bundle/sysroot/usr/include/arm-linux-androideabi"
             ],
             "defines": [],
             "macFrameworkPath": [

@@ -22,7 +22,8 @@ set(SRC_DIR src/main/cpp)
 include_directories(lava/include)
 
 add_library(lavademos SHARED
-        ${SRC_DIR}/VulkanMain.cpp
+        ${SRC_DIR}/AmberAppAndroid.cpp
+        #${SRC_DIR}/VulkanMain.cpp
         #${SRC_DIR}/CreateShaderModule.cpp
         ${SRC_DIR}/AndroidMain.cpp)
 

@@ -538,10 +538,8 @@ bool VulkanDrawFrame(void) {
   CALL_VK(
       vkWaitForFences(device.device_, 1, &render.fence_, VK_TRUE, 100000000));
 
-  LOGI("Drawing frames......");
-
   VkResult result;
-  VkPresentInfoKHR presentInfo{
+  VkPresentInfoKHR presentInfo {
       .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
       .pNext = nullptr,
       .swapchainCount = 1,

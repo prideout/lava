@@ -1,8 +1,3 @@
-# Screenshots, gif, and Blog
-
-       Lava Vulkan Library
-       Lightweight C++ library for doing Vulkan stuff. It's just a toy!
-       http://github.prideout.net/lava/#overview
 
 # Android
 
@@ -21,7 +16,6 @@
 
     Introduce LavaGeometry
         only supports two "attribs" because it assumes non-position data is interleaved
-    https://github.com/tiimgreen/github-cheat-sheet#imagesgifs
 
 # gli and ktx pipeline
 

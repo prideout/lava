@@ -29,14 +29,19 @@ counter-increment: h6;margin-right:10px}</style><style>.hljs{display:block;overf
 
 <p></p><p>
 
+<a href="https://github.com/prideout/lava/raw/master/extras/assets/triptych.png" target="_blank"><img class="markdeep" src="https://github.com/prideout/lava/raw/master/extras/assets/triptych.png"></a>
+<br>
+
+</p><p>
+
 </p><ul>
-<li class="minus">Overview
+<li class="minus"><a href="#overview">Overview</a>
 <ul>
     <li class="minus"><a href="#buildingandrunningthedemos">Building and Running the Demos</a>
 </li>
     <li class="minus"><a href="#lunargsdkinstructions">LunarG SDK Instructions</a>
 </li></ul>
-</li><li class="minus">Lava Components
+</li><li class="minus"><a href="#lavacomponents">Lava Components</a>
 <ul>
     <li class="minus"><a href="#lavacontext">LavaContext</a> creates an instance, a device, a swap chain, and some command buffers.
 </li>
@@ -50,13 +55,13 @@ counter-increment: h6;margin-right:10px}</style><style>.hljs{display:block;overf
 </li>
     <li class="minus"><a href="#lavatexture">LavaTexture</a> encapsulates an image, an image view, and a buffer staging area.
 </li></ul>
-</li><li class="minus">Amber Components
+</li><li class="minus"><a href="#ambercomponents">Amber Components</a>
 <ul>
-    <li class="minus"><a href="#ambercomponents">AmberCompiler</a>
+    <li class="minus">AmberCompiler
 </li>
-    <li class="minus"><a href="#ambercomponents">AmberProgram</a>
+    <li class="minus">AmberProgram
 </li></ul>
-</li><li class="minus">Internal Guidelines
+</li><li class="minus"><a href="#internalguidelines">Internal Guidelines</a>
 <ul>
     <li class="minus"><a href="#visualstudiocode">Visual Studio Code</a>
 </li>
@@ -66,10 +71,6 @@ counter-increment: h6;margin-right:10px}</style><style>.hljs{display:block;overf
 <a class="target" name="overview">&nbsp;</a><a class="target" name="toc0.1">&nbsp;</a><h2><a href="#overview"># </a>Overview<a href="#" class="gotop">Back to Top</a></h2>
 <p>
 
-
-</p><center><a href="https://github.com/prideout/lava/raw/master/extras/assets/triptych.png" target="_blank"><img class="markdeep" src="https://github.com/prideout/lava/raw/master/extras/assets/triptych.png"></a></center>
-
-<p></p><p>
 
 <strong class="asterisk">Lava</strong> is a toy C++ library composed of classes that make it easy to create and manage Vulkan
 objects. It is open sourced under the MIT license, available at <a href="https://github.com/prideout/lava" class="url">https://github.com/prideout/lava</a>.
@@ -446,9 +447,10 @@ VkImage image = texture-&gt;getImage();</code></pre>
 <p>
 
 
-The Lava core has very few dependencies, so we also have an <strong class="asterisk">Amber</strong> utility layer which is allowed
-to depend on outside repositories such as <a href="https://github.com/KhronosGroup/glslang">glslang</a>. For
-now, the only Amber classes are:
+The Lava core has very few dependencies, so we created an optional utility layer called <strong class="asterisk">Amber</strong>
+which is allowed to depend on outside repositories such as
+<a href="https://github.com/KhronosGroup/glslang">glslang</a>. This makes it easier to write simple demo apps.
+For now, the only Amber classes are:
 
 </p><p>
 

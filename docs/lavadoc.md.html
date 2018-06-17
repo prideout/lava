@@ -13,29 +13,31 @@
 
 **Lava Vulkan Utilities**
 
-- Overview
+![](https://github.com/prideout/lava/raw/master/extras/assets/triptych.png)
+<br>
+
+- [Overview](#overview)
     - [Building and Running the Demos](#buildingandrunningthedemos)
     - [LunarG SDK Instructions](#lunargsdkinstructions)
-- Lava Components
+- [Lava Components](#lavacomponents)
     - [LavaContext](#lavacontext) creates an instance, a device, a swap chain, and some command buffers.
     - [LavaDescCache](#lavadesccache) creates a descriptor set layout and manages a set of corollary descriptors.
     - [LavaPipeCache](#lavapipecache) manages a set of pipeline objects for a given layout.
     - [LavaCpuBuffer](#lavacpubuffer) is a shared CPU-GPU buffer, useful for staging or uniform buffers.
     - [LavaGpuBuffer](#lavagpubuffer) is a fast device-only buffer, useful for vertex buffers and index buffers.
     - [LavaTexture](#lavatexture) encapsulates an image, an image view, and a buffer staging area.
-- Amber Components
-    - [AmberCompiler](#ambercomponents)
-    - [AmberProgram](#ambercomponents)
-- Internal Guidelines
+- [Amber Components](#ambercomponents)
+    - AmberCompiler
+    - AmberProgram
+- [Internal Guidelines](#internalguidelines)
     - [Visual Studio Code](#visualstudiocode)
     - [C++ Style](#c++style)
 
 ## Overview
 
-![](https://github.com/prideout/lava/raw/master/extras/assets/triptych.png)
-
 **Lava** is a toy C++ library composed of classes that make it easy to create and manage Vulkan
 objects. It is open sourced under the MIT license, available at https://github.com/prideout/lava.
+
 
 !!! Note
     Lava only creates and destroys Vulkan objects; it rarely adds to the command buffer. For
@@ -391,9 +393,10 @@ VkImage image = texture->getImage();
 
 ## Amber Components
 
-The Lava core has very few dependencies, so we also have an **Amber** utility layer which is allowed
-to depend on outside repositories such as [glslang](https://github.com/KhronosGroup/glslang). For
-now, the only Amber classes are:
+The Lava core has very few dependencies, so we created an optional utility layer called **Amber**
+which is allowed to depend on outside repositories such as
+[glslang](https://github.com/KhronosGroup/glslang). This makes it easier to write simple demo apps.
+For now, the only Amber classes are:
 
 * [AmberProgram](https://github.com/prideout/lava/blob/master/include/par/AmberProgram.h)
 * [AmberCompiler](https://github.com/prideout/lava/blob/master/include/par/AmberCompiler.h)

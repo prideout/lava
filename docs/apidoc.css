@@ -13,6 +13,10 @@ body {
     padding-left:0;
 }
 
+span > ul > li > a:first-of-type {
+    font-weight: bold;
+}
+
 .md ul:first-of-type li li {
     list-style-type: none;
     padding-left:30px;
@@ -45,6 +49,8 @@ body {
     margin: 0.4em 0 0 0;
     padding: 0;
     text-align: inherit;
+    /* font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif; */
+    color: #cc8400 !important;
 }
 
 .md div.subtitle {
@@ -90,4 +96,9 @@ body {
     background-color: transparent;
     padding: 0;
     border: none;
+}
+
+img:first-of-type {
+    height: 128px;
+    border-radius: 10px;
 }

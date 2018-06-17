@@ -49,21 +49,21 @@ struct SwapchainBundle {
     VkFence fence;
 };
 
-struct DepthBundle {
-    VkImage image = 0;
-    VkImageView view = 0;
-    VkDeviceMemory mem = 0;
-    VkFormat format = VK_FORMAT_D32_SFLOAT;
+struct ImageBundle {
+    VkImage image;
+    VkImageView view;
+    VkDeviceMemory mem;
+    VkFormat format;
 };
 
 struct LavaContextImpl : LavaContext {
-    explicit LavaContextImpl(bool useValidation) noexcept;
+    explicit LavaContextImpl(Config config) noexcept;
     ~LavaContextImpl() noexcept;
-    void initDevice(VkSurfaceKHR surface, bool createDepthBuffer) noexcept;
+    void initDevice(VkSurfaceKHR surface) noexcept;
     void killDevice() noexcept;
     VkCommandBuffer beginFrame() noexcept;
     void endFrame() noexcept;
-    void initDepthBuffer() noexcept;
+    void initImageBundles() noexcept;
     bool determineMemoryType(uint32_t typeBits, VkFlags requirements,
             uint32_t *typeIndex) const noexcept;
     VkInstance mInstance {};
@@ -82,8 +82,9 @@ struct LavaContextImpl : LavaContext {
     VkRenderPass mRenderPass {};
     VkSwapchainKHR mSwapchain {};
     SwapchainBundle mSwap[2] {};
+    ImageBundle mDepthBuffer {};
+    ImageBundle mMultisampleColor {};
     VkExtent2D mExtent;
-    DepthBundle mDepth;
     VkSurfaceKHR mSurface;
     VkSemaphore mImageAvailable;
     VkSemaphore mDrawFinished;
@@ -91,7 +92,8 @@ struct LavaContextImpl : LavaContext {
     VkFence mWorkFence;
     uint32_t mCurrentSwapIndex = ~0u;
     LavaRecording* mCurrentRecording {};
-    VkDebugReportCallbackEXT mDebugCallback  {};
+    VkDebugReportCallbackEXT mDebugCallback {};
+    const Config mConfig;
 };
 
 namespace LavaLoader {
@@ -102,9 +104,9 @@ namespace LavaLoader {
 LAVA_DEFINE_UPCAST(LavaContext)
 
 LavaContext* LavaContext::create(Config config) noexcept {
-    auto impl = new LavaContextImpl(config.validation);
+    auto impl = new LavaContextImpl(config);
     impl->mSurface = config.createSurface(impl->mInstance);
-    impl->initDevice(impl->mSurface, config.depthBuffer);
+    impl->initDevice(impl->mSurface);
     return impl;
 }
 
@@ -122,12 +124,12 @@ static bool isExtensionSupported(const string& ext) noexcept;
 static bool areAllLayersSupported(const LavaVector<VkLayerProperties>& props,
     const LavaVector<const char*>& layerNames) noexcept;
 
-LavaContextImpl::LavaContextImpl(bool useValidation) noexcept {
+LavaContextImpl::LavaContextImpl(Config config) noexcept : mConfig(config) {
     LavaLoader::init();
     // Form list of requested layers.
     LavaVector<VkLayerProperties> props;
     VkResult error = vkEnumerateInstanceLayerProperties(&props.size, nullptr);
-    if (useValidation && !error && props.size > 0) {
+    if (config.validation && !error && props.size > 0) {
         vkEnumerateInstanceLayerProperties(&props.size, props.alloc());
         if (areAllLayersSupported(props, kValidationLayers1)) {
             mEnabledLayers = kValidationLayers1;
@@ -141,7 +143,7 @@ LavaContextImpl::LavaContextImpl(bool useValidation) noexcept {
 
     // Form list of requested extensions.
     mEnabledExtensions = kRequiredExtensions;
-    if (useValidation && isExtensionSupported(VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
+    if (config.validation && isExtensionSupported(VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
         llog.info("Enabling instance extension {}.", VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
         mEnabledExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
     }
@@ -175,13 +177,21 @@ void LavaContextImpl::killDevice() noexcept {
 
     // Technically the "if" is not needed because the Vulkan spec allows null here. However,
     // MoltenVK segfaults...
-    if (mDepth.view) {
-        vkDestroyImageView(mDevice, mDepth.view, VKALLOC);
-        vkDestroyImage(mDevice, mDepth.image, VKALLOC);
-        vkFreeMemory(mDevice, mDepth.mem, VKALLOC);
-        mDepth.view = VK_NULL_HANDLE;
-        mDepth.image = VK_NULL_HANDLE;
-        mDepth.mem = VK_NULL_HANDLE;
+    if (mDepthBuffer.view) {
+        vkDestroyImageView(mDevice, mDepthBuffer.view, VKALLOC);
+        vkDestroyImage(mDevice, mDepthBuffer.image, VKALLOC);
+        vkFreeMemory(mDevice, mDepthBuffer.mem, VKALLOC);
+        mDepthBuffer.view = VK_NULL_HANDLE;
+        mDepthBuffer.image = VK_NULL_HANDLE;
+        mDepthBuffer.mem = VK_NULL_HANDLE;
+    }
+    if (mMultisampleColor.view) {
+        vkDestroyImageView(mDevice, mMultisampleColor.view, VKALLOC);
+        vkDestroyImage(mDevice, mMultisampleColor.image, VKALLOC);
+        vkFreeMemory(mDevice, mMultisampleColor.mem, VKALLOC);
+        mMultisampleColor.view = VK_NULL_HANDLE;
+        mMultisampleColor.image = VK_NULL_HANDLE;
+        mMultisampleColor.mem = VK_NULL_HANDLE;
     }
 
     vkDestroyRenderPass(mDevice, mRenderPass, VKALLOC);
@@ -218,7 +228,7 @@ void LavaContextImpl::killDevice() noexcept {
     mDevice = VK_NULL_HANDLE;
 }
 
-void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) noexcept {
+void LavaContextImpl::initDevice(VkSurfaceKHR surface) noexcept {
     assert(surface && "Missing VkSurfaceKHR instance.");
     // Pick the first physical device.
     LavaVector<VkPhysicalDevice> gpus;
@@ -425,21 +435,21 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
         LOG_CHECK(not error, "Unable to create swap chain image view.");
     }
 
-    // Create the work fence and depth buffer.
+    // Create the work fence, depth buffer, and MSAA targets.
     VkFenceCreateInfo fenceInfo {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
         .flags = VK_FENCE_CREATE_SIGNALED_BIT,
     };
     vkCreateFence(mDevice, &fenceInfo, VKALLOC, &mWorkFence);
-    if (createDepthBuffer) {
-        initDepthBuffer();
+    if (mConfig.depthBuffer || mConfig.samples > 1) {
+        initImageBundles();
     }
 
     // Create the render pass used for drawing to the backbuffer.
     LavaVector<VkAttachmentDescription> rpattachments;
     rpattachments.push_back(VkAttachmentDescription {
          .format = mFormat,
-         .samples = VK_SAMPLE_COUNT_1_BIT,
+         .samples = mConfig.samples,
          .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
          .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
          .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -459,11 +469,11 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
         .colorAttachmentCount = 1,
         .pColorAttachments = &colorref,
     };
-    if (createDepthBuffer) {
+    if (mConfig.depthBuffer) {
         subpass.pDepthStencilAttachment = &depthref;
         rpattachments.push_back(VkAttachmentDescription {
-            .format = VK_FORMAT_D32_SFLOAT,
-            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .format = mDepthBuffer.format,
+            .samples = mConfig.samples,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
             .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -485,8 +495,8 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface, bool createDepthBuffer) n
     // Create two framebuffers (one for each element in the swap chain)
     LavaVector<VkImageView> fbattachments;
     fbattachments.push_back(mSwap[0].view);
-    if (createDepthBuffer) {
-        fbattachments.push_back(mDepth.view);
+    if (mConfig.depthBuffer) {
+        fbattachments.push_back(mDepthBuffer.view);
     }
     const VkFramebufferCreateInfo fbinfo {
         .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -560,67 +570,91 @@ void LavaContextImpl::endFrame() noexcept {
 }
 
 
-void LavaContextImpl::initDepthBuffer() noexcept {
-    const VkImageCreateInfo image {
+void LavaContextImpl::initImageBundles() noexcept {
+    VkImageCreateInfo imageinfo {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .imageType = VK_IMAGE_TYPE_2D,
-        .format = mDepth.format,
         .extent = {mExtent.width, mExtent.height, 1},
         .mipLevels = 1,
         .arrayLayers = 1,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .samples = mConfig.samples,
         .tiling = VK_IMAGE_TILING_OPTIMAL,
-        .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
     };
     VkMemoryAllocateInfo memalloc {
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
     };
-    VkResult error = vkCreateImage(mDevice, &image, VKALLOC, &mDepth.image);
-    LOG_CHECK(not error, "Unable to create depth image.");
-
-    VkMemoryRequirements memreqs;
-    vkGetImageMemoryRequirements(mDevice, mDepth.image, &memreqs);
-
-    memalloc.allocationSize = memreqs.size;
-    bool pass = determineMemoryType(memreqs.memoryTypeBits, 0, &memalloc.memoryTypeIndex);
-    LOG_CHECK(pass, "Unable to determine memory type.");
-
-    error = vkAllocateMemory(mDevice, &memalloc, VKALLOC, &mDepth.mem);
-    LOG_CHECK(not error, "Unable to allocate depth image.");
-
-    error = vkBindImageMemory(mDevice, mDepth.image, mDepth.mem, 0);
-    LOG_CHECK(not error, "Unable to bind depth image.");
-
-    const VkImageViewCreateInfo viewinfo {
+    VkImageViewCreateInfo viewinfo {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .format = mDepth.format,
         .subresourceRange = {
-            .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
             .levelCount = 1,
             .layerCount = 1,
         },
-        .image = mDepth.image,
         .viewType = VK_IMAGE_VIEW_TYPE_2D,
     };
-    error = vkCreateImageView(mDevice, &viewinfo, VKALLOC, &mDepth.view);
-    LOG_CHECK(not error, "Unable to create depth view.");
+    VkMemoryRequirements memreqs;
 
-    VkCommandBuffer cmd = this->beginWork();
+    if (mConfig.depthBuffer) {
+        viewinfo.format = imageinfo.format = mDepthBuffer.format = VK_FORMAT_D24_UNORM_S8_UINT;
+        imageinfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        viewinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
+                VK_IMAGE_ASPECT_STENCIL_BIT;
+        vkCreateImage(mDevice, &imageinfo, VKALLOC, &mDepthBuffer.image);
+        vkGetImageMemoryRequirements(mDevice, mDepthBuffer.image, &memreqs);
+        memalloc.allocationSize = memreqs.size;
+        viewinfo.image = mDepthBuffer.image;
+        determineMemoryType(memreqs.memoryTypeBits, 0, &memalloc.memoryTypeIndex);
+        vkAllocateMemory(mDevice, &memalloc, VKALLOC, &mDepthBuffer.mem);
+        vkBindImageMemory(mDevice, mDepthBuffer.image, mDepthBuffer.mem, 0);
+        vkCreateImageView(mDevice, &viewinfo, VKALLOC, &mDepthBuffer.view);
+    }
+
+    if (mConfig.samples > 1) {
+        viewinfo.format = imageinfo.format = mMultisampleColor.format = VK_FORMAT_R8G8B8A8_UNORM;
+        imageinfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        viewinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        vkCreateImage(mDevice, &imageinfo, VKALLOC, &mMultisampleColor.image);
+        vkGetImageMemoryRequirements(mDevice, mMultisampleColor.image, &memreqs);
+        memalloc.allocationSize = memreqs.size;
+        viewinfo.image = mMultisampleColor.image;
+        determineMemoryType(memreqs.memoryTypeBits, 0, &memalloc.memoryTypeIndex);
+        vkAllocateMemory(mDevice, &memalloc, VKALLOC, &mMultisampleColor.mem);
+        vkBindImageMemory(mDevice, mMultisampleColor.image, mMultisampleColor.mem, 0);
+        vkCreateImageView(mDevice, &viewinfo, VKALLOC, &mMultisampleColor.view);
+    }
+
     const VkImageMemoryBarrier barrier {
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .image = mDepth.image,
-        .newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .subresourceRange = {
-            .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
             .levelCount = 1,
             .layerCount = 1,
-        },
-        .dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+        }
     };
+    VkImageMemoryBarrier barriers[] = { barrier, barrier };
+    uint32_t nbarriers = 0;
+
+    if (mConfig.depthBuffer) {
+        VkImageMemoryBarrier& barrier = barriers[nbarriers++];
+        barrier.image = mDepthBuffer.image;
+        barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
+                VK_IMAGE_ASPECT_STENCIL_BIT;
+        barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    }
+
+    if (mConfig.samples > 1) {
+        VkImageMemoryBarrier& barrier = barriers[nbarriers++];
+        barrier.image = mMultisampleColor.image;
+        barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    }
+
+    VkCommandBuffer cmd = this->beginWork();
     vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0, 0, nullptr, 0, nullptr,
+            nbarriers, barriers);
     this->endWork();
     this->waitWork();
 }

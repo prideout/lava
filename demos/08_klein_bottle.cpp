@@ -31,6 +31,7 @@ using namespace std;
 namespace {
     constexpr int DEMO_WIDTH = 256;
     constexpr int DEMO_HEIGHT = 256;
+    constexpr VkSampleCountFlagBits DEMO_SAMPLES = VK_SAMPLE_COUNT_1_BIT;
 
     struct Uniforms {
         Matrix4 mvp;
@@ -439,7 +440,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     };
     const VkDeviceSize zero_offset {};
     auto default_raster = pipelines->getDefaultRasterState();
-    // default_raster.multisampling.rasterizationSamples = VK_SAMPLE_COUNT_4_BIT;
+    default_raster.multisampling.rasterizationSamples = DEMO_SAMPLES;
     auto blended_raster = default_raster;
     auto no_z_raster = default_raster;
     no_z_raster.depthStencil.depthWriteEnable = VK_FALSE;
@@ -448,6 +449,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
     blended_raster.blending.blendEnable = VK_TRUE;
     constexpr uint32_t podium_begin = 273;
     constexpr uint32_t podium_end = 305;
+    pipelines->setRasterState(default_raster);
 
     // Record two command buffers.
     LavaRecording* frame = context->createRecording();
@@ -495,8 +497,6 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         pipelines->setRasterState(default_raster);
 
         // Draw the backdrop.
-        // vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
-        //         descriptors->getDescPointer(), 0, 0);
         pipelines->setVertexState(backdrop_vertex);
         pipelines->setVertexShader(backdrop_program->getVertexShader());
         pipelines->setFragmentShader(backdrop_program->getFragmentShader());
@@ -572,6 +572,7 @@ int main(const int argc, const char *argv[]) {
     LavaContext* context = LavaContext::create({
         .depthBuffer = true,
         .validation = true,
+        .samples = DEMO_SAMPLES,
         .createSurface = [window] (VkInstance instance) {
             VkSurfaceKHR surface;
             glfwCreateWindowSurface(instance, window, nullptr, &surface);

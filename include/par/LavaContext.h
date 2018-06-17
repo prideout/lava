@@ -17,6 +17,7 @@ public:
     struct Config {
         bool depthBuffer;
         bool validation;
+        VkSampleCountFlagBits samples;
         std::function<VkSurfaceKHR(VkInstance)> createSurface;
     };
     static LavaContext* create(Config config) noexcept;

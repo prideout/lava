@@ -1,12 +1,8 @@
-# 08_klein_bottle
-
-    Multisampling
-       https://github.com/SaschaWillems/Vulkan/blob/master/examples/multisampling/multisampling.cpp
-
 # Screenshots, gif, and Blog
 
        Lava Vulkan Library
        Lightweight C++ library for doing Vulkan stuff. It's just a toy!
+       http://github.prideout.net/lava/#overview
 
 # Android
 
@@ -14,6 +10,7 @@
 
 # LavaContext
 
+    expose a pointer to VkRenderPassBeginInfo for convenience.
     recording API should take a callback instead of begin / end
 
 # LavaCpuBuffer

@@ -2,6 +2,8 @@
 // Copyright (c) 2018 Philip Rideout
 
 #include <par/LavaLoader.h>
+
+#include <par/AmberProgram.h>
 #include <par/LavaContext.h>
 #include <par/LavaCpuBuffer.h>
 #include <par/LavaDescCache.h>
@@ -9,7 +11,6 @@
 #include <par/LavaLog.h>
 #include <par/LavaPipeCache.h>
 #include <par/LavaTexture.h>
-#include <par/AmberProgram.h>
 
 #include <GLFW/glfw3.h>
 
@@ -31,7 +32,7 @@ using namespace std;
 namespace {
     constexpr int DEMO_WIDTH = 256;
     constexpr int DEMO_HEIGHT = 256;
-    constexpr VkSampleCountFlagBits DEMO_SAMPLES = VK_SAMPLE_COUNT_1_BIT;
+    constexpr VkSampleCountFlagBits DEMO_SAMPLES = VK_SAMPLE_COUNT_4_BIT;
 
     struct Uniforms {
         Matrix4 mvp;
@@ -422,7 +423,8 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
 
     // Fill in some info structs before starting the render loop.
     const VkClearValue clearValues[] = {
-        { .color.float32 = { 0, 0, 0, 0 } },
+        { .color.float32 = {} },
+        { .color.float32 = {} },
         { .depthStencil = {1, 0} }
     };
     const VkViewport viewport = {
@@ -436,7 +438,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
         .renderPass = renderPass,
         .renderArea.extent = extent,
         .pClearValues = clearValues,
-        .clearValueCount = 2
+        .clearValueCount = 3
     };
     const VkDeviceSize zero_offset {};
     auto default_raster = pipelines->getDefaultRasterState();

@@ -112,9 +112,9 @@ after every other Lava object, since it destroys the <strong class="asterisk">Vk
 <p>
 
 
-On Linux, do this first:
+For Android, see the README in <code>extras/android</code>. For Linux, do this first:
 
-</p><pre class="listing backtick"><code>sudo apt-get install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+</p><pre class="listing backtick"><code>sudo apt-get install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libcurl4-openssl-dev
 <span class="hljs-built_in">export</span> CC=clang CXX=clang++</code></pre><p>
 
 On macOS, you first need clang (which comes with Xcode) and homebrew, then do this:
@@ -189,6 +189,7 @@ so:
 </p><pre class="listing tilde"><code>LavaContext* context = LavaContext::create({
     .depthBuffer = <span class="hljs-literal">false</span>,
     .validation = <span class="hljs-literal">true</span>,
+    .samples = VK_SAMPLE_COUNT_4_BIT,
     .createSurface = [window] (VkInstance instance) {
         VkSurfaceKHR surface;
         glfwCreateWindowSurface(instance, window, <span class="hljs-literal">nullptr</span>, &amp;surface);
@@ -275,9 +276,9 @@ demo.
 <p>
 
 
-Upon construction, this consumes a count of uniform buffers and samplers, and immediately creates a
+Upon construction, this consumes a count of uniform buffers and samplers and immediately creates a
 <strong class="asterisk">VkDescriptorSetLayout</strong> and <strong class="asterisk">VkDescriptorPool</strong>. Over its lifetime, it creates and evicts
-<strong class="asterisk">VkDescriptorSet</strong> on the fly, according to the bindings that you push to it.
+<strong class="asterisk">VkDescriptorSet</strong> according to the bindings that you push to it.
 
 </p><p>
 
@@ -290,7 +291,7 @@ VkBuffer ubo = ...;
 LavaDescCache* descriptors = LavaDescCache::create({
     .device = device,
     .uniformBuffers = { ubo }, <span class="hljs-comment">// If you don't have a UBO yet, just say: { 0 }</span>
-    .imageSamplers = { <span class="hljs-number">0</span>, <span class="hljs-number">0</span> }  <span class="hljs-comment">// Declare two image samplers (not known yet)</span>
+    .imageSamplers = { {}, {} }  <span class="hljs-comment">// Declare two image samplers (not known yet)</span>
 });
 <span class="hljs-keyword">const</span> VkDescriptorSetLayout dlayout = descriptors-&gt;getLayout();</code></pre><p>
 
@@ -532,4 +533,5 @@ window.setTimeout(function() {
 
 </p><p>
 
-</script></p></span><div class="markdeepFooter"><i>formatted by <a href="http://casual-effects.com/markdeep" style="color:#999">Markdeep&nbsp;1.01&nbsp;&nbsp;</a></i><div style="display:inline-block;font-size:13px;font-family:'Times New Roman',serif;vertical-align:middle;transform:translate(-3px,-1px)rotate(135deg);">✒</div></div></body></html>
+</script>
+</p></span><div class="markdeepFooter"><i>formatted by <a href="http://casual-effects.com/markdeep" style="color:#999">Markdeep&nbsp;1.01&nbsp;&nbsp;</a></i><div style="display:inline-block;font-size:13px;font-family:'Times New Roman',serif;vertical-align:middle;transform:translate(-3px,-1px)rotate(135deg);">✒</div></div></body></html>

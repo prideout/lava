@@ -64,6 +64,8 @@ struct LavaContextImpl : LavaContext {
     VkCommandBuffer beginFrame() noexcept;
     void endFrame() noexcept;
     void initImageBundles() noexcept;
+    void initFramebuffers();
+    void initMultisampledFramebuffers();
     bool determineMemoryType(uint32_t typeBits, VkFlags requirements,
             uint32_t *typeIndex) const noexcept;
     VkInstance mInstance {};
@@ -73,7 +75,7 @@ struct LavaContextImpl : LavaContext {
     VkPhysicalDeviceProperties mGpuProps;
     VkPhysicalDeviceFeatures mGpuFeatures;
     VkQueue mQueue;
-    VkFormat mFormat;
+    VkFormat mSwapChainFormat;
     VkColorSpaceKHR mColorSpace;
     VkPhysicalDeviceMemoryProperties mMemoryProperties;
     LavaVector<VkQueueFamilyProperties> mQueueProps;
@@ -124,7 +126,13 @@ static bool isExtensionSupported(const string& ext) noexcept;
 static bool areAllLayersSupported(const LavaVector<VkLayerProperties>& props,
     const LavaVector<const char*>& layerNames) noexcept;
 
-LavaContextImpl::LavaContextImpl(Config config) noexcept : mConfig(config) {
+LavaContextImpl::LavaContextImpl(Config config) noexcept :
+
+    mConfig([] (Config cfg) {
+        cfg.samples = cfg.samples == 0 ? VK_SAMPLE_COUNT_1_BIT : cfg.samples;
+        return cfg;
+    }(config)) {
+
     LavaLoader::init();
     // Form list of requested layers.
     LavaVector<VkLayerProperties> props;
@@ -326,9 +334,9 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface) noexcept {
     vkGetPhysicalDeviceSurfaceFormatsKHR(mGpu, surface, &formats.size, formats.alloc());
     LOG_CHECK(formats.size > 1, "Unable to find a surface format.");
     if (formats.size == 1 && formats[0].format == VK_FORMAT_UNDEFINED) {
-        mFormat = VK_FORMAT_B8G8R8A8_UNORM;
+        mSwapChainFormat = VK_FORMAT_B8G8R8A8_UNORM;
     } else {
-        mFormat = formats[0].format;
+        mSwapChainFormat = formats[0].format;
     }
     mColorSpace = formats[0].colorSpace;
 
@@ -390,7 +398,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface) noexcept {
         .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .surface = surface,
         .minImageCount = 2,
-        .imageFormat = mFormat,
+        .imageFormat = mSwapChainFormat,
         .imageColorSpace = mColorSpace,
         .imageExtent = mExtent,
         .imageUsage = VkImageUsageFlags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
@@ -415,7 +423,7 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface) noexcept {
     // Create the VkImageView objects.
     VkImageViewCreateInfo viewinfo {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .format = mFormat,
+        .format = mSwapChainFormat,
         .components = {
              .r = VK_COMPONENT_SWIZZLE_R,
              .g = VK_COMPONENT_SWIZZLE_G,
@@ -445,73 +453,11 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface) noexcept {
         initImageBundles();
     }
 
-    // Create the render pass used for drawing to the backbuffer.
-    LavaVector<VkAttachmentDescription> rpattachments;
-    rpattachments.push_back(VkAttachmentDescription {
-         .format = mFormat,
-         .samples = mConfig.samples,
-         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-         .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-         .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-         .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-    });
-    const VkAttachmentReference colorref {
-        .attachment = 0,
-        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-    };
-    const VkAttachmentReference depthref {
-        .attachment = 1,
-        .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-    };
-    VkSubpassDescription subpass {
-        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-        .colorAttachmentCount = 1,
-        .pColorAttachments = &colorref,
-    };
-    if (mConfig.depthBuffer) {
-        subpass.pDepthStencilAttachment = &depthref;
-        rpattachments.push_back(VkAttachmentDescription {
-            .format = mDepthBuffer.format,
-            .samples = mConfig.samples,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-        });
+    if (mConfig.samples <= 1) {
+        initFramebuffers();
+    } else {
+        initMultisampledFramebuffers();
     }
-    const VkRenderPassCreateInfo rpinfo {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        .attachmentCount = rpattachments.size,
-        .pAttachments = rpattachments.data,
-        .subpassCount = 1,
-        .pSubpasses = &subpass,
-    };
-    error = vkCreateRenderPass(mDevice, &rpinfo, VKALLOC, &mRenderPass);
-    LOG_CHECK(not error, "Unable to create render pass.");
-
-    // Create two framebuffers (one for each element in the swap chain)
-    LavaVector<VkImageView> fbattachments;
-    fbattachments.push_back(mSwap[0].view);
-    if (mConfig.depthBuffer) {
-        fbattachments.push_back(mDepthBuffer.view);
-    }
-    const VkFramebufferCreateInfo fbinfo {
-        .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-        .renderPass = mRenderPass,
-        .attachmentCount = fbattachments.size,
-        .pAttachments = fbattachments.data,
-        .width = mExtent.width,
-        .height = mExtent.height,
-        .layers = 1,
-    };
-    error = vkCreateFramebuffer(mDevice, &fbinfo, VKALLOC, &mSwap[0].framebuffer);
-    LOG_CHECK(not error, "Unable to create framebuffer.");
-    fbattachments[0] = mSwap[1].view;
-    error = vkCreateFramebuffer(mDevice, &fbinfo, VKALLOC, &mSwap[1].framebuffer);
-    LOG_CHECK(not error, "Unable to create framebuffer.");
 
     // Create a fence for each command buffer.
     vkCreateFence(mDevice, &fenceInfo, VKALLOC, &mSwap[0].fence);
@@ -609,7 +555,7 @@ void LavaContextImpl::initImageBundles() noexcept {
     }
 
     if (mConfig.samples > 1) {
-        viewinfo.format = imageinfo.format = mMultisampleColor.format = VK_FORMAT_R8G8B8A8_UNORM;
+        viewinfo.format = imageinfo.format = mMultisampleColor.format = mSwapChainFormat;
         imageinfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         viewinfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         vkCreateImage(mDevice, &imageinfo, VKALLOC, &mMultisampleColor.image);
@@ -657,6 +603,157 @@ void LavaContextImpl::initImageBundles() noexcept {
             nbarriers, barriers);
     this->endWork();
     this->waitWork();
+}
+
+void LavaContextImpl::initFramebuffers() {
+    assert(mConfig.samples <= 1);
+    // Before creating the two framebuffers, create a shared render pass.
+    LavaVector<VkAttachmentDescription> rpattachments;
+    rpattachments.push_back(VkAttachmentDescription {
+         .format = mSwapChainFormat,
+         .samples = mConfig.samples,
+         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+         .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+         .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+         .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+    });
+    const VkAttachmentReference colorref {
+        .attachment = 0,
+        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    };
+    const VkAttachmentReference depthref {
+        .attachment = 1,
+        .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+    };
+    VkSubpassDescription subpass {
+        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &colorref,
+    };
+    if (mConfig.depthBuffer) {
+        subpass.pDepthStencilAttachment = &depthref;
+        rpattachments.push_back(VkAttachmentDescription {
+            .format = mDepthBuffer.format,
+            .samples = mConfig.samples,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        });
+    }
+    const VkRenderPassCreateInfo rpinfo {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = rpattachments.size,
+        .pAttachments = rpattachments.data,
+        .subpassCount = 1,
+        .pSubpasses = &subpass,
+    };
+    vkCreateRenderPass(mDevice, &rpinfo, VKALLOC, &mRenderPass);
+
+    // Create two framebuffers, one for each element in the swap chain.
+    LavaVector<VkImageView> fbattachments;
+    fbattachments.push_back(mSwap[0].view);
+    if (mConfig.depthBuffer) {
+        fbattachments.push_back(mDepthBuffer.view);
+    }
+    const VkFramebufferCreateInfo fbinfo {
+        .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+        .renderPass = mRenderPass,
+        .attachmentCount = fbattachments.size,
+        .pAttachments = fbattachments.data,
+        .width = mExtent.width,
+        .height = mExtent.height,
+        .layers = 1,
+    };
+    vkCreateFramebuffer(mDevice, &fbinfo, VKALLOC, &mSwap[0].framebuffer);
+    fbattachments[0] = mSwap[1].view;
+    vkCreateFramebuffer(mDevice, &fbinfo, VKALLOC, &mSwap[1].framebuffer);
+}
+
+void LavaContextImpl::initMultisampledFramebuffers() {
+    assert(mConfig.samples > 1);
+    // Before creating the two framebuffers, create a shared render pass.
+    LavaVector<VkAttachmentDescription> rpattachments;
+    rpattachments.push_back(VkAttachmentDescription {
+         .format = mMultisampleColor.format,
+         .samples = mConfig.samples,
+         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+         .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+         .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+         .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    });
+    rpattachments.push_back(VkAttachmentDescription {
+         .format = mSwapChainFormat,
+         .samples = VK_SAMPLE_COUNT_1_BIT,
+         .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+         .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+         .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+         .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+    });
+    const VkAttachmentReference colorref {
+        .attachment = 0,
+        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    };
+    const VkAttachmentReference resolveref {
+        .attachment = 1,
+        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    };
+    const VkAttachmentReference depthref {
+        .attachment = 2,
+        .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+    };
+    VkSubpassDescription subpass {
+        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &colorref,
+        .pResolveAttachments = &resolveref,
+    };
+    if (mConfig.depthBuffer) {
+        subpass.pDepthStencilAttachment = &depthref;
+        rpattachments.push_back(VkAttachmentDescription {
+            .format = mDepthBuffer.format,
+            .samples = mConfig.samples,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        });
+    }
+    const VkRenderPassCreateInfo rpinfo {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = rpattachments.size,
+        .pAttachments = rpattachments.data,
+        .subpassCount = 1,
+        .pSubpasses = &subpass,
+    };
+    vkCreateRenderPass(mDevice, &rpinfo, VKALLOC, &mRenderPass);
+
+    // Create two framebuffers, one for each element in the swap chain.
+    LavaVector<VkImageView> fbattachments;
+    fbattachments.push_back(mMultisampleColor.view);
+    fbattachments.push_back(mSwap[0].view);
+    if (mConfig.depthBuffer) {
+        fbattachments.push_back(mDepthBuffer.view);
+    }
+    const VkFramebufferCreateInfo fbinfo {
+        .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+        .renderPass = mRenderPass,
+        .attachmentCount = fbattachments.size,
+        .pAttachments = fbattachments.data,
+        .width = mExtent.width,
+        .height = mExtent.height,
+        .layers = 1,
+    };
+    vkCreateFramebuffer(mDevice, &fbinfo, VKALLOC, &mSwap[0].framebuffer);
+    fbattachments[1] = mSwap[1].view;
+    vkCreateFramebuffer(mDevice, &fbinfo, VKALLOC, &mSwap[1].framebuffer);
 }
 
 bool LavaContextImpl::determineMemoryType(uint32_t typeBits, VkFlags requirements,
@@ -707,7 +804,7 @@ VkQueue LavaContext::getQueue() const noexcept {
 }
 
 VkFormat LavaContext::getFormat() const noexcept {
-    return upcast(this)->mFormat;
+    return upcast(this)->mSwapChainFormat;
 }
 
 VkColorSpaceKHR LavaContext::getColorSpace() const noexcept {

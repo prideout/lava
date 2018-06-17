@@ -140,6 +140,7 @@ so:
 LavaContext* context = LavaContext::create({
     .depthBuffer = false,
     .validation = true,
+    .samples = VK_SAMPLE_COUNT_4_BIT,
     .createSurface = [window] (VkInstance instance) {
         VkSurfaceKHR surface;
         glfwCreateWindowSurface(instance, window, nullptr, &amp;surface);
@@ -221,9 +222,9 @@ demo.
 
 ### LavaDescCache
 
-Upon construction, this consumes a count of uniform buffers and samplers, and immediately creates a
+Upon construction, this consumes a count of uniform buffers and samplers and immediately creates a
 **VkDescriptorSetLayout** and **VkDescriptorPool**. Over its lifetime, it creates and evicts
-**VkDescriptorSet** on the fly, according to the bindings that you push to it.
+**VkDescriptorSet** according to the bindings that you push to it.
 
 For example, let's say you need only one binding for uniform buffers, and up to two textures. You
 can create the layout like this:
@@ -235,7 +236,7 @@ VkBuffer ubo = ...;
 LavaDescCache* descriptors = LavaDescCache::create({
     .device = device,
     .uniformBuffers = { ubo }, // If you don't have a UBO yet, just say: { 0 }
-    .imageSamplers = { 0, 0 }  // Declare two image samplers (not known yet)
+    .imageSamplers = { {}, {} }  // Declare two image samplers (not known yet)
 });
 const VkDescriptorSetLayout dlayout = descriptors->getLayout();
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

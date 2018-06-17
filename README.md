@@ -1,4 +1,4 @@
-<img src="https://github.com/prideout/lava/raw/master/extras/assets/klein31416.gif" height="128px" style="border-radius: 10px">
+<img src="https://github.com/prideout/lava/raw/master/extras/assets/klein31416.gif" height="128px">
 
 [![Build Status](https://travis-ci.org/prideout/lava.svg?branch=master)](https://travis-ci.org/prideout/lava)
 

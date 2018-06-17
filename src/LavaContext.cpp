@@ -25,6 +25,8 @@ static LavaVector<const char *> kRequiredExtensions {
     "VK_KHR_surface",
 #if defined(__APPLE__)
     "VK_MVK_macos_surface",
+#elif defined(__ANDROID__)
+    "VK_KHR_android_surface",
 #elif defined(__linux__)
     "VK_KHR_xcb_surface",
 #endif

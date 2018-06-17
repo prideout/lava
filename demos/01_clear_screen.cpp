@@ -59,6 +59,7 @@ int main(const int argc, const char *argv[]) {
     auto context = LavaContext::create({
         .depthBuffer = false,
         .validation = true,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
         .createSurface = [window] (VkInstance instance) {
             VkSurfaceKHR surface;
             glfwCreateWindowSurface(instance, window, nullptr, &surface);

@@ -1,9 +1,11 @@
 
 # Android
 
-    01_clear_screen
-    VulkanApp => AmberApp
-    07_hello_texture
+    Fix Crash
+    AmberApplication Registration
+    Swipe to navigate demos, with a hardcoded "entry" app?
+    HelloTexture
+    Refactor all non-android demos (keep their file names though)
 
 # LavaContext
 

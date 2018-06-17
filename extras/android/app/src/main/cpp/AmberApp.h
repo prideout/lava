@@ -1,11 +1,14 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
+#include <functional>
+
 struct AmberAppImpl;
 
 struct AmberApp {
-    AmberApp(void* app);
-    ~AmberApp();
-    bool isReady() const;
-    void draw();
-    AmberAppImpl& self;
+    using SurfaceFn = std::function<VkSurfaceKHR(VkInstance)>;
+    static AmberApp* create(int appIndex, SurfaceFn createSurface);
+    virtual ~AmberApp() {}
+    virtual void draw(double seconds) = 0;
 };

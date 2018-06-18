@@ -1,8 +1,7 @@
 
 # Android
 
-    Fix Crash
-    AmberApplication Registration
+    AmberApplication, AmberMain Registration
     Swipe to navigate demos, with a hardcoded "entry" app?
     HelloTexture
     Refactor all non-android demos (keep their file names though)

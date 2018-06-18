@@ -12,7 +12,8 @@ endif()
 
 set(APP_GLUE_DIR ${ANDROID_NDK}/sources/android/native_app_glue)
 include_directories(${APP_GLUE_DIR})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Werror")
+set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_ANDROID_KHR")
 add_library(appglue STATIC ${APP_GLUE_DIR}/android_native_app_glue.c)
 

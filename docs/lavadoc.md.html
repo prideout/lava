@@ -28,6 +28,7 @@
     - [LavaTexture](#lavatexture) encapsulates an image, an image view, and a buffer staging area.
 - [Amber Components](#ambercomponents)
     - AmberApplication
+    - AmberMain
     - AmberCompiler
     - AmberProgram
 - [Internal Guidelines](#internalguidelines)
@@ -39,6 +40,9 @@
 **Lava** is a toy C++ library composed of classes that make it easy to create and manage Vulkan
 objects. It is open sourced under the MIT license, available at https://github.com/prideout/lava.
 
+In addition to reading this documentation page, a good way to learn the API is to study the
+[demos](https://github.com/prideout/lava/tree/master/demos) and the
+[headers](https://github.com/prideout/lava/tree/master/include/par).
 
 !!! Note
     Lava only creates and destroys Vulkan objects; it rarely adds to the command buffer. For
@@ -76,7 +80,9 @@ after every other Lava object, since it destroys the **VkDevice** and **VkInstan
 
 ### Building and Running the Demos
 
-For Android, see the README in `extras/android`. For Linux, do this first:
+For Android, see the README in
+[extras/android](https://github.com/prideout/lava/tree/master/extras/android).
+For Linux, do this first:
 
 ```bash
 sudo apt-get install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libcurl4-openssl-dev
@@ -399,9 +405,10 @@ which is allowed to depend on outside repositories such as
 [glslang](https://github.com/KhronosGroup/glslang). This makes it easier to write simple demo apps.
 For now, the only Amber classes are:
 
+* AmberApplication
+* AmberMain
 * [AmberProgram](https://github.com/prideout/lava/blob/master/include/par/AmberProgram.h)
 * [AmberCompiler](https://github.com/prideout/lava/blob/master/include/par/AmberCompiler.h)
-* AmberApplication
 
 ## Internal Guidelines
 

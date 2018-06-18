@@ -1,3 +1,4 @@
+#include <par/LavaLoader.h>
 #include <par/LavaLog.h>
 #include <par/LavaContext.h>
 
@@ -27,9 +28,9 @@ ClearScreenApp::~ClearScreenApp() {
     delete mContext;
 }
 
-void ClearScreenApp::draw(double time) {
+void ClearScreenApp::draw(double seconds) {
     VkCommandBuffer cmdbuffer = mContext->beginFrame();
-    const float red = fmod(time, 1.0);
+    const float red = fmod(seconds, 1.0);
     const VkClearValue clearValue = { .color.float32 = {red, 0, 0, 1} };
     const VkRenderPassBeginInfo rpbi {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,

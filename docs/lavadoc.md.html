@@ -450,27 +450,53 @@ imperative ("Open the file").
 <script>window.markdeepOptions = {tocStyle: 'none'};</script> 
 <script src="markdeep.min.js"></script>
 
+<!-- These get moved into HEAD by the fixup script -->
+<meta property="og:image" content="https://raw.githubusercontent.com/prideout/lava/master/extras/assets/klein31416.gif" />
+<meta property="og:site_name" content="GitHub" />
+<meta property="og:type" content="object" />
+<meta property="og:title" content="prideout/lava" />
+<meta property="og:url" content="https://github.prideout.net/lava/" />
+<meta property="og:description" content="Toy C++ library for doing #vulkan experiments." />
+
+<!-- Do not use double-quotes or blank lines in the following script; they confuse markdeep. -->
 <script>
-
 window.setTimeout(function() {
-
+    // Move meta tags into <head>.
+    let head = document.querySelector('head');
+    let els = Array.prototype.slice.call(document.querySelectorAll('meta'));
+    for (let el of els) {
+        el.parentNode.removeChild(el);
+        head.insertBefore(el, null);
+    }
+    // Insert some new DOM elements at each heading.
     let headers = document.querySelectorAll('.md h1, .md h2, .md h3, .md h4');
     for (let header of headers) {
         let targetAnchor1 = header.previousSibling;
         let targetAnchor2 = targetAnchor1.previousSibling;
-
-        let anchor = document.createElement("a"); 
-        anchor.appendChild(document.createTextNode("# "));  
+        // Insert an anchor to this section.
+        let anchor = document.createElement('a'); 
+        anchor.appendChild(document.createTextNode('# '));  
         anchor.setAttribute('href', '#' + targetAnchor2.name);
         header.insertBefore(anchor, header.childNodes[0]);
-
-        let gotop = document.createElement("a"); 
-        gotop.appendChild(document.createTextNode("Back to Top"));  
+        // Insert a go-to-top link.
+        let gotop = document.createElement('a'); 
+        gotop.appendChild(document.createTextNode(' top'));  
         gotop.setAttribute('href', '#');
         gotop.classList.add('gotop');
         header.appendChild(gotop);
     }
-
+    // Remove <script>.
+    let scripts = Array.prototype.slice.call(document.querySelectorAll('script'));
+    for (let el of scripts) {
+        el.parentNode.removeChild(el);
+    }
+    let walker = document.createTreeWalker(document.body, NodeFilter.SHOW_COMMENT, filter, false);
+        // For each comment node, add a
+        while ( treeWalker.nextNode() ) {
+            $( "<p></p>" )
+                .text( treeWalker.currentNode.nodeValue )
+                .insertAfter( treeWalker.currentNode )
+            ;
+        }
 }, 100);
-
 </script>

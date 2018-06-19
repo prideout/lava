@@ -1,11 +1,18 @@
 # Android
 
+    do "gradle wrapper" and commit the result
+        Test with linux
     TriangleRecordedApp::draw
-    Gradle Wrapper (Test with linux)
     AmberApplication, AmberMain
         Refactor all non-android demos (keep their file names though)
     Android: swipe to navigate demos, with a hardcoded "entry" app?
     HelloTexture
+    README
+        Test Matrix
+        ------------
+        | Andrid Studio Version | cmake in SDK| NDK      | device  |
+        |-----------------------|-------------|----------|---------|
+        | 3.0.0                 | 3.6.4111459 | NDK-r16  | Pixel XL|
 
 # LavaContext
 

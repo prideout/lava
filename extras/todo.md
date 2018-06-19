@@ -1,17 +1,9 @@
 # Android
 
-    Test with linux
-    TriangleRecordedApp::draw
+    Flesh out TriangleRecordedApp
     AmberApplication, AmberMain
         Refactor all non-android demos (keep their file names though)
-    Android: swipe to navigate demos, with a hardcoded "entry" app?
     HelloTexture
-    README
-        Test Matrix
-        ------------
-        | Andrid Studio Version | cmake in SDK| NDK      | device  |
-        |-----------------------|-------------|----------|---------|
-        | 3.0.0                 | 3.6.4111459 | NDK-r16  | Pixel XL|
 
 # LavaContext
 
@@ -22,10 +14,14 @@
 
     remove setData in favor of persistent mapping
 
-# 08_klein_bottle
+# LavaGeometry
 
-    Introduce LavaGeometry
-        only supports two "attribs" because it assumes non-position data is interleaved
+    Test with 08_klein_bottle
+    Only supports two "attribs" because it assumes non-position data is interleaved
+
+# Android Swipe
+
+    Navigate between demos, with a hardcoded starting app.
 
 # gli and ktx pipeline
 
@@ -35,6 +31,13 @@
 
     .clang-format
         AlignAfterOpenBracket: BAS_DontAlign
+
+# Add testing matrix to README.md
+
+    ------------
+    | Andrid Studio Version | cmake in SDK| NDK      | device  |
+    |-----------------------|-------------|----------|---------|
+    | 3.0.0                 | 3.6.4111459 | NDK-r16  | Pixel XL|
 
 # lavaray
 

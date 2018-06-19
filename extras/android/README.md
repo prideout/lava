@@ -9,7 +9,7 @@ To build:
 
 ```
 cd lava/extras/android
-gradle build
+./gradlew build
 ```
 
 To verify:

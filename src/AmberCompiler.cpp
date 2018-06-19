@@ -63,7 +63,7 @@ bool AmberCompilerImpl::compile(Stage stage, const string& glsl,
     const int glslangVersion = 100;
     const bool fwdCompatible = false;
     if (!shader.parse(&DefaultTBuiltInResource, glslangVersion, fwdCompatible, flags)) {
-        llog.error("Can't compile {}", (stage == EShLangVertex ? "VS" : "FS"));
+        llog.error("Can't compile {}", (lang == EShLangVertex ? "VS" : "FS"));
         llog.warn(shader.getInfoLog());
         if (*shader.getInfoDebugLog()) {
             llog.debug(shader.getInfoDebugLog());
@@ -81,7 +81,7 @@ bool AmberCompilerImpl::compile(Stage stage, const string& glsl,
     glslang::TProgram program;
     program.addShader(&shader);
     if (!program.link(flags)) {
-        llog.error("Can't link {}", (stage == EShLangVertex ? "VS" : "FS"));
+        llog.error("Can't link {}", (lang == EShLangVertex ? "VS" : "FS"));
         if (program.getInfoLog()) {
             llog.warn(program.getInfoLog());
         }

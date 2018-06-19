@@ -1,8 +1,9 @@
-
 # Android
 
     Fix crash
         TriangleRecordedApp::draw
+            are you really building glslang?
+            #version 450 es
     AmberApplication, AmberMain
         Move to Lava
         Refactor all non-android demos (keep their file names though)

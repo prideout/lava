@@ -33,7 +33,18 @@ endif()
 # Build the core library (zero dependencies).
 include_directories(include)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-file(GLOB_RECURSE LAVA_SOURCE "src/Lava*.cpp")
+
+set(LAVA_SOURCE
+    src/LavaContext.cpp
+    src/LavaCpuBuffer.cpp
+    src/LavaDescCache.cpp
+    src/LavaGpuBuffer.cpp
+    src/LavaInternal.cpp
+    src/LavaLoader.cpp
+    src/LavaLog.cpp
+    src/LavaPipeCache.cpp
+    src/LavaTexture.cpp)
+
 add_library(lava STATIC ${LAVA_SOURCE})
 
 # Build demos if submodules have been initialized.

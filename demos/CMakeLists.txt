@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.6)
 
 project(LavaDemos)
 
-file(GLOB_RECURSE AMBER_SOURCE "../src/Amber*.cpp")
+set(AMBER_SOURCE
+    ../src/AmberCompiler.cpp
+    ../src/AmberProgram.cpp)
 
 set(DEMO_LIBS glfw glslang SPIRV curl sfw_lib lava)
 

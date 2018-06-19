@@ -19,13 +19,12 @@ add_library(appglue STATIC ${APP_GLUE_DIR}/android_native_app_glue.c)
 
 add_subdirectory(lava)
 
-set(SRC_DIR src/main/cpp)
 include_directories(lava/include)
 
 add_library(lavademos SHARED
-        ${SRC_DIR}/ClearScreenApp.cpp
-        ${SRC_DIR}/TriangleRecordedApp.cpp
-        ${SRC_DIR}/AndroidMain.cpp)
+        lava/src/AmberMain.cpp
+        src/main/cpp/ClearScreenApp.cpp
+        src/main/cpp/TriangleRecordedApp.cpp)
 
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 target_link_libraries(lavademos log android appglue lava)

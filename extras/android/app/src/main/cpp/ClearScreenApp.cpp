@@ -2,12 +2,12 @@
 #include <par/LavaLog.h>
 #include <par/LavaContext.h>
 
-#include "AmberApp.h"
+#include <par/AmberApplication.h>
 
 using namespace std;
 using namespace par;
 
-struct ClearScreenApp : AmberApp {
+struct ClearScreenApp : AmberApplication {
     ClearScreenApp(SurfaceFn createSurface);
     ~ClearScreenApp();
     void draw(double seconds) override;
@@ -50,6 +50,6 @@ void ClearScreenApp::draw(double seconds) {
     mContext->endFrame();
 }
 
-AmberApp* AmberApp::create(int appIndex, SurfaceFn createSurface) {
-    return new ClearScreenApp(createSurface);
-}
+static AmberApplication::Register app("clearscreen", [] (AmberApplication::SurfaceFn cb) {
+    return new ClearScreenApp(cb);
+});

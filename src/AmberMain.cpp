@@ -3,37 +3,45 @@
 #endif
 
 #include <par/LavaLoader.h>
+#include <par/AmberApplication.h>
 
+#ifdef __ANDROID__
 #include <android/log.h>
 #include <android_native_app_glue.h>
+#else
+#error TODO: GLFW stuff here
+#endif
 
 #include <chrono>
 
-#include "AmberApp.h"
+using namespace par;
 
-AmberApp* g_vulkanApp = nullptr;
+static AmberApplication* g_vulkanApp = nullptr;
 
-double get_current_time() {
+static double get_current_time() {
     using namespace std;
     static auto start = chrono::high_resolution_clock::now();
     auto now = chrono::high_resolution_clock::now();
     return 0.001 * chrono::duration_cast<chrono::milliseconds>(now - start).count();
 }
 
-void handle_cmd(android_app* app, int32_t cmd) {
+#ifdef __ANDROID__
+
+static void handle_cmd(android_app* app, int32_t cmd) {
+    auto createSurface = [app](VkInstance instance) {
+        VkAndroidSurfaceCreateInfoKHR createInfo {
+            .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
+            .pNext = nullptr,
+            .flags = 0,
+            .window = app->window
+        };
+        VkSurfaceKHR surface;
+        vkCreateAndroidSurfaceKHR(instance, &createInfo, nullptr, &surface);
+        return surface;
+    };
     switch (cmd) {
         case APP_CMD_INIT_WINDOW:
-            g_vulkanApp = AmberApp::create(0, [app](VkInstance instance) {
-                VkAndroidSurfaceCreateInfoKHR createInfo {
-                    .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
-                    .pNext = nullptr,
-                    .flags = 0,
-                    .window = app->window
-                };
-                VkSurfaceKHR surface;
-                vkCreateAndroidSurfaceKHR(instance, &createInfo, nullptr, &surface);
-                return surface;
-            });
+            g_vulkanApp = AmberApplication::createApp("trianglerecorded", createSurface);
             break;
         case APP_CMD_TERM_WINDOW:
             delete g_vulkanApp;
@@ -58,3 +66,9 @@ void android_main(struct android_app* app) {
         }
     } while (app->destroyRequested == 0);
 }
+
+#else
+
+#error TODO: GLFW stuff here
+
+#endif

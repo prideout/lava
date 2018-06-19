@@ -1,10 +1,13 @@
 
 # Android
 
-    AmberApplication, AmberMain Registration
-    Swipe to navigate demos, with a hardcoded "entry" app?
+    Fix crash
+        TriangleRecordedApp::draw
+    AmberApplication, AmberMain
+        Move to Lava
+        Refactor all non-android demos (keep their file names though)
+    Android: swipe to navigate demos, with a hardcoded "entry" app?
     HelloTexture
-    Refactor all non-android demos (keep their file names though)
 
 # LavaContext
 

@@ -1,12 +1,12 @@
 #include <par/LavaLog.h>
 #include <par/LavaContext.h>
 
-#include "AmberApp.h"
+#include <par/AmberApplication.h>
 
 using namespace std;
 using namespace par;
 
-struct TriangleRecordedApp : AmberApp {
+struct TriangleRecordedApp : AmberApplication {
     TriangleRecordedApp(SurfaceFn createSurface);
     ~TriangleRecordedApp();
     void draw(double seconds) override;
@@ -49,6 +49,6 @@ void TriangleRecordedApp::draw(double time) {
     mContext->endFrame();
 }
 
-// AmberApp* AmberApp::create(int appIndex, SurfaceFn createSurface) {
-//     return new TriangleRecordedApp(createSurface);
-// }
+static AmberApplication::Register app("trianglerecorded", [] (AmberApplication::SurfaceFn cb) {
+    return new TriangleRecordedApp(cb);
+});

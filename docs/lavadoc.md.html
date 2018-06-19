@@ -36,7 +36,6 @@
     - [LavaTexture](#lavatexture) encapsulates an image, an image view, and a buffer staging area.
 - [Amber Components](#ambercomponents)
     - AmberApplication
-    - AmberMain
     - AmberCompiler
     - AmberProgram
 - [Internal Guidelines](#internalguidelines)
@@ -416,8 +415,7 @@ which is allowed to depend on outside repositories such as
 [glslang](https://github.com/KhronosGroup/glslang). This makes it easier to write simple demo apps.
 For now, the only Amber classes are:
 
-* AmberApplication
-* AmberMain
+* [AmberApplication](https://github.com/prideout/lava/blob/master/include/par/AmberApplication.h)
 * [AmberProgram](https://github.com/prideout/lava/blob/master/include/par/AmberProgram.h)
 * [AmberCompiler](https://github.com/prideout/lava/blob/master/include/par/AmberCompiler.h)
 
@@ -468,7 +466,7 @@ imperative ("Open the file").
 <meta property="og:type" content="object" />
 <meta property="og:title" content="prideout/lava" />
 <meta property="og:url" content="https://github.prideout.net/lava/" />
-<meta property="og:description" content="Toy C++ library for doing #vulkan experiments." />
+<meta property="og:description" content="toy C++ library for vulkan experiments" />
 
 <!-- Do not use double-quotes or blank lines in the following script; they confuse markdeep. -->
 <script>

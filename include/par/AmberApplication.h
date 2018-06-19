@@ -9,7 +9,7 @@
 namespace par {
 
 // The class shields the Lava samples from the windowing system (GLFW on Desktop, native_app_glue
-// on Android). The application's entry point (i.e. main) calls AmberApplication::createApp.
+// on Android). The entry point (e.g. main or android_main) calls AmberApplication::createApp.
 struct AmberApplication {
     using SurfaceFn = std::function<VkSurfaceKHR(VkInstance)>;
     using FactoryFn = std::function<AmberApplication*(SurfaceFn)>;

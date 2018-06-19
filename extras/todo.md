@@ -1,7 +1,6 @@
 # Android
 
-    do "gradle wrapper" and commit the result
-        Test with linux
+    Test with linux
     TriangleRecordedApp::draw
     AmberApplication, AmberMain
         Refactor all non-android demos (keep their file names though)

@@ -9,13 +9,15 @@
 #include <vector>
 #include <fstream>
 
-#include <FileWatcher/FileWatcher.h>
-
 #include "LavaInternal.h"
 
 using namespace par;
 using namespace std;
+
+#ifndef __ANDROID__
+#include <FileWatcher/FileWatcher.h>
 using namespace FW;
+#endif
 
 struct AmberProgramImpl : AmberProgram {
     AmberProgramImpl(const string& vshader, const string& fshader) noexcept;
@@ -28,6 +30,7 @@ struct AmberProgramImpl : AmberProgram {
     VkShaderModule mVertModule = VK_NULL_HANDLE;
     VkShaderModule mFragModule = VK_NULL_HANDLE;
     VkDevice mDevice = VK_NULL_HANDLE;
+    #ifndef __ANDROID__
     FileWatcher mFileWatcher;
     struct : FileWatchListener {
         FileListener callback;
@@ -40,6 +43,7 @@ struct AmberProgramImpl : AmberProgram {
             }
         }
     } mFileListener;
+    #endif
 };
 
 LAVA_DEFINE_UPCAST(AmberProgram)
@@ -144,12 +148,16 @@ string AmberProgram::getChunk(const string& filename, const string& chunkName) n
 }
 
 void AmberProgram::watchDirectory(const string& directory, FileListener onChange) noexcept {
+    #ifndef __ANDROID__
     AmberProgramImpl& impl = *upcast(this);
     impl.mFileListener.callback = onChange;
     impl.mFileWatcher.addWatch(directory, &impl.mFileListener);
+    #endif
 }
 
 void AmberProgram::checkDirectory() noexcept {
+    #ifndef __ANDROID__
     AmberProgramImpl& impl = *upcast(this);
     impl.mFileWatcher.update();
+    #endif
 }

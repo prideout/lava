@@ -1,4 +1,6 @@
 #include <par/LavaLoader.h>
+#include <par/LavaCpuBuffer.h>
+#include <par/LavaGpuBuffer.h>
 #include <par/LavaLog.h>
 #include <par/LavaContext.h>
 
@@ -45,8 +47,8 @@ struct TriangleRecordedApp : AmberApplication {
     TriangleRecordedApp(SurfaceFn createSurface);
     ~TriangleRecordedApp();
     void draw(double seconds) override;
-    LavaContext* mContext = nullptr;
-    LavaProgram* mProgram;
+    LavaContext* mContext;
+    AmberProgram* mProgram;
     LavaGpuBuffer* mVertexBuffer;
 };
 
@@ -58,6 +60,8 @@ TriangleRecordedApp::TriangleRecordedApp(SurfaceFn createSurface) {
         .samples = VK_SAMPLE_COUNT_1_BIT,
         .createSurface = createSurface
     });
+    auto device = mContext->getDevice();
+    auto gpu = mContext->getGpu();
 
     // Begin populating a vertex buffer.
     mVertexBuffer = LavaGpuBuffer::create({
@@ -73,17 +77,17 @@ TriangleRecordedApp::TriangleRecordedApp(SurfaceFn createSurface) {
         .source = TRIANGLE_VERTICES,
         .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
     });
-    VkCommandBuffer cmdbuffer = context->beginWork();
+    VkCommandBuffer cmdbuffer = mContext->beginWork();
     const VkBufferCopy region = { .size = sizeof(TRIANGLE_VERTICES) };
-    vkCmdCopyBuffer(cmdbuffer, stage->getBuffer(), vertexBuffer->getBuffer(), 1, &region);
-    context->endWork();
+    vkCmdCopyBuffer(cmdbuffer, stage->getBuffer(), mVertexBuffer->getBuffer(), 1, &region);
+    mContext->endWork();
 
     // Compile shaders.
     mProgram = AmberProgram::create(vertShaderGLSL, fragShaderGLSL);
-    program->compile(device);
+    mProgram->compile(device);
 
     // Finish populating the vertex buffer.
-    context->waitWork();
+    mContext->waitWork();
     delete stage;
 }
 

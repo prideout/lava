@@ -32,7 +32,7 @@ using namespace std;
 namespace {
     constexpr int DEMO_WIDTH = 256;
     constexpr int DEMO_HEIGHT = 256;
-    constexpr VkSampleCountFlagBits DEMO_SAMPLES = VK_SAMPLE_COUNT_4_BIT;
+    constexpr VkSampleCountFlagBits DEMO_SAMPLES = VK_SAMPLE_COUNT_8_BIT;
 
     struct Uniforms {
         Matrix4 mvp;

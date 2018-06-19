@@ -37,6 +37,11 @@ protected:
 
 #define AMBER_STRINGIFY(x) #x
 #define AMBER_STRINGIFY_(x) AMBER_STRINGIFY(x)
+
+#ifdef __ANDROID__
+#define AMBER_PREFIX_450 "#version 450 es\n#line " AMBER_STRINGIFY_(__LINE__) "\n"
+#else
 #define AMBER_PREFIX_450 "#version 450\n#line " AMBER_STRINGIFY_(__LINE__) "\n"
+#endif
 
 }

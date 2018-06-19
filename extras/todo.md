@@ -1,11 +1,8 @@
 # Android
 
-    Fix crash
-        TriangleRecordedApp::draw
-            are you really building glslang?
-            #version 450 es
+    TriangleRecordedApp::draw
+    Gradle Wrapper (Test with linux)
     AmberApplication, AmberMain
-        Move to Lava
         Refactor all non-android demos (keep their file names though)
     Android: swipe to navigate demos, with a hardcoded "entry" app?
     HelloTexture
@@ -50,9 +47,10 @@
 
 # Demo ideas
 
-    demos/space_colony https://twitter.com/BendotK/status/1005209740874584064
-                       http://algorithmicbotany.org/papers/colonization.egwnp2007.large.pdf
-                       http://algorithmicbotany.org/papers/venation.sig2005.pdf
+    streamlines     https://www.kovach.me/posts/2018-04-30-blotch.html
+    space_colony    https://twitter.com/BendotK/status/1005209740874584064
+                    http://algorithmicbotany.org/papers/colonization.egwnp2007.large.pdf
+                    http://algorithmicbotany.org/papers/venation.sig2005.pdf
     demos/circle    draws filled-in circle with random sampling
     demos/gamma     https://www.shadertoy.com/view/llBGz1
     demos/smallpt   https://www.codeplay.com/portal/sycl-ing-the-smallpt-raytracer

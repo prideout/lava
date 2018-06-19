@@ -11,6 +11,8 @@ content:counter(h1) "."counter(h2) "."counter(h3) "."counter(h4) "."counter(h5) 
 counter-increment: h5;margin-right:10px}.md h6::before {
 content:counter(h1) "."counter(h2) "."counter(h3) "."counter(h4) "."counter(h5) "."counter(h6) " ";
 counter-increment: h6;margin-right:10px}</style><style>.hljs{display:block;overflow-x:auto;padding:0.5em;background:#fff;color:#000;-webkit-text-size-adjust:none}.hljs-comment{color:#006a00}.hljs-keyword{color:#02E}.hljs-literal,.nginx .hljs-title{color:#aa0d91}.method,.hljs-list .hljs-title,.hljs-tag .hljs-title,.setting .hljs-value,.hljs-winutils,.tex .hljs-command,.http .hljs-title,.hljs-request,.hljs-status,.hljs-name{color:#008}.hljs-envvar,.tex .hljs-special{color:#660}.hljs-string{color:#c41a16}.hljs-tag .hljs-value,.hljs-cdata,.hljs-filter .hljs-argument,.hljs-attr_selector,.apache .hljs-cbracket,.hljs-date,.hljs-regexp{color:#080}.hljs-sub .hljs-identifier,.hljs-pi,.hljs-tag,.hljs-tag .hljs-keyword,.hljs-decorator,.ini .hljs-title,.hljs-shebang,.hljs-prompt,.hljs-hexcolor,.hljs-rule .hljs-value,.hljs-symbol,.hljs-symbol .hljs-string,.hljs-number,.css .hljs-function,.hljs-function .hljs-title,.coffeescript .hljs-attribute{color:#A0C}.hljs-function .hljs-title{font-weight:bold;color:#000}.hljs-class .hljs-title,.smalltalk .hljs-class,.hljs-type,.hljs-typename,.hljs-tag .hljs-attribute,.hljs-doctype,.hljs-class .hljs-id,.hljs-built_in,.setting,.hljs-params,.clojure .hljs-attribute{color:#5c2699}.hljs-variable{color:#3f6e74}.css .hljs-tag,.hljs-rule .hljs-property,.hljs-pseudo,.hljs-subst{color:#000}.css .hljs-class,.css .hljs-id{color:#9b703f}.hljs-value .hljs-important{color:#ff7700;font-weight:bold}.hljs-rule .hljs-keyword{color:#c5af75}.hljs-annotation,.apache .hljs-sqbracket,.nginx .hljs-built_in{color:#9b859d}.hljs-preprocessor,.hljs-preprocessor *,.hljs-pragma{color:#643820}.tex .hljs-formula{background-color:#eee;font-style:italic}.diff .hljs-header,.hljs-chunk{color:#808080;font-weight:bold}.diff .hljs-change{background-color:#bccff9}.hljs-addition{background-color:#baeeba}.hljs-deletion{background-color:#ffc8bd}.hljs-comment .hljs-doctag{font-weight:bold}.method .hljs-id{color:#000}</style><style>div.title { padding-top: 40px; } div.afterTitles { height: 15px; }</style><link rel="stylesheet" href="apidoc.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.13/css/all.css" integrity="sha384-DNOHZ68U8hZfKXOrtjWvjxusGo9WQnrNx2sqG0tfsghAvtVlRW3tvkXWZh58N9jp" crossorigin="anonymous">
+
 <!--
 // Quick reference for markdeep:
 //    http://casual-effects.com/markdeep/features.md.html
@@ -23,7 +25,7 @@ counter-increment: h6;margin-right:10px}</style><style>.hljs{display:block;overf
 //
 -->
 
-<meta charset="UTF-8"><meta http-equiv="content-type" content="text/html;charset=UTF-8"><meta charset="utf-8"><meta property="og:image" content="https://raw.githubusercontent.com/prideout/lava/master/extras/assets/klein31416.gif"><meta property="og:site_name" content="GitHub"><meta property="og:type" content="object"><meta property="og:title" content="prideout/lava"><meta property="og:url" content="https://github.prideout.net/lava/"><meta property="og:description" content="Toy C++ library for doing #vulkan experiments."></head><body style="visibility: visible;"><span class="md"><p><title>Lava Vulkan Utilities</title></p><div class="title"> Lava Vulkan Utilities </div>
+<meta charset="UTF-8"><meta http-equiv="content-type" content="text/html;charset=UTF-8"><meta charset="utf-8"><meta property="og:image" content="https://github.com/prideout/lava/raw/master/extras/assets/triptych.png"><meta property="og:site_name" content="GitHub"><meta property="og:type" content="object"><meta property="og:title" content="prideout/lava"><meta property="og:url" content="https://github.prideout.net/lava/"><meta property="og:description" content="Toy C++ library for doing #vulkan experiments."></head><body style="visibility: visible;"><span class="md"><p><title>Lava Vulkan Utilities</title></p><div class="title"> Lava Vulkan Utilities </div>
 
 <div class="afterTitles"></div>
 
@@ -43,15 +45,19 @@ counter-increment: h6;margin-right:10px}</style><style>.hljs{display:block;overf
 </li></ul>
 </li><li class="minus"><a href="#lavacomponents">Lava Components</a>
 <ul>
-    <li class="minus"><a href="#lavacontext">LavaContext</a> creates an instance, a device, a swap chain, and some command buffers.
+    <li class="minus"><a href="#lavacontext">LavaContext</a> creates an instance, a device, a swap chain, and some command
+            buffers.
 </li>
-    <li class="minus"><a href="#lavadesccache">LavaDescCache</a> creates a descriptor set layout and manages a set of corollary descriptors.
+    <li class="minus"><a href="#lavadesccache">LavaDescCache</a> creates a descriptor set layout and manages a set of corollary
+            descriptors.
 </li>
     <li class="minus"><a href="#lavapipecache">LavaPipeCache</a> manages a set of pipeline objects for a given layout.
 </li>
-    <li class="minus"><a href="#lavacpubuffer">LavaCpuBuffer</a> is a shared CPU-GPU buffer, useful for staging or uniform buffers.
+    <li class="minus"><a href="#lavacpubuffer">LavaCpuBuffer</a> is a shared CPU-GPU buffer, useful for staging or uniform
+            buffers.
 </li>
-    <li class="minus"><a href="#lavagpubuffer">LavaGpuBuffer</a> is a fast device-only buffer, useful for vertex buffers and index buffers.
+    <li class="minus"><a href="#lavagpubuffer">LavaGpuBuffer</a> is a fast device-only buffer, useful for vertex buffers and
+            index buffers.
 </li>
     <li class="minus"><a href="#lavatexture">LavaTexture</a> encapsulates an image, an image view, and a buffer staging area.
 </li></ul>
@@ -77,7 +83,8 @@ counter-increment: h6;margin-right:10px}</style><style>.hljs{display:block;overf
 
 
 <strong class="asterisk">Lava</strong> is a toy C++ library composed of classes that make it easy to create and manage Vulkan
-objects. It is open sourced under the MIT license, available at <a href="https://github.com/prideout/lava" class="url">https://github.com/prideout/lava</a>.
+objects. It is open sourced under the MIT license, available at
+<a href="https://github.com/prideout/lava"><i class="fab fa-github"></i> prideout/lava</a>.
 
 </p><p>
 
@@ -127,14 +134,18 @@ after every other Lava object, since it destroys the <strong class="asterisk">Vk
 <p>
 
 
-For Android, see the README in
+For <i class="fab fa-android" style="color:darkseagreen"></i> Android, see the README in
 <a href="https://github.com/prideout/lava/tree/master/extras/android">extras/android</a>.
-For Linux, do this first:
+
+</p><p>
+
+For <i class="fab fa-linux"></i> Linux, do this first:
 
 </p><pre class="listing backtick"><code>sudo apt-get install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libcurl4-openssl-dev
 <span class="hljs-built_in">export</span> CC=clang CXX=clang++</code></pre><p>
 
-On macOS, you first need clang (which comes with Xcode) and homebrew, then do this:
+On <i class="fab fa-apple" style="color:#aaa"></i> macOS, you first need clang (which comes with
+Xcode) and homebrew, then do this:
 
 </p><pre class="listing backtick"><code>brew install cmake ninja</code></pre><p>
 

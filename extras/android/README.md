@@ -1,4 +1,4 @@
-To verify that you have Vulkan libs available:
+First, verify that you have Vulkan libs available in your NDK:
 
 ```
 find ${ANDROID_HOME}/ndk-bundle -name vulkan*.h

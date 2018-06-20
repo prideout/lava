@@ -4,6 +4,7 @@
     AmberApplication, AmberMain
         Refactor all non-android demos (keep their file names though)
     HelloTexture
+    Demos README should be a table
 
 # LavaContext
 

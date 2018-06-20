@@ -15,7 +15,7 @@ using namespace par;
 namespace {
     constexpr float PI = 3.1415926535;
 
-    const std::string vertShaderGLSL = AMBER_PREFIX_450 R"GLSL(
+    const std::string vertShaderGLSL = AMBER_PREFIX R"GLSL(
     layout(location=0) in vec2 position;
     layout(location=1) in vec4 color;
     layout(location=0) out vec4 vert_color;
@@ -24,9 +24,9 @@ namespace {
         vert_color = color;
     })GLSL";
 
-    const std::string fragShaderGLSL = AMBER_PREFIX_450 R"GLSL(
-    layout(location=0) out vec4 frag_color;
-    layout(location=0) in vec4 vert_color;
+    const std::string fragShaderGLSL = AMBER_PREFIX R"GLSL(
+    layout(location=0) out lowp vec4 frag_color;
+    layout(location=0) in highp vec4 vert_color;
     void main() {
         frag_color = vert_color;
     })GLSL";
@@ -84,7 +84,9 @@ TriangleRecordedApp::TriangleRecordedApp(SurfaceFn createSurface) {
 
     // Compile shaders.
     mProgram = AmberProgram::create(vertShaderGLSL, fragShaderGLSL);
-    mProgram->compile(device);
+    if (!mProgram->compile(device)) {
+        terminate();
+    }
 
     // Finish populating the vertex buffer.
     mContext->waitWork();

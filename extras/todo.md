@@ -1,6 +1,8 @@
 # Android
 
-    Flesh out TriangleRecordedApp
+    TriangleRecordedApp
+        Make it spin
+        Fix the aspect ratio
     AmberApplication, AmberMain
         Refactor all non-android demos (keep their file names though)
     HelloTexture
@@ -14,6 +16,11 @@
 # LavaCpuBuffer
 
     remove setData in favor of persistent mapping
+
+# streamlines
+
+    first, generate simplex 3D noise in a compute shader...
+    https://www.kovach.me/posts/2018-04-30-blotch.html
 
 # LavaGeometry
 

@@ -12,6 +12,7 @@
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/extras/glfw/include",
                 "${workspaceFolder}/extras/SimpleFileWatcher/include",
+                "${workspaceFolder}/extras",
                 "${workspaceFolder}/extras/stb",
                 "${workspaceFolder}/extras/par",
                 "${workspaceFolder}/extras/tinyobjloader",

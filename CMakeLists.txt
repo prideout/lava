@@ -18,16 +18,7 @@ set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
 if(EXISTS "${CMAKE_SOURCE_DIR}/extras/glfw/CMakeLists.txt")
     add_subdirectory(extras/glfw)
     add_subdirectory(extras/glslang)
-
-    # Workaround an error in the SimpleFileWatcher build system
-    if(APPLE)
-        unset(UNIX)
-    endif()
     add_subdirectory(extras/SimpleFileWatcher)
-    if(APPLE)
-        set(UNIX 1)
-    endif()
-
 endif()
 
 # Build the core library (zero dependencies).
@@ -44,6 +35,11 @@ set(LAVA_SOURCE
     src/LavaLog.cpp
     src/LavaPipeCache.cpp
     src/LavaTexture.cpp)
+
+set(AMBER_SOURCE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AmberMain.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AmberCompiler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AmberProgram.cpp PARENT_SCOPE)
 
 add_library(lava STATIC ${LAVA_SOURCE})
 

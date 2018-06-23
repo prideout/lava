@@ -15,7 +15,7 @@ using namespace std;
 using namespace par;
 
 namespace {
-    const std::string vertShaderGLSL = AMBER_PREFIX R"GLSL(
+    const string vertShaderGLSL = AMBER_PREFIX R"GLSL(
     layout(location=0) in vec2 position;
     layout(location=1) in vec4 color;
     layout(location=0) out vec4 vert_color;
@@ -27,7 +27,7 @@ namespace {
         vert_color = color;
     })GLSL";
 
-    const std::string fragShaderGLSL = AMBER_PREFIX R"GLSL(
+    const string fragShaderGLSL = AMBER_PREFIX R"GLSL(
     layout(location=0) out lowp vec4 frag_color;
     layout(location=0) in highp vec4 vert_color;
     void main() {
@@ -206,7 +206,7 @@ void TriangleRecordedApp::draw(double time) {
     Matrix4 matrix = M4Mul(mProjection, M4MakeRotationZ(time));
     mUniforms[0]->setData(&matrix, sizeof(matrix));
     mContext->presentRecording(mRecording);
-    std::swap(mUniforms[0], mUniforms[1]);
+    swap(mUniforms[0], mUniforms[1]);
 }
 
 static AmberApplication::Register app("trianglerecorded", [] (AmberApplication::SurfaceFn cb) {

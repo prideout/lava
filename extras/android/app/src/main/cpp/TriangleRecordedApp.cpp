@@ -57,6 +57,7 @@ namespace {
         LavaPipeCache* mPipelines;
         LavaDescCache* mDescriptors;
         LavaCpuBuffer* mUniforms[2];
+        Matrix4 mProjection;
     };
 }
 
@@ -70,6 +71,20 @@ TriangleRecordedApp::TriangleRecordedApp(SurfaceFn createSurface) {
     const auto gpu = mContext->getGpu();
     const auto renderPass = mContext->getRenderPass();
     const auto extent = mContext->getSize();
+    llog.info("Surface size: {}x{}", extent.width, extent.height);
+
+    // Compute a projection that makes [-1,+1] fit.
+    // For reference, my Pixel 2 has a surface size of 1080x1794.
+    float hw;
+    float hh;
+    if (extent.height > extent.width) {
+        hw = 1;
+        hh = (float) extent.height / extent.width;
+    } else {
+        hw = (float) extent.width / extent.height;
+        hh = 1;
+    }
+    mProjection = M4MakeOrthographic(-hw, hw, -hh, hh, -1, 1);
 
     // Begin populating a vertex buffer.
     mVertexBuffer = LavaGpuBuffer::create({
@@ -188,7 +203,7 @@ TriangleRecordedApp::~TriangleRecordedApp() {
 }
 
 void TriangleRecordedApp::draw(double time) {
-    Matrix4 matrix = M4MakeRotationZ(time);
+    Matrix4 matrix = M4Mul(mProjection, M4MakeRotationZ(time));
     mUniforms[0]->setData(&matrix, sizeof(matrix));
     mContext->presentRecording(mRecording);
     std::swap(mUniforms[0], mUniforms[1]);

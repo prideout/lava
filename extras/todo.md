@@ -1,7 +1,5 @@
 # Android
 
-    TriangleRecordedApp
-        Fix the aspect ratio
     AmberApplication, AmberMain
         Refactor all non-android demos (keep their file names though)
     HelloTexture

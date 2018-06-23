@@ -54,5 +54,6 @@
         "**/.hg": true,
         "**/CVS": true,
         "**/.DS_Store": true
-    }
+    },
+    "C_Cpp.dimInactiveRegions": false
 }

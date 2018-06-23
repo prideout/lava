@@ -29,3 +29,16 @@ Note that the core Lava library does not have dependencies on GLFW or glslang. *
   *This will demonstrate **LavaGeometry**, work in progress.*
 - [particle_system](0a_particle_system.cpp)
   Fun with point sprites.
+- [shadertoy](0b_shadertoy.cpp)
+  Full screen triangle with a complex fragment shader.
+
+
+| Demo | Description  |
+|------|--------------|
+| [clear_screen](01_clear_screen.cpp)            |  Simplest demo and does not draw any geometry.
+| [triangle_shared](02_triangle_shared.cpp)      |  Draws a triangle using a vertex buffer that resides in shared CPU-GPU memory.
+| [triangle_staged](03_triangle_staged.cpp)      |  Draws a triangle using a vertex buffer that is copied from a staging area.
+| [triangle_recorded](04_triangle_recorded.cpp)  |  Draws a triangle using a recorded command buffer.
+| [klein_bottle](08_klein_bottle.cpp)            |  Indexed triangles with a depth buffer and MSAA.
+| [particle_system](0a_particle_system.cpp)      |   Fun with point sprites.
+| [shadertoy](0b_shadertoy.cpp)                  | Full screen triangle with a complex fragment shader.

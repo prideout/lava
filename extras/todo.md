@@ -2,15 +2,6 @@
 
     HelloTexture
 
-# streamlines
-
-    first, generate simplex 3D noise in a compute shader...
-    https://www.kovach.me/posts/2018-04-30-blotch.html
-        http://web.cs.ucdavis.edu/~ma/SIGGRAPH02/course23/notes/papers/Jobard.pdf
-        "Image-Guided Streamline Placement"
-    https://blog.mapbox.com/how-i-built-a-wind-map-with-webgl-b63022b5537f
-        https://mapbox.github.io/webgl-wind/demo/
-
 # AmberApplication, AmberMain
 
     Refactor all or some non-android demos (keep their file names though)

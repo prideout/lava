@@ -1,15 +1,15 @@
-#ifndef VK_USE_PLATFORM_ANDROID_KHR
-#define VK_USE_PLATFORM_ANDROID_KHR
-#endif
-
 #include <par/LavaLoader.h>
 #include <par/AmberApplication.h>
 
+#define DEMO_NAME "shadertoy"
+
 #ifdef __ANDROID__
-#include <android/log.h>
-#include <android_native_app_glue.h>
+    #include <android/log.h>
+    #include <android_native_app_glue.h>
 #else
-#error TODO: GLFW stuff here
+    static constexpr int DEMO_WIDTH = 1794 / 2;
+    static constexpr int DEMO_HEIGHT = 1080 / 2;
+    #include <GLFW/glfw3.h>
 #endif
 
 #include <chrono>
@@ -41,7 +41,7 @@ static void handle_cmd(android_app* app, int32_t cmd) {
     };
     switch (cmd) {
         case APP_CMD_INIT_WINDOW:
-            g_vulkanApp = AmberApplication::createApp("trianglerecorded", createSurface);
+            g_vulkanApp = AmberApplication::createApp(DEMO_NAME, createSurface);
             break;
         case APP_CMD_TERM_WINDOW:
             delete g_vulkanApp;
@@ -69,6 +69,32 @@ void android_main(struct android_app* app) {
 
 #else
 
-#error TODO: GLFW stuff here
+int main(const int argc, const char *argv[]) {
+    glfwInit();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    glfwWindowHint(GLFW_DECORATED, GL_FALSE);
+    auto window = glfwCreateWindow(DEMO_WIDTH, DEMO_HEIGHT, DEMO_NAME, 0, 0);
+
+    glfwSetKeyCallback(window, [] (GLFWwindow* window, int key, int, int action, int) {
+        if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
+    });
+
+    auto createSurface = [window] (VkInstance instance) {
+        VkSurfaceKHR surface;
+        glfwCreateWindowSurface(instance, window, nullptr, &surface);
+        return surface;
+    };
+
+    g_vulkanApp = AmberApplication::createApp(DEMO_NAME, createSurface);
+    while (!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
+        g_vulkanApp->draw(get_current_time());
+    }
+    delete g_vulkanApp;
+    return 0;
+}
 
 #endif

@@ -35,7 +35,19 @@ set(DEMO_NAMES
     09_particle_system
     0a_particle_system)
 
+# Build the Desktop-only GLFW demos.
+
 foreach(DEMO ${DEMO_NAMES})
     add_executable(${DEMO} ${DEMO}.cpp ${AMBER_SOURCE})
+    set_target_properties(${DEMO} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+endforeach()
+
+## Build Mobile-friendly Amber demos.
+
+set(AMBER_DEMOS
+    0b_shadertoy)
+
+foreach(DEMO ${AMBER_DEMOS})
+    add_executable(${DEMO} ${DEMO}.cpp ${AMBER_SOURCE} ../src/AmberMain.cpp)
     set_target_properties(${DEMO} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 endforeach()

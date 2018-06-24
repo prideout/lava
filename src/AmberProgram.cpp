@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <fstream>
+#include <regex>
 
 #include "LavaInternal.h"
 
@@ -125,23 +126,30 @@ VkShaderModule AmberProgram::getFragmentShader() const noexcept {
 }
 
 string AmberProgram::getChunk(const string& filename, const string& chunkName) noexcept {
-    string chunk = "#version 450\n#line ";
-    ifstream ifs(filename);
-    const string prefix = "-- " + chunkName;
-    bool extracting = false;
-    int lineno = 1;
-    for (string line; getline(ifs, line); ++lineno) {
-        if (!line.compare(0, prefix.size(), prefix)) {
-            chunk += to_string(lineno + 1) + "\n";
-            extracting = true;
-            continue;
-        } else if (!extracting) {
-            continue;
-        }
-        if (!line.compare(0, 2, "--")) {
-            extracting = false;
-        } else {
-            chunk += line + "\n";
+    const regex pattern(R"([\s,]+)");
+    sregex_token_iterator it(chunkName.begin(), chunkName.end(), pattern, -1);
+    vector<string> words(it, {});
+
+    string chunk = "#version 450\n";
+    for (auto token : words) {
+        chunk += "#line ";
+        ifstream ifs(filename);
+        const string prefix = "-- " + token;
+        bool extracting = false;
+        int lineno = 1;
+        for (string line; getline(ifs, line); ++lineno) {
+            if (!line.compare(0, prefix.size(), prefix)) {
+                chunk += to_string(lineno + 1) + "\n";
+                extracting = true;
+                continue;
+            } else if (!extracting) {
+                continue;
+            }
+            if (!line.compare(0, 2, "--")) {
+                extracting = false;
+            } else {
+                chunk += line + "\n";
+            }
         }
     }
     return chunk;

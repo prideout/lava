@@ -1,4 +1,5 @@
 #include <par/LavaLoader.h>
+#include <par/LavaLog.h>
 #include <par/AmberApplication.h>
 
 #define DEMO_NAME "shadertoy"
@@ -31,8 +32,6 @@ static void handle_cmd(android_app* app, int32_t cmd) {
     auto createSurface = [app](VkInstance instance) {
         VkAndroidSurfaceCreateInfoKHR createInfo {
             .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
-            .pNext = nullptr,
-            .flags = 0,
             .window = app->window
         };
         VkSurfaceKHR surface;
@@ -70,11 +69,14 @@ void android_main(struct android_app* app) {
 #else
 
 int main(const int argc, const char *argv[]) {
+    auto& prefs = AmberApplication::prefs();
+
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    // glfwWindowHint(GLFW_DECORATED, GL_FALSE);
-    auto window = glfwCreateWindow(DEMO_WIDTH, DEMO_HEIGHT, DEMO_NAME, 0, 0);
+    glfwWindowHint(GLFW_DECORATED, prefs.decorated);
+
+    auto window = glfwCreateWindow(prefs.width, prefs.height, prefs.title.c_str(), 0, 0);
 
     auto createSurface = [window] (VkInstance instance) {
         VkSurfaceKHR surface;
@@ -82,7 +84,8 @@ int main(const int argc, const char *argv[]) {
         return surface;
     };
 
-    g_vulkanApp = AmberApplication::createApp(DEMO_NAME, createSurface);
+    llog.info("Starting {}...", prefs.first);
+    g_vulkanApp = AmberApplication::createApp(prefs.first, createSurface);
 
     glfwSetKeyCallback(window, [] (GLFWwindow* window, int key, int, int action, int) {
         if (action != GLFW_RELEASE) {

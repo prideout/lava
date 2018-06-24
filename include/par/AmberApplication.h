@@ -17,6 +17,19 @@ struct AmberApplication {
     virtual void draw(double seconds) = 0;
     virtual void handleKey(int key) {}
 
+    struct Prefs {
+        std::string title = "amber";
+        std::string first = "shadertoy";
+        uint32_t width = 1794 / 2;
+        uint32_t height = 1080 / 2;
+        bool decorated = true;
+    };
+
+   static Prefs& prefs() {
+       static Prefs p;
+       return p;
+   }
+
     static std::unordered_map<std::string, FactoryFn>& registry() {
         static std::unordered_map<std::string, FactoryFn> r;
         return r;
@@ -27,9 +40,8 @@ struct AmberApplication {
     }
 
     struct Register {
-        Register(std::string id, FactoryFn createApp) {
-            registry()[id] = createApp;
-        }
+        Register(std::string id, FactoryFn createApp) { registry()[id] = createApp; }
+        Register(Prefs p) { prefs() = p; }
     };
 };
 

@@ -896,6 +896,21 @@ LavaRecording* LavaContext::createRecording() noexcept {
     return recording;
 }
 
+LavaRecording* LavaContext::createRecording(function<void(VkCommandBuffer, uint32_t)> cmdbuilder) {
+    VkCommandBuffer cmd;
+    LavaRecording* r = createRecording();
+
+    cmd = beginRecording(r, 0);
+    cmdbuilder(cmd, 0);
+    endRecording();
+
+    cmd = beginRecording(r, 1);
+    cmdbuilder(cmd, 1);
+    endRecording();
+
+    return r;
+}
+
 void LavaContext::freeRecording(LavaRecording* recording) noexcept {
     auto impl = upcast(this);
     assert(recording);

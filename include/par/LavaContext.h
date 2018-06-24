@@ -41,6 +41,7 @@ public:
 
     // Allows commands to be recorded and played back later.
     LavaRecording* createRecording() noexcept;
+    LavaRecording* createRecording(std::function<void(VkCommandBuffer, uint32_t)> cmdbuilder);
     VkCommandBuffer beginRecording(LavaRecording*, uint32_t i) noexcept;
     void endRecording() noexcept;
     void presentRecording(LavaRecording*) noexcept;

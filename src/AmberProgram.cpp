@@ -126,19 +126,21 @@ VkShaderModule AmberProgram::getFragmentShader() const noexcept {
 }
 
 string AmberProgram::getChunk(const string& filename, const string& chunkName) noexcept {
-    const regex pattern(R"([\s,]+)");
+    const regex pattern(R"([\s]+)");
     sregex_token_iterator it(chunkName.begin(), chunkName.end(), pattern, -1);
-    vector<string> words(it, {});
+    vector<string> chunkids(it, {});
+    vector<string> tokens;
 
     string chunk = "#version 450\n";
-    for (auto token : words) {
+    for (auto chunkid : chunkids) {
         chunk += "#line ";
         ifstream ifs(filename);
-        const string prefix = "-- " + token;
         bool extracting = false;
         int lineno = 1;
         for (string line; getline(ifs, line); ++lineno) {
-            if (!line.compare(0, prefix.size(), prefix)) {
+            sregex_token_iterator it(line.begin(), line.end(), pattern, -1);
+            vector<string> tokens(it, {});
+            if (tokens.size() >= 2 && tokens[1] == chunkid) {
                 chunk += to_string(lineno + 1) + "\n";
                 extracting = true;
                 continue;

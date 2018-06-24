@@ -18,6 +18,7 @@
 using namespace par;
 
 static AmberApplication* g_vulkanApp = nullptr;
+static AmberApplication::SurfaceFn g_createSurface;
 
 static double get_current_time() {
     using namespace std;
@@ -78,21 +79,30 @@ int main(const int argc, const char *argv[]) {
 
     auto window = glfwCreateWindow(prefs.width, prefs.height, prefs.title.c_str(), 0, 0);
 
-    auto createSurface = [window] (VkInstance instance) {
+    g_createSurface = [window] (VkInstance instance) {
         VkSurfaceKHR surface;
         glfwCreateWindowSurface(instance, window, nullptr, &surface);
         return surface;
     };
 
-    llog.info("Starting {}...", prefs.first);
-    g_vulkanApp = AmberApplication::createApp(prefs.first, createSurface);
+    g_vulkanApp = AmberApplication::createApp(prefs.first, g_createSurface);
 
     glfwSetKeyCallback(window, [] (GLFWwindow* window, int key, int, int action, int) {
         if (action != GLFW_RELEASE) {
             return;
         }
-        if (key == GLFW_KEY_ESCAPE) {
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        switch (key) {
+            case GLFW_KEY_ESCAPE:
+                glfwSetWindowShouldClose(window, GLFW_TRUE);
+                break;
+            case GLFW_KEY_LEFT:
+                delete g_vulkanApp;
+                g_vulkanApp = AmberApplication::createPreviousApp(g_createSurface);
+                break;
+            case GLFW_KEY_RIGHT:
+                delete g_vulkanApp;
+                g_vulkanApp = AmberApplication::createNextApp(g_createSurface);
+                break;
         }
         g_vulkanApp->handleKey(key);
     });
@@ -102,7 +112,6 @@ int main(const int argc, const char *argv[]) {
         g_vulkanApp->draw(get_current_time());
     }
     delete g_vulkanApp;
-    return 0;
 }
 
 #endif

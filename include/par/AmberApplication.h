@@ -1,5 +1,7 @@
 #pragma once
 
+#include <par/LavaLog.h>
+
 #include <vulkan/vulkan.h>
 
 #include <functional>
@@ -13,6 +15,7 @@ namespace par {
 struct AmberApplication {
     using SurfaceFn = std::function<VkSurfaceKHR(VkInstance)>;
     using FactoryFn = std::function<AmberApplication*(SurfaceFn)>;
+    using Registry = std::unordered_map<std::string, FactoryFn>;
     virtual ~AmberApplication() {}
     virtual void draw(double seconds) = 0;
     virtual void handleKey(int key) {}
@@ -30,13 +33,45 @@ struct AmberApplication {
        return p;
    }
 
-    static std::unordered_map<std::string, FactoryFn>& registry() {
-        static std::unordered_map<std::string, FactoryFn> r;
+    static Registry& registry() {
+        static Registry r;
         return r;
     }
 
+    static Registry::iterator& current() {
+        static Registry::iterator iter;
+        return iter;
+    }
+
     static AmberApplication* createApp(std::string id, SurfaceFn createSurface) {
-        return registry()[id](createSurface);
+        auto& iter = current();
+        auto& reg = registry();
+        iter = reg.find(id);
+        assert(iter != reg.end());
+        llog.warn("Starting {}...", iter->first);
+        return iter->second(createSurface);
+    }
+
+    static AmberApplication* createNextApp(SurfaceFn createSurface) {
+        auto& iter = current();
+        auto& reg = registry();
+        ++iter;
+        if (iter == reg.end()) {
+            iter = reg.begin();
+        }
+        llog.warn("Starting {}...", iter->first);
+        return iter->second(createSurface);
+    }
+
+   static AmberApplication* createPreviousApp(SurfaceFn createSurface) {
+        auto& iter = current();
+        auto& reg = registry();
+        ++iter;
+        if (iter == reg.end()) {
+            iter = reg.begin();
+        }
+        llog.warn("Starting {}...", iter->first);
+        return iter->second(createSurface);
     }
 
     struct Register {

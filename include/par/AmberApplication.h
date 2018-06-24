@@ -15,6 +15,7 @@ struct AmberApplication {
     using FactoryFn = std::function<AmberApplication*(SurfaceFn)>;
     virtual ~AmberApplication() {}
     virtual void draw(double seconds) = 0;
+    virtual void handleKey(int key) {}
 
     static std::unordered_map<std::string, FactoryFn>& registry() {
         static std::unordered_map<std::string, FactoryFn> r;

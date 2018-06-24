@@ -73,14 +73,8 @@ int main(const int argc, const char *argv[]) {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    glfwWindowHint(GLFW_DECORATED, GL_FALSE);
+    // glfwWindowHint(GLFW_DECORATED, GL_FALSE);
     auto window = glfwCreateWindow(DEMO_WIDTH, DEMO_HEIGHT, DEMO_NAME, 0, 0);
-
-    glfwSetKeyCallback(window, [] (GLFWwindow* window, int key, int, int action, int) {
-        if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-        }
-    });
 
     auto createSurface = [window] (VkInstance instance) {
         VkSurfaceKHR surface;
@@ -89,6 +83,17 @@ int main(const int argc, const char *argv[]) {
     };
 
     g_vulkanApp = AmberApplication::createApp(DEMO_NAME, createSurface);
+
+    glfwSetKeyCallback(window, [] (GLFWwindow* window, int key, int, int action, int) {
+        if (action != GLFW_RELEASE) {
+            return;
+        }
+        if (key == GLFW_KEY_ESCAPE) {
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
+        g_vulkanApp->handleKey(key);
+    });
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         g_vulkanApp->draw(get_current_time());

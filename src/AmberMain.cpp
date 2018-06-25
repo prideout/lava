@@ -8,8 +8,6 @@
     #include <android/log.h>
     #include <android_native_app_glue.h>
 #else
-    static constexpr int DEMO_WIDTH = 1794 / 2;
-    static constexpr int DEMO_HEIGHT = 1080 / 2;
     #include <GLFW/glfw3.h>
 #endif
 

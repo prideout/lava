@@ -190,7 +190,7 @@ ShaderToyApp::~ShaderToyApp() {
 
 void ShaderToyApp::draw(double time) {
     Uniforms uniforms {
-        .iResolution = {(float) mResolution.width, (float) mResolution.height, 0, 0},
+        .iResolution = {1794, 1080, 0, 0},
         .iTime = (float) time
     };
     mUniforms[0]->setData(&uniforms, sizeof(uniforms));

@@ -75,7 +75,7 @@ static unique_ptr<LavaTexture> load_texture(char const* filename, VkDevice devic
     int ok = stbi_info(filename, (int*) &width, (int*) &height, 0);
     if (!ok) {
         llog.error("{}: {}.", filename, stbi_failure_reason());
-        exit(1);
+        terminate();
     }
     llog.info("Loading texture from {} ({}x{})", filename, width, height);
     uint8_t* texels = stbi_load(filename, (int*) &width, (int*) &height, 0, 4);
@@ -410,6 +410,7 @@ int main(const int argc, const char *argv[]) {
     LavaContext* context = LavaContext::create({
         .depthBuffer = false,
         .validation = true,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
         .createSurface = [window] (VkInstance instance) {
             VkSurfaceKHR surface;
             glfwCreateWindowSurface(instance, window, nullptr, &surface);
@@ -446,9 +447,9 @@ void main() {
     float time = max(0.0, original_time - recording_delay);
 
     frag_color = vec4(0.92);
-    vec4 tex_color = texture(img, vert_uv);
-    float t = clamp(time - 5.0, 0.0, 1.0);
-    frag_color = mix(frag_color, tex_color, t);
+    // vec4 tex_color = texture(img, vert_uv);
+    // float t = clamp(time - 5.0, 0.0, 1.0);
+    // frag_color = mix(frag_color, tex_color, t);
 }
 
 -- points.vs ---------------------------------------------------------------------------------------
@@ -466,7 +467,7 @@ void main() {
     float time = max(0.0, original_time - recording_delay);
 
     float a = 5.0 - time;
-    gl_PointSize = clamp(a, 2.0, 5.0);
+    gl_PointSize = 3.0; // clamp(a, 2.0, 5.0);
 
     float aspect = 640.0 / 718.0;
     vec2 gibbons = gibbons_position * vec2(2.25, 2.0);
@@ -482,9 +483,11 @@ void main() {
     pt = mix(pt, gibbons, t);
 
     gl_Position = vec4(pt, 0, 1);
-    vec3 red = vec3(0.6, 0.2, 0.2);
+    vec3 red = vec3(0); // vec3(0.6, 0.2, 0.2);
     vert_color = vec4(red, 1);
     vert_color.a = min(0.04 + t, 0.3);
+
+    vert_color.a *= 1.0 - n;
 }
 
 -- points.fs ---------------------------------------------------------------------------------------
@@ -493,6 +496,7 @@ layout(location = 0) out vec4 frag_color;
 layout(location = 0) in vec4 vert_color;
 void main() {
     frag_color = vert_color;
+    frag_color.a *= clamp(0.5 - distance(vec2(0.5), gl_PointCoord), 0.0, 1.0);
 }
 
 ----------------------------------------------------------------------------------------------------

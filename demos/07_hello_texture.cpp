@@ -83,7 +83,7 @@ int main(const int argc, const char *argv[]) {
 
     // Create the VkInstance, VkDevice, etc.
     auto context = LavaContext::create({
-        .depthBuffer = false, .validation = true,
+        .depthBuffer = false, .validation = true, .samples = VK_SAMPLE_COUNT_1_BIT,
         .createSurface = [window] (VkInstance instance) {
             VkSurfaceKHR surface;
             glfwCreateWindowSurface(instance, window, nullptr, &surface);
@@ -118,7 +118,7 @@ int main(const int argc, const char *argv[]) {
         int ok = stbi_info(TEXTURE_FILENAME, (int*) &width, (int*) &height, 0);
         if (!ok) {
             llog.error("{}: {}.", TEXTURE_FILENAME, stbi_failure_reason());
-            exit(1);
+            std::terminate();
         }
         llog.info("Loading texture {:4}x{:4} {}", width, height, TEXTURE_FILENAME);
         uint8_t* texels = stbi_load(TEXTURE_FILENAME, (int*) &width, (int*) &height, 0, 4);

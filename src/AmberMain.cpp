@@ -2,8 +2,6 @@
 #include <par/LavaLog.h>
 #include <par/AmberApplication.h>
 
-#define DEMO_NAME "shadertoy"
-
 #ifdef __ANDROID__
     #include <android/log.h>
     #include <android_native_app_glue.h>
@@ -28,6 +26,7 @@ static double get_current_time() {
 #ifdef __ANDROID__
 
 static void handle_cmd(android_app* app, int32_t cmd) {
+    auto& prefs = AmberApplication::prefs();
     auto createSurface = [app](VkInstance instance) {
         VkAndroidSurfaceCreateInfoKHR createInfo {
             .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
@@ -39,7 +38,7 @@ static void handle_cmd(android_app* app, int32_t cmd) {
     };
     switch (cmd) {
         case APP_CMD_INIT_WINDOW:
-            g_vulkanApp = AmberApplication::createApp(DEMO_NAME, createSurface);
+            g_vulkanApp = AmberApplication::createApp(prefs.first, createSurface);
             break;
         case APP_CMD_TERM_WINDOW:
             delete g_vulkanApp;

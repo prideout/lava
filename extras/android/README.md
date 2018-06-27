@@ -36,3 +36,8 @@ To clobber:
 ```
 rm -rf build app/build app/.externalNativeBuild
 ```
+
+To uninstall:
+```
+adb uninstall net.prideout.lava.lavademo
+```

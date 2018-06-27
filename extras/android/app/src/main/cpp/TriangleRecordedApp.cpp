@@ -20,7 +20,7 @@ namespace {
     layout(location=1) in vec4 color;
     layout(location=0) out vec4 vert_color;
     layout(binding = 0) uniform MatrixBlock {
-    mat4 transform;
+        mat4 transform;
     };
     void main() {
         gl_Position = transform * vec4(position, 0, 1);
@@ -208,6 +208,11 @@ void TriangleRecordedApp::draw(double time) {
     mContext->presentRecording(mRecording);
     swap(mUniforms[0], mUniforms[1]);
 }
+
+static AmberApplication::Register prefs({
+    .title = "lava",
+    .first = "trianglerecorded",
+});
 
 static AmberApplication::Register app("trianglerecorded", [] (AmberApplication::SurfaceFn cb) {
     return new TriangleRecordedApp(cb);

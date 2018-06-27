@@ -277,7 +277,9 @@ bool LavaPipeCache::getPipeline(VkPipeline* pipeline) noexcept {
     };
 
     VkPipeline pipe;
-    vkCreateGraphicsPipelines(impl->device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VKALLOC, &pipe);
+    VkResult err = vkCreateGraphicsPipelines(impl->device, VK_NULL_HANDLE, 1, &pipelineCreateInfo,
+            VKALLOC, &pipe);
+    LOG_CHECK(!err, "Unable to create graphics pipeline.");
     *pipeline = pipe;
 
     const size_t size0 = impl->cache.size();

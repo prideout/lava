@@ -28,7 +28,7 @@ adb logcat -c ; adb shell am start -n net.prideout.lava.lavademo/android.app.Nat
 
 To dump the logs:
 ```
-export PID=`adb shell ps | grep net.prideout.lava.lavademo | tr -s [:space:] ' ' | cut -d' ' -f2` ;\
+export PID=`adb shell ps | grep net.prideout.lava.lavademo | tr -s [:space:] ' ' | cut -d' ' -f2`
 adb logcat | grep -F $PID
 ```
 

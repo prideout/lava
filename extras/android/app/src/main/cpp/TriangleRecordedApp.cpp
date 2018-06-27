@@ -21,9 +21,33 @@ namespace {
     layout(location=0) out vec4 vert_color;
     layout(binding = 0) uniform MatrixBlock {
         mat4 transform;
-    };
+    } matrixBlock;
+
+    mat4 getWorldFromModelMatrix() {
+        return matrixBlock.transform;
+    }
+
+    vec4 getSkinnedPosition() {
+        vec4 pos = vec4(position, 0, 1);
+        return pos;
+    }
+
+    vec4 mulMat4x4Float3(const mat4 m, const vec3 v) {
+        return v.x * m[0] + (v.y * m[1] + (v.z * m[2] + m[3]));
+    }
+
+    vec4 computeWorldPosition() {
+        return mulMat4x4Float3(getWorldFromModelMatrix(), getSkinnedPosition().xyz);
+    }
+
+    vec4 computeWorldPosition_WORKAROUND() {
+        mat4 m = getWorldFromModelMatrix();
+        vec3 v = getSkinnedPosition().xyz;
+        return mulMat4x4Float3(m, v);
+    }
+
     void main() {
-        gl_Position = transform * vec4(position, 0, 1);
+        gl_Position = computeWorldPosition();
         vert_color = color;
     })GLSL";
 

@@ -16,6 +16,7 @@ struct LavaCpuBufferImpl : LavaCpuBuffer {
     VkBuffer buffer;
     VmaAllocation memory;
     VmaAllocator vma;
+    uint32_t size;
 };
 
 LAVA_DEFINE_UPCAST(LavaCpuBuffer)
@@ -41,6 +42,7 @@ LavaCpuBufferImpl::LavaCpuBufferImpl(Config config) noexcept : device(config.dev
         .size = config.size,
         .usage = config.usage
     };
+    size = config.size;
     VmaAllocationCreateInfo allocInfo { .usage = VMA_MEMORY_USAGE_CPU_TO_GPU };
     vmaCreateBuffer(vma, &bufferInfo, &allocInfo, &buffer, &memory, nullptr);
     if (config.source) {
@@ -51,6 +53,7 @@ LavaCpuBufferImpl::LavaCpuBufferImpl(Config config) noexcept : device(config.dev
 void LavaCpuBuffer::setData(void const* sourceData, uint32_t bytesToCopy, uint32_t offset)
         noexcept {
     auto impl = upcast(this);
+    LOG_CHECK(offset + bytesToCopy <= impl->size, "Out of bounds upload.");
     uint8_t* mappedData;
     vmaMapMemory(impl->vma, impl->memory, (void**) &mappedData);
     memcpy(mappedData + offset, sourceData, bytesToCopy);

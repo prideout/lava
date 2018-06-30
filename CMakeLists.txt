@@ -33,13 +33,16 @@ set(LAVA_SOURCE
     src/LavaInternal.cpp
     src/LavaLoader.cpp
     src/LavaLog.cpp
+    src/LavaSurfCache.cpp
     src/LavaPipeCache.cpp
     src/LavaTexture.cpp)
 
-set(AMBER_SOURCE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/AmberMain.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/AmberCompiler.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/AmberProgram.cpp PARENT_SCOPE)
+if(AMBER_REQUIRED)
+    set(AMBER_SOURCE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/AmberMain.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/AmberCompiler.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/AmberProgram.cpp PARENT_SCOPE)
+endif()
 
 add_library(lava STATIC ${LAVA_SOURCE})
 

@@ -17,9 +17,15 @@ span > ul > li > a:first-of-type {
     font-weight: bold;
 }
 
+.md ul:first-of-type em.asterisk {
+    font-weight: 300;
+    font-style: normal;
+    color: gray;
+}
+
 .md ul:first-of-type li li {
     list-style-type: none;
-    padding-left:30px;
+    padding-left: 30px;
 }
 
 .md .gotop {

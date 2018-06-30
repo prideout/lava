@@ -45,7 +45,8 @@ endforeach()
 ## Build Mobile-friendly Amber demos.
 
 set(AMBER_DEMOS
-    0b_shadertoy)
+    0b_shadertoy
+    0c_framebuffer)
 
 foreach(DEMO ${AMBER_DEMOS})
     add_executable(${DEMO} ${DEMO}.cpp ${AMBER_SOURCE} ../src/AmberMain.cpp)

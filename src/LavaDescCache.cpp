@@ -313,6 +313,7 @@ void LavaDescCache::releaseUnused(uint64_t milliseconds) noexcept {
     auto& cache = impl->cache;
     for (decltype(impl->cache)::const_iterator iter = cache.begin(); iter != cache.end();) {
         if (iter->second.timestamp < expiration) {
+            vkFreeDescriptorSets(impl->device, impl->descriptorPool, 1, &iter->second.handle);
             iter = cache.erase(iter);
         } else {
             ++iter;

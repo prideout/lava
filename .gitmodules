@@ -15,4 +15,4 @@
 	url = https://github.com/syoyo/tinyobjloader
 [submodule "extras/SimpleFileWatcher"]
 	path = extras/SimpleFileWatcher
-	url = https://github.com/prideout/SimpleFileWatcher.git
+	url = https://github.com/skogler/SimpleFileWatcher.git

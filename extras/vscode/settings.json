@@ -38,7 +38,8 @@
         "ios": "cpp",
         "__locale": "cpp",
         "iosfwd": "cpp",
-        "__string": "cpp"
+        "__string": "cpp",
+        "regex": "cpp"
     },
     "files.exclude": {
         "include/spdlog": true,

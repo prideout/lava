@@ -26,20 +26,20 @@ public:
         uint32_t height;
         VkFormat format;
     };
-    Attachment const* createAttachment(uint32_t width, uint32_t height, VkFormat) const noexcept;
+    Attachment const* createColorAttachment(uint32_t w, uint32_t h, VkFormat) const noexcept;
     void finalizeAttachment(Attachment const* attachment, VkCommandBuffer cmdbuf) const noexcept;
     void freeAttachment(Attachment const* attachment) const noexcept;
 
     struct Params {
-        Attachment* color;
-        Attachment* depth;
-        float clearColor[4];
+        Attachment const* color;
+        Attachment const* depth;
+        VkClearValue clearValue;
         bool discardColor;
         bool discardDepth;
         float clearDepth;
     };
     VkFramebuffer getFramebuffer(const Params& params) noexcept;
-    VkRenderPass getRenderPass(const Params& params) noexcept;
+    VkRenderPass getRenderPass(const Params& params, VkRenderPassBeginInfo* = nullptr) noexcept;
 
     // Evicts objects that were last retrieved more than N milliseconds ago.
     void releaseUnused(uint64_t milliseconds) noexcept;
@@ -49,5 +49,7 @@ protected:
     LavaSurfCache(LavaSurfCache const&) = delete;
     LavaSurfCache& operator=(LavaSurfCache const&) = delete;
 };
+
+using LavaSurface = LavaSurfCache::Params;
 
 }

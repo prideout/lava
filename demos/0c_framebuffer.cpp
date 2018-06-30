@@ -44,6 +44,8 @@ struct FramebufferApp : AmberApplication {
     LavaRecording* mRecording;
     LavaPipeCache* mPipelines;
     LavaDescCache* mDescriptors;
+    LavaSurfCache* mSurfaces;
+    LavaSurface mOffscreenSurface;
     LavaCpuBuffer* mUniforms[2];
     VkExtent2D mResolution;
 };
@@ -63,6 +65,12 @@ FramebufferApp::FramebufferApp(SurfaceFn createSurface) {
     llog.info("Surface size: {}x{}", extent.width, extent.height);
     mResolution = extent;
 
+    // Create offscreen surface.
+    mSurfaces = LavaSurfCache::create({ .device = device, .gpu = gpu });
+    mOffscreenSurface = {
+        .color = mSurfaces->createColorAttachment(512, 512, VK_FORMAT_R8G8B8A8_UNORM)
+    };
+
     // Begin populating a vertex buffer.
     mVertexBuffer = LavaGpuBuffer::create({
         .device = device, .gpu = gpu,
@@ -77,10 +85,10 @@ FramebufferApp::FramebufferApp(SurfaceFn createSurface) {
     VkCommandBuffer cmdbuffer = mContext->beginWork();
     const VkBufferCopy region = { .size = sizeof(TRIANGLE_VERTICES) };
     vkCmdCopyBuffer(cmdbuffer, stage->getBuffer(), mVertexBuffer->getBuffer(), 1, &region);
+    mSurfaces->finalizeAttachment(mOffscreenSurface.color, cmdbuffer);
     mContext->endWork();
 
     // Compile shaders.
-
     auto make_program = [device](string vshader, string fshader) {
         const string vs = AmberProgram::getChunk(__FILE__, vshader);
         const string fs = AmberProgram::getChunk(__FILE__, fshader);
@@ -91,7 +99,6 @@ FramebufferApp::FramebufferApp(SurfaceFn createSurface) {
         }
         return ptr;
     };
-
     mProgram = make_program("shadertoy.vs", "shadertoy.fs");
     if (!mProgram) {
         terminate();
@@ -182,6 +189,8 @@ FramebufferApp::FramebufferApp(SurfaceFn createSurface) {
 FramebufferApp::~FramebufferApp() {
     mContext->waitRecording(mRecording);
     mContext->freeRecording(mRecording);
+    mSurfaces->freeAttachment(mOffscreenSurface.color);
+    delete mSurfaces;
     delete mUniforms[0];
     delete mUniforms[1];
     delete mDescriptors;

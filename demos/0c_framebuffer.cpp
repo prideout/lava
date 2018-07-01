@@ -44,10 +44,10 @@ struct FramebufferApp : AmberApplication {
     LavaRecording* mRecording;
     LavaPipeCache* mPipelines;
     LavaDescCache* mDescriptors;
-    LavaSurfCache* mSurfaces;
-    LavaSurface mOffscreenSurface;
     LavaCpuBuffer* mUniforms[2];
     VkExtent2D mResolution;
+    LavaSurfCache* mSurfaces;
+    LavaSurface mOffscreenSurface;
 };
 
 } // anonymous namespace
@@ -66,7 +66,7 @@ FramebufferApp::FramebufferApp(SurfaceFn createSurface) {
     mResolution = extent;
 
     // Create offscreen surface.
-    mSurfaces = LavaSurfCache::create({ .device = device, .gpu = gpu });
+    mSurfaces = LavaSurfCache::create(LavaSurfCache::Config { .device = device, .gpu = gpu });
     mOffscreenSurface = {
         .color = mSurfaces->createColorAttachment(512, 512, VK_FORMAT_R8G8B8A8_UNORM)
     };
@@ -150,30 +150,32 @@ FramebufferApp::FramebufferApp(SurfaceFn createSurface) {
     delete stage;
 
     // Fill in some structs that will be used when rendering.
-    const VkClearValue clearValue = { .color.float32 = {} };
     const VkViewport viewport = {
         .width = (float) extent.width, .height = (float) extent.height
     };
     const VkRect2D scissor { .extent = extent };
     const VkBuffer buffer[] = { mVertexBuffer->getBuffer() };
     const VkDeviceSize offsets[] = { 0 };
+    VkRenderPassBeginInfo offscreenRpbi;
 
     // Record two command buffers.
     mRecording = mContext->createRecording();
     for (uint32_t i = 0; i < 2; i++) {
-        const VkRenderPassBeginInfo rpbi {
-            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .framebuffer = mContext->getFramebuffer(i),
-            .renderPass = renderPass,
-            .renderArea.extent = extent,
-            .pClearValues = &clearValue,
-            .clearValueCount = 1
-        };
         mDescriptors->setUniformBuffer(0, mUniforms[i]->getBuffer());
         const VkDescriptorSet dset = mDescriptors->getDescriptor();
-
         const VkCommandBuffer cmdbuffer = mContext->beginRecording(mRecording, i);
-        vkCmdBeginRenderPass(cmdbuffer, &rpbi, VK_SUBPASS_CONTENTS_INLINE);
+
+        VkFramebuffer fb = mSurfaces->getFramebuffer(mOffscreenSurface);
+        VkRenderPass rp = mSurfaces->getRenderPass(mOffscreenSurface, &offscreenRpbi);
+        vkCmdBeginRenderPass(cmdbuffer, &offscreenRpbi, VK_SUBPASS_CONTENTS_INLINE);
+        // vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        // vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
+        // vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
+        //         &dset, 0, 0);
+        // vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
+        vkCmdEndRenderPass(cmdbuffer);
+
+        vkCmdBeginRenderPass(cmdbuffer, mContext->getBeginInfo(i), VK_SUBPASS_CONTENTS_INLINE);
         vkCmdSetViewport(cmdbuffer, 0, 1, &viewport);
         vkCmdSetScissor(cmdbuffer, 0, 1, &scissor);
         vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);

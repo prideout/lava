@@ -49,6 +49,7 @@ struct SwapchainBundle {
     VkImageView view;
     VkFramebuffer framebuffer;
     VkFence fence;
+    VkRenderPassBeginInfo rpbi;
 };
 
 struct ImageBundle {
@@ -97,6 +98,7 @@ struct LavaContextImpl : LavaContext {
     uint32_t mCurrentSwapIndex = ~0u;
     LavaRecording* mCurrentRecording {};
     VkDebugReportCallbackEXT mDebugCallback {};
+    VkClearValue mClearValue {};
     const Config mConfig;
 };
 
@@ -460,6 +462,24 @@ void LavaContextImpl::initDevice(VkSurfaceKHR surface) noexcept {
     } else {
         initMultisampledFramebuffers();
     }
+
+    mSwap[0].rpbi = {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = mRenderPass,
+        .framebuffer = mSwap[0].framebuffer,
+        .renderArea.extent = mExtent,
+        .pClearValues = &mClearValue,
+        .clearValueCount = 1
+    };
+
+    mSwap[1].rpbi = {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = mRenderPass,
+        .framebuffer = mSwap[1].framebuffer,
+        .renderArea.extent = mExtent,
+        .pClearValues = &mClearValue,
+        .clearValueCount = 1
+    };
 
     // Create a fence for each command buffer.
     vkCreateFence(mDevice, &fenceInfo, VKALLOC, &mSwap[0].fence);
@@ -835,6 +855,10 @@ VkImageView LavaContext::getImageView(uint32_t i) const noexcept {
 
 VkFramebuffer LavaContext::getFramebuffer(uint32_t i) const noexcept {
     return upcast(this)->mSwap[i].framebuffer;
+}
+
+VkRenderPassBeginInfo const* LavaContext::getBeginInfo(uint32_t i) const noexcept {
+    return &upcast(this)->mSwap[i].rpbi;
 }
 
 void LavaContext::waitFrame(int n) noexcept {

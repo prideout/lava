@@ -66,6 +66,7 @@ public:
     VkImage getImage(uint32_t i = 0) const noexcept;
     VkImageView getImageView(uint32_t i = 0) const noexcept;
     VkFramebuffer getFramebuffer(uint32_t i = 0) const noexcept;
+    VkRenderPassBeginInfo const* getBeginInfo(uint32_t i = 0) const noexcept;
 
 protected:
     LavaContext() noexcept = default;

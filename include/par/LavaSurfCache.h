@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <vector>
-
 #include <vulkan/vulkan.h>
 
 namespace par {
@@ -12,12 +10,28 @@ namespace par {
 // Creates offscreen rendering surfaces, manages a cache of VkFramebuffer and VkRenderPass.
 class LavaSurfCache {
 public:
+    struct Config;
+    struct Attachment;
+    struct Params;
+
+    // Construction / Destruction.
+    static LavaSurfCache* create(const Config& config) noexcept;
+    static void operator delete(void* );
+
+    // Factory functions for VkImage / VkImageLayout.
+    Attachment const* createColorAttachment(uint32_t w, uint32_t h, VkFormat) const noexcept;
+    void finalizeAttachment(Attachment const* attachment, VkCommandBuffer cmdbuf) const noexcept;
+    void freeAttachment(Attachment const* attachment) const noexcept;
+
+    // Cache retrieval / creation / eviction.
+    VkFramebuffer getFramebuffer(const Params& params) noexcept;
+    VkRenderPass getRenderPass(const Params& params, VkRenderPassBeginInfo* = nullptr) noexcept;
+    void releaseUnused(uint64_t milliseconds) noexcept;
+
     struct Config {
         VkDevice device;
         VkPhysicalDevice gpu;
     };
-    static LavaSurfCache* create(Config config) noexcept;
-    static void operator delete(void* );
 
     struct Attachment {
         VkImage image;
@@ -26,9 +40,6 @@ public:
         uint32_t height;
         VkFormat format;
     };
-    Attachment const* createColorAttachment(uint32_t w, uint32_t h, VkFormat) const noexcept;
-    void finalizeAttachment(Attachment const* attachment, VkCommandBuffer cmdbuf) const noexcept;
-    void freeAttachment(Attachment const* attachment) const noexcept;
 
     struct Params {
         Attachment const* color;
@@ -38,11 +49,6 @@ public:
         bool discardDepth;
         float clearDepth;
     };
-    VkFramebuffer getFramebuffer(const Params& params) noexcept;
-    VkRenderPass getRenderPass(const Params& params, VkRenderPassBeginInfo* = nullptr) noexcept;
-
-    // Evicts objects that were last retrieved more than N milliseconds ago.
-    void releaseUnused(uint64_t milliseconds) noexcept;
 
 protected:
     LavaSurfCache() noexcept = default;

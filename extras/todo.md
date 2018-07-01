@@ -6,11 +6,8 @@
 
     Refactor all or some non-android demos (keep their file names though)
 
-# Demos README should be a table
-
 # LavaContext
 
-    expose a pointer to VkRenderPassBeginInfo for convenience.
     recording API should take a callback instead of begin / end
 
 # LavaCpuBuffer

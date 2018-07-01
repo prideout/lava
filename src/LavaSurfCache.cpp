@@ -25,8 +25,8 @@ struct AttachmentImpl : LavaSurfCache::Attachment {
 };
 
 struct FbCacheKey {
-    LavaSurfCache::Attachment* color;
-    LavaSurfCache::Attachment* depth;
+    LavaSurfCache::Attachment const* color;
+    LavaSurfCache::Attachment const* depth;
 };
 
 struct FbCacheVal {
@@ -74,7 +74,7 @@ LAVA_DEFINE_UPCAST(LavaSurfCache)
 
 } // anonymous namespace
 
-LavaSurfCache* LavaSurfCache::create(Config config) noexcept {
+LavaSurfCache* LavaSurfCache::create(const Config& config) noexcept {
     auto impl = new LavaSurfCacheImpl;
     impl->device = config.device;
     impl->vma = getVma(config.device, config.gpu);
@@ -154,7 +154,41 @@ void LavaSurfCache::freeAttachment(Attachment const* attachment) const noexcept 
 }
 
 VkFramebuffer LavaSurfCache::getFramebuffer(const Params& params) noexcept {
-    return {};
+    assert(params.color && !params.depth && "Not yet implemented.");
+    const uint32_t width = params.color ? params.color->width : params.depth->width;
+    const uint32_t height = params.color ? params.color->height : params.depth->height;
+    auto impl = upcast(this);
+    const FbCacheKey key {
+        .color = params.color,
+        .depth = params.depth,
+    };
+    auto iter = impl->fbcache.find(key);
+    if (iter != impl->fbcache.end()) {
+        FbCacheVal* val = (FbCacheVal*) &(iter->second);
+        val->timestamp = getCurrentTime();
+        return val->handle;
+    }
+    VkImageView attachments[2];
+    uint32_t nattachments = 0;
+    if (params.color) {
+        attachments[nattachments++] = params.color->imageView;
+    }
+    if (params.depth) {
+        attachments[nattachments++] = params.depth->imageView;
+    }
+    VkFramebufferCreateInfo info {
+        .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+        .renderPass = getRenderPass(params, nullptr),
+        .width = width,
+        .height = height,
+        .layers = 1,
+        .attachmentCount = nattachments,
+        .pAttachments = attachments
+    };
+    VkFramebuffer framebuffer;
+    vkCreateFramebuffer(impl->device, &info, VKALLOC, &framebuffer);
+    impl->fbcache.emplace(make_pair(key, FbCacheVal {framebuffer, getCurrentTime()}));
+    return framebuffer;
 }
 
 VkRenderPass LavaSurfCache::getRenderPass(const Params& params, VkRenderPassBeginInfo* rpbi)

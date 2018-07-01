@@ -66,4 +66,6 @@ protected:
     LavaPipeCache& operator=(LavaPipeCache const&) = delete;
 };
 
+using LavaVertex = LavaPipeCache::VertexState;
+
 }

@@ -6,10 +6,6 @@
 
     Refactor all or some non-android demos (keep their file names though)
 
-# LavaContext
-
-    recording API should take a callback instead of begin / end
-
 # LavaCpuBuffer
 
     remove setData in favor of persistent mapping

@@ -12,7 +12,8 @@ public:
     struct Config {
         VkDevice device;
         VkPhysicalDevice gpu;
-        uint32_t size;
+        uint32_t size;      // Size of the upload in bytes.
+        uint32_t capacity;  // Optional capacity, must be 0 or greater than "size".
         void const* source; // if non-null, triggers a memcpy during construction
         VkBufferUsageFlags usage;
     };    
@@ -23,7 +24,6 @@ public:
             uint32_t offset = 0) noexcept;
 protected:
     LavaCpuBuffer() noexcept = default;
-    // par::noncopyable
     LavaCpuBuffer(LavaCpuBuffer const&) = delete;
     LavaCpuBuffer& operator=(LavaCpuBuffer const&) = delete;
 };

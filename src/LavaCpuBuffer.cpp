@@ -39,7 +39,7 @@ LavaCpuBufferImpl::LavaCpuBufferImpl(Config config) noexcept : device(config.dev
     vma = getVma(config.device, config.gpu);
     VkBufferCreateInfo bufferInfo {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .size = config.size,
+        .size = config.capacity ? config.capacity : config.size,
         .usage = config.usage
     };
     size = config.size;

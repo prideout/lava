@@ -94,21 +94,22 @@ void LavaSurfCache::operator delete(void* ptr) {
 }
 
 LavaSurfCache::Attachment const* LavaSurfCache::createColorAttachment(
-        uint32_t width, uint32_t height, VkFormat format) const noexcept {
+        const AttachmentConfig& config) const noexcept {
     auto impl = upcast(this);
     AttachmentImpl* attach = new AttachmentImpl();
-    attach->width = width;
-    attach->height = height;
-    attach->format = format;
+    attach->width = config.width;
+    attach->height = config.height;
+    attach->format = config.format;
     attach->type = COLOR;
     VkImageCreateInfo imageInfo {
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .imageType = VK_IMAGE_TYPE_2D,
-        .extent = {width, height, 1},
-        .format = format,
+        .extent = {config.width, config.height, 1},
+        .format = config.format,
         .mipLevels = 1,
         .arrayLayers = 1,
-        .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
+                (config.enableUpload ? VK_IMAGE_USAGE_TRANSFER_DST_BIT : VkImageUsageFlags {}),
         .samples = VK_SAMPLE_COUNT_1_BIT,
     };
     VmaAllocationCreateInfo allocInfo { .usage = VMA_MEMORY_USAGE_GPU_ONLY };
@@ -117,7 +118,7 @@ LavaSurfCache::Attachment const* LavaSurfCache::createColorAttachment(
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .image = attach->image,
         .viewType = VK_IMAGE_VIEW_TYPE_2D,
-        .format = format,
+        .format = config.format,
         .subresourceRange = {
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
             .levelCount = 1,
@@ -143,6 +144,61 @@ void LavaSurfCache::finalizeAttachment(Attachment const* attachment,
     };
     vkCmdPipelineBarrier(cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+}
+
+void LavaSurfCache::finalizeAttachment(Attachment const* attachment, VkCommandBuffer cmdbuf,
+        VkBuffer srcbuf, uint32_t nbytes) const noexcept {
+    const int miplevel = 0;
+    VkImageMemoryBarrier barrier1 {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .image = attachment->image,
+        .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .subresourceRange = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = miplevel,
+            .levelCount = 1,
+            .layerCount = 1,
+        },
+        .srcAccessMask = 0,
+        .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT
+    };
+    VkBufferImageCopy upload {
+        .imageSubresource = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel = miplevel,
+            .layerCount = 1,
+        },
+        .imageExtent = {
+            .width = attachment->width >> miplevel,
+            .height = attachment->height >> miplevel,
+            .depth = 1,
+        }
+    };
+    VkImageMemoryBarrier barrier2 {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .image = attachment->image,
+        .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .subresourceRange = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = miplevel,
+            .levelCount = 1,
+            .layerCount = 1,
+        },
+        .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT
+    };
+    vkCmdPipelineBarrier(cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier1);
+    vkCmdCopyBufferToImage(cmdbuf, srcbuf, attachment->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1, &upload);
+    vkCmdPipelineBarrier(cmdbuf, VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier2);
 }
 
 void LavaSurfCache::freeAttachment(Attachment const* attachment) const noexcept {

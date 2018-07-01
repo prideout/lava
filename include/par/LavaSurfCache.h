@@ -13,14 +13,17 @@ public:
     struct Config;
     struct Attachment;
     struct Params;
+    struct AttachmentConfig;
 
     // Construction / Destruction.
     static LavaSurfCache* create(const Config& config) noexcept;
     static void operator delete(void* );
 
     // Factory functions for VkImage / VkImageLayout.
-    Attachment const* createColorAttachment(uint32_t w, uint32_t h, VkFormat) const noexcept;
+    Attachment const* createColorAttachment(const AttachmentConfig& config) const noexcept;
     void finalizeAttachment(Attachment const* attachment, VkCommandBuffer cmdbuf) const noexcept;
+    void finalizeAttachment(Attachment const* attachment, VkCommandBuffer cmdbuf,
+            VkBuffer srcData, uint32_t nbytes) const noexcept;
     void freeAttachment(Attachment const* attachment) const noexcept;
 
     // Cache retrieval / creation / eviction.
@@ -31,6 +34,13 @@ public:
     struct Config {
         VkDevice device;
         VkPhysicalDevice gpu;
+    };
+
+    struct AttachmentConfig {
+        uint32_t width;
+        uint32_t height;
+        VkFormat format;
+        bool enableUpload;
     };
 
     struct Attachment {

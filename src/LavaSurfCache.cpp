@@ -108,7 +108,7 @@ LavaSurfCache::Attachment const* LavaSurfCache::createColorAttachment(
         .format = format,
         .mipLevels = 1,
         .arrayLayers = 1,
-        .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         .samples = VK_SAMPLE_COUNT_1_BIT,
     };
     VmaAllocationCreateInfo allocInfo { .usage = VMA_MEMORY_USAGE_GPU_ONLY };
@@ -231,7 +231,7 @@ VkRenderPass LavaSurfCache::getRenderPass(const Params& params, VkRenderPassBegi
          .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
          .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
          .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-         .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+         .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     });
     const VkAttachmentReference colorref {
         .attachment = 0,

@@ -39,7 +39,8 @@ struct FramebufferApp : AmberApplication {
     ~FramebufferApp();
     void draw(double seconds) override;
     LavaContext* mContext;
-    AmberProgram* mProgram;
+    AmberProgram* mOffscreenProgram;
+    AmberProgram* mBackbufferProgram;
     LavaGpuBuffer* mVertexBuffer;
     LavaRecording* mRecording;
     LavaPipeCache* mPipelines;
@@ -48,6 +49,7 @@ struct FramebufferApp : AmberApplication {
     VkExtent2D mResolution;
     LavaSurfCache* mSurfaces;
     LavaSurface mOffscreenSurface;
+    VkSampler mSampler;
 };
 
 } // anonymous namespace
@@ -99,10 +101,8 @@ FramebufferApp::FramebufferApp(SurfaceFn createSurface) {
         }
         return ptr;
     };
-    mProgram = make_program("shadertoy.vs", "shadertoy.fs");
-    if (!mProgram) {
-        terminate();
-    }
+    mOffscreenProgram = make_program("shadertoy.vs", "shadertoy.fs");
+    mBackbufferProgram = make_program("backbuffer.vs", "backbuffer.fs");
 
     // Create the double-buffered UBO.
     LavaCpuBuffer::Config cfg {
@@ -112,9 +112,24 @@ FramebufferApp::FramebufferApp(SurfaceFn createSurface) {
     mUniforms[0] = LavaCpuBuffer::create(cfg);
     mUniforms[1] = LavaCpuBuffer::create(cfg);
 
+    // Create the sampler.
+    VkSamplerCreateInfo samplerInfo {
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .minFilter = VK_FILTER_LINEAR,
+        .magFilter = VK_FILTER_LINEAR,
+        .mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+        .minLod = 0.0f,
+        .maxLod = 0.25f
+    };
+    vkCreateSampler(device, &samplerInfo, 0, &mSampler);
+
     // Create the descriptor set.
     mDescriptors = LavaDescCache::create({
-        .device = device, .uniformBuffers = { 0 }, .imageSamplers = {}
+        .device = device, .uniformBuffers = { 0 }, .imageSamplers = { {
+            .sampler = mSampler,
+            .imageView = mOffscreenSurface.color->imageView,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        } }
     });
     const VkDescriptorSetLayout dlayout = mDescriptors->getLayout();
 
@@ -122,7 +137,8 @@ FramebufferApp::FramebufferApp(SurfaceFn createSurface) {
     static_assert(sizeof(Vertex) == 12, "Unexpected vertex size.");
     mPipelines = LavaPipeCache::create({
         .device = device, .descriptorLayouts = { dlayout }, .renderPass = renderPass,
-        .vshader = mProgram->getVertexShader(), .fshader = mProgram->getFragmentShader(),
+        .vshader = VK_NULL_HANDLE,
+        .fshader = VK_NULL_HANDLE,
         .vertex = {
             .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
             .attributes = { {
@@ -142,7 +158,6 @@ FramebufferApp::FramebufferApp(SurfaceFn createSurface) {
             } }
         }
     });
-    VkPipeline pipeline = mPipelines->getPipeline();
     VkPipelineLayout playout = mPipelines->getLayout();
 
     // Finish populating the vertex buffer.
@@ -161,29 +176,38 @@ FramebufferApp::FramebufferApp(SurfaceFn createSurface) {
     // Record two command buffers.
     mRecording = mContext->createRecording();
     for (uint32_t i = 0; i < 2; i++) {
-        mDescriptors->setUniformBuffer(0, mUniforms[i]->getBuffer());
-        const VkDescriptorSet dset = mDescriptors->getDescriptor();
         const VkCommandBuffer cmdbuffer = mContext->beginRecording(mRecording, i);
 
-        VkFramebuffer fb = mSurfaces->getFramebuffer(mOffscreenSurface);
-        VkRenderPass rp = mSurfaces->getRenderPass(mOffscreenSurface, &offscreenRpbi);
-        vkCmdBeginRenderPass(cmdbuffer, &offscreenRpbi, VK_SUBPASS_CONTENTS_INLINE);
-        // vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-        // vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
-        // vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
-        //         &dset, 0, 0);
-        // vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
-        vkCmdEndRenderPass(cmdbuffer);
+        mDescriptors->setUniformBuffer(0, mUniforms[i]->getBuffer());
+        mSurfaces->getRenderPass(mOffscreenSurface, &offscreenRpbi);
+        mPipelines->setRenderPass(offscreenRpbi.renderPass);
+        mPipelines->setVertexShader(mOffscreenProgram->getVertexShader());
+        mPipelines->setFragmentShader(mOffscreenProgram->getFragmentShader());
 
-        vkCmdBeginRenderPass(cmdbuffer, mContext->getBeginInfo(i), VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(cmdbuffer, &offscreenRpbi, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelines->getPipeline());
         vkCmdSetViewport(cmdbuffer, 0, 1, &viewport);
         vkCmdSetScissor(cmdbuffer, 0, 1, &scissor);
-        vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
         vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
-                &dset, 0, 0);
+                mDescriptors->getDescPointer(), 0, 0);
         vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
         vkCmdEndRenderPass(cmdbuffer);
+
+        mPipelines->setRenderPass(renderPass);
+        mPipelines->setVertexShader(mBackbufferProgram->getVertexShader());
+        mPipelines->setFragmentShader(mBackbufferProgram->getFragmentShader());
+
+        vkCmdBeginRenderPass(cmdbuffer, mContext->getBeginInfo(i), VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelines->getPipeline());
+        vkCmdSetViewport(cmdbuffer, 0, 1, &viewport);
+        vkCmdSetScissor(cmdbuffer, 0, 1, &scissor);
+        vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
+        vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
+                mDescriptors->getDescPointer(), 0, 0);
+        vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
+        vkCmdEndRenderPass(cmdbuffer);
+
         mContext->endRecording();
     }
 }
@@ -192,19 +216,21 @@ FramebufferApp::~FramebufferApp() {
     mContext->waitRecording(mRecording);
     mContext->freeRecording(mRecording);
     mSurfaces->freeAttachment(mOffscreenSurface.color);
+    vkDestroySampler(mContext->getDevice(), mSampler, 0);
     delete mSurfaces;
     delete mUniforms[0];
     delete mUniforms[1];
     delete mDescriptors;
     delete mPipelines;
-    delete mProgram;
+    delete mOffscreenProgram;
+    delete mBackbufferProgram;
     delete mVertexBuffer;
     delete mContext;
 }
 
 void FramebufferApp::draw(double time) {
     Uniforms uniforms {
-        .iResolution = {1794, 1080, 0, 0},
+        .iResolution = {1200, 1200, 0, 0},
         .iTime = (float) time
     };
     mUniforms[0]->setData(&uniforms, sizeof(uniforms));
@@ -225,6 +251,24 @@ static AmberApplication::Register app("framebuffer", [] (AmberApplication::Surfa
 });
 
 #if 0
+-- backbuffer.vs -----------------------------------------------------------------------------------
+
+layout(location=0) in vec2 position;
+layout(location=0) out highp vec2 vert_texcoord;
+void main() {
+    gl_Position = vec4(position, 0, 1);
+    vert_texcoord = position.xy;
+}
+
+-- backbuffer.fs -----------------------------------------------------------------------------------
+
+layout(location = 0) out vec4 frag_color;
+layout(location = 0) in vec2 vert_texcoord;
+layout(binding = 1) uniform sampler2D img;
+void main() {
+    frag_color = texture(img, vert_texcoord);
+}
+
 -- shadertoy.vs ------------------------------------------------------------------------------------
 
 layout(location=0) in vec2 position;
@@ -251,49 +295,6 @@ layout(binding = 0) uniform ParamsBlock {
 layout(location=0) out lowp vec4 frag_color;
 layout(location=0) in highp vec2 vert_texcoord;
 
-//////////////////////////////////////
-// Combine distance field functions //
-//////////////////////////////////////
-
-float smoothMerge(float d1, float d2, float k) {
-    float h = clamp(0.5 + 0.5*(d2 - d1)/k, 0.0, 1.0);
-    return mix(d2, d1, h) - k * h * (1.0-h);
-}
-
-float merge(float d1, float d2) {
-	return min(d1, d2);
-}
-
-float mergeExclude(float d1, float d2) {
-	return min(max(-d1, d2), max(-d2, d1));
-}
-
-float substract(float d1, float d2) {
-	return max(-d1, d2);
-}
-
-float intersect(float d1, float d2) {
-	return max(d1, d2);
-}
-
-//////////////////////////////
-// Rotation and translation //
-//////////////////////////////
-
-vec2 rotateCCW(vec2 p, float a) {
-	mat2 m = mat2(cos(a), sin(a), -sin(a), cos(a));
-	return p * m;	
-}
-
-vec2 rotateCW(vec2 p, float a) {
-	mat2 m = mat2(cos(a), -sin(a), sin(a), cos(a));
-	return p * m;
-}
-
-vec2 translate(vec2 p, vec2 t) {
-	return p - t;
-}
-
 //////////////////////////////
 // Distance field functions //
 //////////////////////////////
@@ -317,13 +318,6 @@ float triangleDist(vec2 p, float radius) {
 float triangleDist(vec2 p, float width, float height) {
 	vec2 n = normalize(vec2(height, width / 2.0));
 	return max(	abs(p).x*n.x + p.y*n.y - (height*n.y), -p.y);
-}
-
-float semiCircleDist(vec2 p, float radius, float angle, float width) {
-	width /= 2.0;
-	radius -= width;
-	return substract(pie(p, angle), 
-					 abs(circleDist(p, radius)) - width);
 }
 
 float boxDist(vec2 p, vec2 size, float radius) {
@@ -350,14 +344,12 @@ float fillMask(float dist) {
 }
 
 float innerBorderMask(float dist, float width) {
-	//dist += 1.0;
 	float alpha1 = clamp(dist + width, 0.0, 1.0);
 	float alpha2 = clamp(dist, 0.0, 1.0);
 	return alpha1 - alpha2;
 }
 
 float outerBorderMask(float dist, float width) {
-	//dist += 1.0;
 	float alpha1 = clamp(dist, 0.0, 1.0);
 	float alpha2 = clamp(dist - width, 0.0, 1.0);
 	return alpha1 - alpha2;
@@ -368,53 +360,7 @@ float outerBorderMask(float dist, float width) {
 ///////////////
 
 float sceneDist(vec2 p) {
-	float c = circleDist(		translate(p, vec2(100, 250)), 40.0);
-	float b1 =  boxDist(		translate(p, vec2(200, 250)), vec2(40, 40), 	0.0);
-	float b2 =  boxDist(		translate(p, vec2(300, 250)), vec2(40, 40), 	10.0);
-	float l = lineDist(			p, 			 vec2(370, 220),  vec2(430, 280),	10.0);
-	float t1 = triangleDist(	translate(p, vec2(500, 210)), 80.0, 			80.0);
-	float t2 = triangleDist(	rotateCW(translate(p, vec2(600, 250)), iTime), 40.0);
-	
-	float m = 	merge(c, b1);
-	m = 		merge(m, b2);
-	m = 		merge(m, l);
-	m = 		merge(m, t1);
-	m = 		merge(m, t2);
-	
-	float b3 = boxDist(		translate(p, vec2(100, sin(iTime * 3.0 + 1.0) * 40.0 + 100.0)), 
-					   		vec2(40, 15), 	0.0);
-	float c2 = circleDist(	translate(p, vec2(100, 100)),	30.0);
-	float s = substract(b3, c2);
-	
-	float b4 = boxDist(		translate(p, vec2(200, sin(iTime * 3.0 + 2.0) * 40.0 + 100.0)), 
-					   		vec2(40, 15), 	0.0);
-	float c3 = circleDist(	translate(p, vec2(200, 100)), 	30.0);
-	float i = intersect(b4, c3);
-	
-	float b5 = boxDist(		translate(p, vec2(300, sin(iTime * 3.0 + 3.0) * 40.0 + 100.0)), 
-					   		vec2(40, 15), 	0.0);
-	float c4 = circleDist(	translate(p, vec2(300, 100)), 	30.0);
-	float a = merge(b5, c4);
-	
-	float b6 = boxDist(		translate(p, vec2(400, 100)),	vec2(40, 15), 	0.0);
-	float c5 = circleDist(	translate(p, vec2(400, 100)), 	30.0);
-	float sm = smoothMerge(b6, c5, 10.0);
-	
-	float sc = semiCircleDist(translate(p, vec2(500,100)), 40.0, 90.0, 10.0);
-    
-    float b7 = boxDist(		translate(p, vec2(600, sin(iTime * 3.0 + 3.0) * 40.0 + 100.0)), 
-					   		vec2(40, 15), 	0.0);
-	float c6 = circleDist(	translate(p, vec2(600, 100)), 	30.0);
-	float e = mergeExclude(b7, c6);
-    
-	m = merge(m, s);
-	m = merge(m, i);
-	m = merge(m, a);
-	m = merge(m, sm);
-	m = merge(m, sc);
-    m = merge(m, e);
-	
-	return m;
+	return circleDist(p, 40.0);
 }
 
 float sceneSmooth(vec2 p, float r) {
@@ -490,39 +436,22 @@ void setLuminance(inout vec4 col, float lum) {
 	col *= lum;
 }
 
-float AO(vec2 p, float dist, float radius, float intensity) {
-	float a = clamp(dist / radius, 0.0, 1.0) - 1.0;
-	return 1.0 - (pow(abs(a), 5.0) + 1.0) * intensity + (1.0 - intensity);
-	return smoothstep(0.0, 1.0, dist / radius);
-}
-
 void main() {
-    vec2 fragCoord = vert_texcoord * iResolution.xy * 0.2 + vec2(340, 180);
-
+    vec2 fragCoord = vert_texcoord * iResolution.xy * 0.2 + vec2(128, 128);
 	vec2 p = fragCoord + 0.5;
 	vec2 c = iResolution.xy / 2.0;
+    float dist = sceneDist(p);
 	
-	float dist = sceneDist(p);
-	
-	vec2 light2Pos = vec2(iResolution.x * (sin(iTime + 3.1415) + 1.2) / 7.0, 175.0);
-	vec4 light2Col = vec4(1.0, 0.75, 0.5, 1.0);
-	setLuminance(light2Col, 0.5);
-	
-	vec2 light3Pos = vec2(iResolution.x * (sin(iTime) + 1.2) / 7.0, 340.0);
-	vec4 light3Col = vec4(0.5, 0.75, 1.0, 1.0);
-	setLuminance(light3Col, 0.6);
-	
+	vec2 light2Pos = vec2(iResolution.x * (sin(3*iTime + 3.1415) + 1.2) / 7.0 - 128.0, 100.0);
+	vec4 light2Col = vec4(1.0, 0.9, 0.8, 1.0);
+	setLuminance(light2Col, 1.0);
+		
 	// gradient
 	vec4 col = vec4(0.5, 0.5, 0.5, 1.0) * (1.0 - length(c - p)/iResolution.x);
-	// grid
-	col *= clamp(min(mod(p.y, 10.0), mod(p.x, 10.0)), 0.9, 1.0);
-	// ambient occlusion
-	col *= AO(p, sceneSmooth(p, 10.0), 40.0, 0.4);
 	// light
 	col += drawLight(p, light2Pos, light2Col, dist, 200.0, 8.0);
-	col += drawLight(p, light3Pos, light3Col, dist, 300.0, 12.0);
 	// shape fill
-	col = mix(col, vec4(1.0, 0.4, 0.0, 1.0), fillMask(dist));
+	col = mix(col, vec4(0.2, 0.4, 0.6, 1.0), fillMask(dist));
 	// shape outline
 	col = mix(col, vec4(0.1, 0.1, 0.1, 1.0), innerBorderMask(dist, 1.5));
 

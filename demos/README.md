@@ -14,3 +14,4 @@ Note that the core Lava library does not have dependencies on GLFW or glslang. *
 | [klein_bottle](08_klein_bottle.cpp)            | Indexed triangles with a depth buffer and MSAA.
 | [particle_system](0a_particle_system.cpp)      | Fun with point sprites.
 | [shadertoy](0b_shadertoy.cpp)                  | Full screen triangle with a complex fragment shader.
+| [framebuffer](0c_framebuffer.cpp)              | Offscreen framebuffer.

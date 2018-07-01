@@ -41,9 +41,8 @@ struct FbCacheVal {
 struct RpCacheKey {
     VkFormat clayout;
     VkFormat dlayout;
-    bool discardColor;
-    bool discardDepth;
-    float clearDepth;
+    VkAttachmentLoadOp colorLoad;
+    VkAttachmentLoadOp depthLoad;
 };
 
 struct RpCacheVal {
@@ -256,15 +255,14 @@ VkRenderPass LavaSurfCache::getRenderPass(const Params& params, VkRenderPassBegi
     const RpCacheKey key {
         .clayout = params.color ? params.color->format : VK_FORMAT_UNDEFINED,
         .dlayout = params.depth ? params.depth->format : VK_FORMAT_UNDEFINED,
-        .discardColor = params.discardColor,
-        .discardDepth = params.discardDepth,
-        .clearDepth = params.clearDepth,
+        .colorLoad = params.colorLoad,
+        .depthLoad = params.depthLoad,
     };
     auto iter = impl->rpcache.find(key);
     VkRenderPassBeginInfo info {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .renderArea.extent = {width, height},
-        .pClearValues = &params.clearValue,
+        .pClearValues = &params.clearColor,
         .clearValueCount = 1
     };
     if (iter != impl->rpcache.end()) {
@@ -278,12 +276,11 @@ VkRenderPass LavaSurfCache::getRenderPass(const Params& params, VkRenderPassBegi
         return val->handle;
 
     }
-    const bool discard = params.discardColor;
     LavaVector<VkAttachmentDescription> rpattachments;
     rpattachments.push_back(VkAttachmentDescription {
          .format = params.color->format,
          .samples = VK_SAMPLE_COUNT_1_BIT,
-         .loadOp = discard ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_CLEAR,
+         .loadOp = params.colorLoad,
          .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
          .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
          .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -359,8 +356,7 @@ uint64_t FbHashFn::operator()(const FbCacheKey& key) const {
 
 bool RpIsEqual::operator()(const RpCacheKey& a, const RpCacheKey& b) const {
     return a.clayout == b.clayout && a.dlayout == b.dlayout &&
-            a.discardColor != b.discardColor && a.discardDepth != b.discardDepth &&
-            a.clearDepth != b.clearDepth;
+            a.colorLoad != b.colorLoad && a.depthLoad != b.depthLoad;
 }
 
 uint64_t RpHashFn::operator()(const RpCacheKey& key) const {

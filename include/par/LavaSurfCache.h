@@ -54,10 +54,10 @@ public:
     struct Params {
         Attachment const* color;
         Attachment const* depth;
-        VkClearValue clearValue;
-        bool discardColor;
-        bool discardDepth;
-        float clearDepth;
+        VkAttachmentLoadOp colorLoad;
+        VkAttachmentLoadOp depthLoad;
+        VkClearValue clearColor;
+        VkClearValue clearDepth;
     };
 
 protected:

@@ -70,7 +70,13 @@ FramebufferApp::FramebufferApp(SurfaceFn createSurface) {
     // Create offscreen surface.
     mSurfaces = LavaSurfCache::create(LavaSurfCache::Config { .device = device, .gpu = gpu });
     mOffscreenSurface = {
-        .color = mSurfaces->createColorAttachment(512, 512, VK_FORMAT_R8G8B8A8_UNORM)
+        .color = mSurfaces->createColorAttachment({
+            .width = 512,
+            .height = 512,
+            .format = VK_FORMAT_R8G8B8A8_UNORM,
+            .enableUpload = false
+        }),
+        .colorLoad = VK_ATTACHMENT_LOAD_OP_DONT_CARE
     };
 
     // Begin populating a vertex buffer.

@@ -23,32 +23,9 @@ include_directories(
     ../extras/SimpleFileWatcher/include
     ../include)
 
-set(DEMO_NAMES
-    01_clear_screen
-    02_triangle_shared
-    03_triangle_staged
-    04_triangle_recorded
-    05_spinny_double
-    06_spinny_staged
-    07_hello_texture
-    08_klein_bottle
-    09_particle_system
-    0a_particle_system)
-
-# Build the Desktop-only GLFW demos.
+set(DEMO_NAMES 00_destroy)
 
 foreach(DEMO ${DEMO_NAMES})
     add_executable(${DEMO} ${DEMO}.cpp ${AMBER_SOURCE})
-    set_target_properties(${DEMO} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-endforeach()
-
-## Build Mobile-friendly Amber demos.
-
-set(AMBER_DEMOS
-    0b_shadertoy
-    0c_framebuffer)
-
-foreach(DEMO ${AMBER_DEMOS})
-    add_executable(${DEMO} ${DEMO}.cpp ${AMBER_SOURCE} ../src/AmberMain.cpp)
     set_target_properties(${DEMO} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 endforeach()

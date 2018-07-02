@@ -41,9 +41,10 @@ void createVma(VkDevice device, VkPhysicalDevice gpu) {
         .vkGetBufferMemoryRequirements2KHR = vkGetBufferMemoryRequirements2KHR,
         .vkGetImageMemoryRequirements2KHR = vkGetImageMemoryRequirements2KHR,
     };
-    VmaAllocatorCreateInfo info = {
+    VmaAllocatorCreateInfo info {
         .physicalDevice = gpu,
         .device = device,
+        .preferredLargeHeapBlockSize = 256 * 1024 * 1024,
         .pVulkanFunctions = &funcs,
     };
     auto& vma = sVmaAllocators[device] = VmaAllocator();

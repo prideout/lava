@@ -62,6 +62,9 @@ uint64_t getCurrentTime() {
 }
 
 size_t murmurHash(uint32_t const* words, uint32_t nwords, uint32_t seed) {
+    if (nwords == 0) {
+        return 0;
+    }
     uint32_t h = seed;
     size_t i = nwords;
     do {

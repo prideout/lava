@@ -22,6 +22,7 @@ public:
         VkDevice device;
         std::vector<VkBuffer> uniformBuffers;
         std::vector<VkDescriptorImageInfo> imageSamplers;
+        std::vector<VkDescriptorImageInfo> inputAttachments;
     };
     static LavaDescCache* create(Config config) noexcept;
     static void operator delete(void* );
@@ -45,8 +46,11 @@ public:
 
     void setUniformBuffer(uint32_t bindingIndex, VkBuffer uniformBuffer) noexcept;
     void setImageSampler(uint32_t bindingIndex, VkDescriptorImageInfo binding) noexcept;
+    void setInputAttachment(uint32_t bindingIndex, VkDescriptorImageInfo binding) noexcept;
+
     void unsetUniformBuffer(VkBuffer uniformBuffer) noexcept;
     void unsetImageSampler(VkDescriptorImageInfo binding) noexcept;
+    void unsetInputAttachment(VkDescriptorImageInfo binding) noexcept;
 
     // Evicts descriptor sets that were last used more than N milliseconds ago.
     void releaseUnused(uint64_t milliseconds) noexcept;

@@ -22,6 +22,7 @@ constexpr uint32_t MAX_NUM_DESCRIPTORS = 1000;
 struct CacheKey {
     vector<VkBuffer> uniformBuffers;
     vector<VkDescriptorImageInfo> imageSamplers;
+    vector<VkDescriptorImageInfo> inputAttachments;
 };
 
 struct CacheVal {
@@ -56,6 +57,14 @@ struct IsEqual {
                 return false;
             }
         }
+        if (a.inputAttachments.size() != b.inputAttachments.size()) {
+            return false;
+        }
+        for (size_t i = 0; i < a.inputAttachments.size(); ++i) {
+            if (!(*this)(a.inputAttachments[i], b.inputAttachments[i])) {
+                return false;
+            }
+        }
         return true;
     }
 };
@@ -74,6 +83,11 @@ struct HashFn {
             assert(0 == (issize & 3) && "Hashing requires a size that is a multiple of 4.");
             ishash = murmurHash((uint32_t*) key.imageSamplers.data(), issize / 4, 0u);
         }
+        if (key.inputAttachments.size()) {
+            size_t issize = key.inputAttachments.size() * sizeof(key.inputAttachments[0]);
+            assert(0 == (issize & 3) && "Hashing requires a size that is a multiple of 4.");
+            ishash = murmurHash((uint32_t*) key.inputAttachments.data(), issize / 4, ishash);
+        }
         return ubhash | (ishash << 32);
     }
 };
@@ -83,6 +97,7 @@ using Cache = unordered_map<CacheKey, CacheVal, HashFn, IsEqual>;
 namespace DirtyFlag {
     static constexpr uint8_t UNIFORM_BUFFER = 1 << 0; 
     static constexpr uint8_t IMAGE_SAMPLER = 1 << 1;
+    static constexpr uint8_t INPUT_ATTACHMENT = 1 << 2;
 }
 
 struct LavaDescCacheImpl : LavaDescCache {
@@ -96,6 +111,7 @@ struct LavaDescCacheImpl : LavaDescCache {
     VkDescriptorPool descriptorPool;
     uint32_t numUniformBuffers;
     uint32_t numImageSamplers;
+    uint32_t numInputAttachments;
     std::vector<VkWriteDescriptorSet> writes;
     std::vector<VkDescriptorBufferInfo> bufferWrites;
     std::vector<VkDescriptorImageInfo> imageWrites;
@@ -112,12 +128,14 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
     impl->currentState = {
         .uniformBuffers = config.uniformBuffers,
         .imageSamplers = config.imageSamplers,
+        .inputAttachments = config.inputAttachments,
     };
     impl->numUniformBuffers = (uint32_t) config.uniformBuffers.size();
     impl->numImageSamplers = (uint32_t) config.imageSamplers.size();
-    impl->writes.resize(impl->numUniformBuffers + impl->numImageSamplers);
+    impl->numInputAttachments = (uint32_t) config.inputAttachments.size();
     impl->bufferWrites.resize(impl->numUniformBuffers);
-    impl->imageWrites.resize(impl->numImageSamplers);
+    impl->imageWrites.resize(impl->numImageSamplers + impl->numInputAttachments);
+    impl->writes.resize(impl->bufferWrites.size() + impl->imageWrites.size());
 
     vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.reserve(impl->writes.size());
@@ -138,6 +156,14 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
             .stageFlags = VK_SHADER_STAGE_ALL,
         });
     }
+    for (auto dummy LAVA_UNUSED : config.inputAttachments) {
+        bindings.emplace_back(VkDescriptorSetLayoutBinding {
+            .binding = binding++,
+            .descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+        });
+    }
 
     VkDescriptorSetLayoutCreateInfo info {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
@@ -146,7 +172,7 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
     };
     vkCreateDescriptorSetLayout(impl->device, &info, VKALLOC, &impl->layout);
 
-    VkDescriptorPoolSize poolSizes[2] = {};
+    VkDescriptorPoolSize poolSizes[3] = {};
     VkDescriptorPoolCreateInfo poolInfo {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         .pPoolSizes = poolSizes,
@@ -162,6 +188,11 @@ LavaDescCache* LavaDescCache::create(Config config) noexcept {
         VkDescriptorPoolSize* size = &poolSizes[poolInfo.poolSizeCount++];
         size->type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         size->descriptorCount = poolInfo.maxSets * impl->numImageSamplers;
+    }
+    if (impl->numInputAttachments > 0) {
+        VkDescriptorPoolSize* size = &poolSizes[poolInfo.poolSizeCount++];
+        size->type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        size->descriptorCount = poolInfo.maxSets * impl->numInputAttachments;
     }
     assert(poolInfo.poolSizeCount > 0);
     vkCreateDescriptorPool(impl->device, &poolInfo, VKALLOC, &impl->descriptorPool);
@@ -250,6 +281,21 @@ bool LavaDescCache::getDescriptorSet(VkDescriptorSet* descriptorSet,
         };
         *pInfoWrite++ = info;
     }
+    for (VkDescriptorImageInfo info : key.inputAttachments) {
+        if (info.sampler == VK_NULL_HANDLE) {
+            binding++;
+            continue;
+        }
+        *pWrite++ = {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = *descriptorSet,
+            .dstBinding = binding++,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+            .pImageInfo = pInfoWrite
+        };
+        *pInfoWrite++ = info;
+    }
 
     const size_t nwrites = pWrite - impl.writes.data();
     if (writes) {
@@ -307,6 +353,19 @@ void LavaDescCache::setImageSampler(uint32_t bindingIndex, VkDescriptorImageInfo
     }
 }
 
+void LavaDescCache::setInputAttachment(uint32_t bindingIndex, VkDescriptorImageInfo binding) noexcept {
+    LavaDescCacheImpl* impl = upcast(this);
+    LOG_CHECK(bindingIndex >= impl->numUniformBuffers + impl->numImageSamplers &&
+            bindingIndex < impl->writes.size(), "Attachment binding out of range.");
+    bindingIndex -= (impl->numUniformBuffers + impl->numImageSamplers);
+    auto& inputAttachments = impl->currentState.inputAttachments;
+    assert(bindingIndex < inputAttachments.size());
+    if (!IsEqual()(inputAttachments[bindingIndex], binding)) {
+        impl->dirtyFlags |= DirtyFlag::INPUT_ATTACHMENT;
+        inputAttachments[bindingIndex] = binding;
+    }
+}
+
 void LavaDescCache::releaseUnused(uint64_t milliseconds) noexcept {
     LavaDescCacheImpl* impl = upcast(this);
     const uint64_t expiration = getCurrentTime() - milliseconds;
@@ -336,6 +395,16 @@ void LavaDescCache::unsetImageSampler(VkDescriptorImageInfo binding) noexcept {
     for (auto& el : impl->currentState.imageSamplers) {
         if (IsEqual()(el, binding)) {
             impl->dirtyFlags |= DirtyFlag::IMAGE_SAMPLER;
+            el = {};
+        }
+    }
+}
+
+void LavaDescCache::unsetInputAttachment(VkDescriptorImageInfo binding) noexcept {
+    LavaDescCacheImpl* impl = upcast(this);
+    for (auto& el : impl->currentState.inputAttachments) {
+        if (IsEqual()(el, binding)) {
+            impl->dirtyFlags |= DirtyFlag::INPUT_ATTACHMENT;
             el = {};
         }
     }

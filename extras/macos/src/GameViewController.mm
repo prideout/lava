@@ -1,8 +1,26 @@
+#include <par/LavaLoader.h>
+#include <par/LavaLog.h>
+#include <par/AmberApplication.h>
+
 #import "GameViewController.h"
 #import <Metal/Metal.h>
 #import <simd/simd.h>
 #import <MetalKit/MetalKit.h>
 #import "SharedStructures.h"
+
+#import <chrono>
+
+using namespace par;
+
+static AmberApplication* g_vulkanApp = nullptr;
+static AmberApplication::SurfaceFn g_createSurface;
+
+static double get_current_time() {
+    using namespace std;
+    static auto start = chrono::high_resolution_clock::now();
+    auto now = chrono::high_resolution_clock::now();
+    return 0.001 * chrono::duration_cast<chrono::milliseconds>(now - start).count();
+}
 
 // The max number of command buffers in flight
 static const NSUInteger kMaxInflightBuffers = 3;
@@ -49,6 +67,25 @@ static const size_t kMaxBytesPerFrame = 1024*1024;
     [self _setupView];
     [self _loadAssets];
     [self _reshape];
+
+    // See _glfwPlatformCreateWindowSurface in cocoa_window.m in glfw
+    g_createSurface = [] (VkInstance instance) {
+        VkSurfaceKHR surface = VK_NULL_HANDLE;
+        VkResult err;
+        VkMacOSSurfaceCreateInfoMVK sci;
+        PFN_vkCreateMacOSSurfaceMVK vkCreateMacOSSurfaceMVK;
+
+        vkCreateMacOSSurfaceMVK = (PFN_vkCreateMacOSSurfaceMVK) vkGetInstanceProcAddr(instance, "vkCreateMacOSSurfaceMVK");
+        if (!vkCreateMacOSSurfaceMVK) {
+            NSLog(@"Failed to get function pointer for vkCreateMacOSSurfaceMVK.");
+            return surface;
+        } else {
+            NSLog(@"Obtained vkCreateMacOSSurfaceMVK.");
+        }
+
+        return surface;
+    };
+
 }
 
 - (void)_setupView

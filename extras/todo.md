@@ -1,3 +1,8 @@
+# MacOS Bundles
+
+    extra/macos
+    GameController needs to be fleshed out similar to AmberMain
+
 # Android
 
     HelloTexture

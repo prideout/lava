@@ -4,7 +4,9 @@ project(lavamac)
 set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
 
 set(AMBER_REQUIRED True)
-add_definitions(-DAMBER_COCOA)
+add_definitions(
+    -DAMBER_COCOA
+    -DVK_USE_PLATFORM_MACOS_MVK)
 
 add_subdirectory(lava)
 add_subdirectory(lava/extras/glslang)

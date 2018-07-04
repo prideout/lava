@@ -1,7 +1,10 @@
-cmake_minimum_required(VERSION 3.11.0)
+cmake_minimum_required(VERSION 3.9.0)
 project(lavamac)
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -stdlib=libc++ -fno-rtti")
+
+set(AMBER_REQUIRED True)
+add_definitions(-DAMBER_COCOA)
 
 add_subdirectory(lava)
 add_subdirectory(lava/extras/glslang)
@@ -17,9 +20,11 @@ include_directories(
 add_executable(
     lavamac
     MACOSX_BUNDLE
+    ${AMBER_SOURCE}
     src/AppDelegate.mm
     src/GameViewController.mm
     src/main.mm
+    src/test.cpp
     src/AppDelegate.h
     src/GameViewController.h
     src/SharedStructures.h

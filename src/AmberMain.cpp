@@ -5,6 +5,8 @@
 #ifdef __ANDROID__
     #include <android/log.h>
     #include <android_native_app_glue.h>
+#elif defined(AMBER_COCOA)
+    // Defer to an Objective C file here.
 #else
     #include <GLFW/glfw3.h>
 #endif
@@ -64,6 +66,8 @@ void android_main(struct android_app* app) {
     } while (app->destroyRequested == 0);
 }
 
+#elif defined(AMBER_COCOA)
+// Defer to an Objective C file here.
 #else
 
 int main(const int argc, const char *argv[]) {

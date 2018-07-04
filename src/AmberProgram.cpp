@@ -15,8 +15,11 @@
 using namespace par;
 using namespace std;
 
-#ifndef __ANDROID__
-#include <FileWatcher/FileWatcher.h>
+#if !defined(__ANDROID__) && !defined(AMBER_COCOA)
+#define FILEWATCHER
+#endif
+
+#ifdef FILEWATCHER
 using namespace FW;
 #endif
 
@@ -31,7 +34,7 @@ struct AmberProgramImpl : AmberProgram {
     VkShaderModule mVertModule = VK_NULL_HANDLE;
     VkShaderModule mFragModule = VK_NULL_HANDLE;
     VkDevice mDevice = VK_NULL_HANDLE;
-    #ifndef __ANDROID__
+    #ifdef SUPPORT_FILEWATCHER
     FileWatcher mFileWatcher;
     struct : FileWatchListener {
         FileListener callback;
@@ -158,7 +161,7 @@ string AmberProgram::getChunk(const string& filename, const string& chunkName) n
 }
 
 void AmberProgram::watchDirectory(const string& directory, FileListener onChange) noexcept {
-    #ifndef __ANDROID__
+    #ifdef SUPPORT_FILEWATCHER
     AmberProgramImpl& impl = *upcast(this);
     impl.mFileListener.callback = onChange;
     impl.mFileWatcher.addWatch(directory, &impl.mFileListener);
@@ -166,7 +169,7 @@ void AmberProgram::watchDirectory(const string& directory, FileListener onChange
 }
 
 void AmberProgram::checkDirectory() noexcept {
-    #ifndef __ANDROID__
+    #ifdef SUPPORT_FILEWATCHER
     AmberProgramImpl& impl = *upcast(this);
     impl.mFileWatcher.update();
     #endif

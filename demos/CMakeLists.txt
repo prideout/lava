@@ -9,7 +9,9 @@ set(AMBER_SOURCE
 set(DEMO_LIBS glfw glslang SPIRV curl sfw_lib lava)
 
 if(APPLE)
-    list(APPEND DEMO_LIBS "$ENV{VULKAN_SDK}/macOS/lib/libvulkan.1.dylib")
+    if($ENV{VULKAN_SDK})
+        list(APPEND DEMO_LIBS "$ENV{VULKAN_SDK}/macOS/lib/libvulkan.1.dylib")
+    endif()
 endif()
 
 link_libraries(${DEMO_LIBS})

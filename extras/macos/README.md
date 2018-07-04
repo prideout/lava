@@ -1,7 +1,9 @@
-Building the Lava demos in the usual way (as described in the root-level README) will create
-executables that can run on macOS, but does not create actual app bundles.
+Building Lava in the usual way (as described
+[here](http://github.prideout.net/lava/#buildingandrunningthedemos)) will create
+executables that can run on macOS, but does not create actual app bundles that can be installed
+on anybody's machine.
 
-This folder exists solely to allow creation of app bundles without opening the Xcode GUI.
+This folder exists solely to allow creation of macOS app bundles. Using this is optional.
 
 ```bash
 > git clone --recurse-submodules https://github.com/prideout/lava.git

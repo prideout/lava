@@ -20,6 +20,7 @@ using namespace std;
 #endif
 
 #ifdef FILEWATCHER
+#include <FileWatcher/FileWatcher.h>
 using namespace FW;
 #endif
 

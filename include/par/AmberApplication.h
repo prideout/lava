@@ -52,6 +52,12 @@ struct AmberApplication {
         return iter->second(createSurface);
     }
 
+    static AmberApplication* restartApp(SurfaceFn createSurface) {
+        auto& iter = current();
+        llog.warn("Starting {}...", iter->first);
+        return iter->second(createSurface);
+    }
+
     static AmberApplication* createNextApp(SurfaceFn createSurface) {
         auto& iter = current();
         auto& reg = registry();

@@ -11,12 +11,17 @@
     #include <GLFW/glfw3.h>
 #endif
 
+#include <vmath.h>
+
 #include <chrono>
 
 using namespace par;
 
 static AmberApplication* g_vulkanApp = nullptr;
 static AmberApplication::SurfaceFn g_createSurface;
+static Vector2 g_cp;
+static Vector2 g_offset;
+static int g_buttonEvent;
 
 static double get_current_time() {
     using namespace std;
@@ -77,6 +82,7 @@ int main(const int argc, const char *argv[]) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
     glfwWindowHint(GLFW_DECORATED, prefs.decorated);
+    // glfwWindowHint(GLFW_TRANSPARENT, GLFW_TRUE);
 
     auto window = glfwCreateWindow(prefs.width, prefs.height, prefs.title.c_str(), 0, 0);
 
@@ -88,6 +94,28 @@ int main(const int argc, const char *argv[]) {
 
     g_vulkanApp = AmberApplication::createApp(prefs.first, g_createSurface);
 
+    glfwSetCursorPosCallback(window, [] (GLFWwindow* window, double x, double y) {
+        if (g_buttonEvent == 1) {
+            g_offset.x = x - g_cp.x;
+            g_offset.y = y - g_cp.y;
+        }
+    });
+
+    glfwSetMouseButtonCallback(window, [] (GLFWwindow* window, int button, int action, int mods) {
+        if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS){
+            g_buttonEvent = 1;
+            double x, y;
+            glfwGetCursorPos(window, &x, &y);
+            g_cp.x = floor(x);
+            g_cp.y = floor(y);
+        }
+        if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE){
+            g_buttonEvent = 0;
+            g_cp.x = 0;
+            g_cp.y = 0;
+        }
+    });
+
     glfwSetKeyCallback(window, [] (GLFWwindow* window, int key, int, int action, int) {
         if (action != GLFW_RELEASE) {
             return;
@@ -95,6 +123,10 @@ int main(const int argc, const char *argv[]) {
         switch (key) {
             case GLFW_KEY_ESCAPE:
                 glfwSetWindowShouldClose(window, GLFW_TRUE);
+                break;
+            case GLFW_KEY_SPACE:
+                delete g_vulkanApp;
+                g_vulkanApp = AmberApplication::restartApp(g_createSurface);
                 break;
             case GLFW_KEY_LEFT:
                 delete g_vulkanApp;
@@ -109,6 +141,17 @@ int main(const int argc, const char *argv[]) {
     });
 
     while (!glfwWindowShouldClose(window)) {
+
+        if (g_buttonEvent == 1) {
+            int w_posx, w_posy;
+            glfwGetWindowPos(window, &w_posx, &w_posy);
+            glfwSetWindowPos(window, w_posx + g_offset.x, w_posy + g_offset.y);
+            g_offset.x = 0;
+            g_offset.y = 0;
+            g_cp.x += g_offset.x;
+            g_cp.y += g_offset.y;
+        }
+
         glfwPollEvents();
         g_vulkanApp->draw(get_current_time());
     }

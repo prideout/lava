@@ -1,3 +1,9 @@
+# Fix DescCache issues
+
+# GPU selector
+
+    GPU selector command line argument (integer) and LavaContext config
+
 # MacOS Bundles
 
     extra/macos

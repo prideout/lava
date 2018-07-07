@@ -24,6 +24,8 @@ public:
     void finalizeAttachment(Attachment const* attachment, VkCommandBuffer cmdbuf) const noexcept;
     void finalizeAttachment(Attachment const* attachment, VkCommandBuffer cmdbuf,
             VkBuffer srcData, uint32_t nbytes) const noexcept;
+    void finalizeAttachment(Attachment const* attachment, VkCommandBuffer cmdbuf,
+            const VkClearColorValue& clearColor) const noexcept;
     void freeAttachment(Attachment const* attachment) const noexcept;
 
     // Cache retrieval / creation / eviction.

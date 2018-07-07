@@ -1,3 +1,5 @@
+*work in progress*
+
 Building Lava in the usual way (as described
 [here](http://github.prideout.net/lava/#buildingandrunningthedemos)) will create
 executables that can run on macOS, but does not create actual app bundles that can be installed

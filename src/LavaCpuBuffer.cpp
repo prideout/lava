@@ -60,6 +60,18 @@ void LavaCpuBuffer::setData(void const* sourceData, uint32_t bytesToCopy, uint32
     vmaUnmapMemory(impl->vma, impl->memory);
 }
 
+uint8_t* LavaCpuBuffer::map() const noexcept {
+    auto impl = upcast(this);
+    uint8_t* mappedData;
+    vmaMapMemory(impl->vma, impl->memory, (void**) &mappedData);
+    return mappedData;
+}
+
+void LavaCpuBuffer::unmap() const noexcept {
+    auto impl = upcast(this);
+    vmaUnmapMemory(impl->vma, impl->memory);
+}
+
 VkBuffer LavaCpuBuffer::getBuffer() const noexcept {
     return upcast(this)->buffer;
 }

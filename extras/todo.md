@@ -1,5 +1,7 @@
 # Fix DescCache issues
 
+# SurfCache should take usage flags instead of enableRead / enableUpload
+
 # GPU selector
 
     GPU selector command line argument (integer) and LavaContext config

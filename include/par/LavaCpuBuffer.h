@@ -22,6 +22,8 @@ public:
     VkBuffer getBuffer() const noexcept;
     void setData(void const* sourceData, uint32_t bytesToCopy,
             uint32_t offset = 0) noexcept;
+    uint8_t* map() const noexcept;
+    void unmap() const noexcept;
 protected:
     LavaCpuBuffer() noexcept = default;
     LavaCpuBuffer(LavaCpuBuffer const&) = delete;

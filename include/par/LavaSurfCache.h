@@ -43,6 +43,7 @@ public:
         uint32_t height;
         VkFormat format;
         bool enableUpload;
+        bool enableRead;
     };
 
     struct Attachment {

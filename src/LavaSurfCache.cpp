@@ -108,6 +108,7 @@ LavaSurfCache::Attachment const* LavaSurfCache::createColorAttachment(
         .mipLevels = 1,
         .arrayLayers = 1,
         .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
+                (config.enableRead ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : VkImageUsageFlags {}) |
                 (config.enableUpload ? VK_IMAGE_USAGE_TRANSFER_DST_BIT : VkImageUsageFlags {}),
         .samples = VK_SAMPLE_COUNT_1_BIT,
     };

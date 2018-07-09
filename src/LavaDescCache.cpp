@@ -92,6 +92,7 @@ struct LavaDescCacheImpl : LavaDescCache {
     VkDevice device;
     Cache cache;
     CacheKey currentState;
+    std::vector<CacheVal> graveyard;
     uint8_t dirtyFlags = 0xf;
     VkDescriptorSetLayout layout;
     VkDescriptorPool descriptorPool;
@@ -320,7 +321,61 @@ void LavaDescCache::evictDescriptors(uint64_t milliseconds, uint64_t nframes) no
     for (decltype(impl.cache)::const_iterator iter = cache.begin(); iter != cache.end();) {
         const auto& val = iter->second;
         if (val.timestampMs < expirationMs && val.timestampFrame < expirationFrame) {
-            vkFreeDescriptorSets(impl.device, impl.descriptorPool, 1, &iter->second.handle);
+            vkFreeDescriptorSets(impl.device, impl.descriptorPool, 1, &val.handle);
+            iter = cache.erase(iter);
+        } else {
+            ++iter;
+        }
+    }
+
+    // The graveyard is composed of descriptors that contain references to now-extinct buffers. We
+    // take care only to free the ones that are old enough to be evicted, since they might be
+    // referenced in a command buffer that hasn't finished executing. Because std::vector::erase can
+    // be very slow, we use swap-and-rebuild.
+    decltype(impl.graveyard) graveyard;
+    graveyard.swap(impl.graveyard);
+    for (auto& val : graveyard) {
+        if (val.timestampMs < expirationMs && val.timestampFrame < expirationFrame) {
+           vkFreeDescriptorSets(impl.device, impl.descriptorPool, 1, &val.handle);
+        } else {
+            impl.graveyard.emplace_back(CacheVal {
+                .handle = val.handle,
+                .timestampMs = val.timestampMs,
+                .timestampFrame = val.timestampFrame,
+            });
+        }
+    }
+}
+
+void LavaDescCache::unsetUniformBuffer(VkBuffer uniformBuffer) noexcept {
+    LavaDescCacheImpl& impl = *upcast(this);
+    // First, ensure that this uniform buffer won't be bound on the next call to getDescriptor.
+    for (auto& el : impl.currentState.uniformBuffers) {
+        if (el == uniformBuffer) {
+            impl.dirtyFlags |= DirtyFlag::UNIFORM_BUFFER;
+            el = VK_NULL_HANDLE;
+        }
+    }
+    // Next, discard all descriptor sets that refer to this handle. Simply waiting for time-based
+    // eviction isn't sufficient since the handle value may be recycled. We immediately remove the
+    // cache entry, but use the graveyard to defer calling vkFreeDescriptorSets.
+    auto& cache = impl.cache;
+    for (decltype(impl.cache)::const_iterator iter = cache.begin(); iter != cache.end();) {
+        const auto& key = iter->first;
+        const auto& val = iter->second;
+        bool removeEntry = false;
+        for (VkBuffer ub : key.uniformBuffers) {
+            if (ub == uniformBuffer) {
+                impl.graveyard.emplace_back(CacheVal {
+                    .handle = val.handle,
+                    .timestampMs = val.timestampMs,
+                    .timestampFrame = val.timestampFrame,
+                });
+                removeEntry = true;
+                break;
+            }
+        }
+        if (removeEntry) {
             iter = cache.erase(iter);
         } else {
             ++iter;
@@ -328,17 +383,8 @@ void LavaDescCache::evictDescriptors(uint64_t milliseconds, uint64_t nframes) no
     }
 }
 
-void LavaDescCache::unsetUniformBuffer(VkBuffer uniformBuffer) noexcept {
-    LavaDescCacheImpl* impl = upcast(this);
-    for (auto& el : impl->currentState.uniformBuffers) {
-        if (el == uniformBuffer) {
-            impl->dirtyFlags |= DirtyFlag::UNIFORM_BUFFER;
-            el = VK_NULL_HANDLE;
-        }
-    }
-}
-
 void LavaDescCache::unsetImageSampler(VkDescriptorImageInfo binding) noexcept {
+    // TODO: assume that *all* of the Vulkan handles in "binding" are now extinct and use graveyard.
     LavaDescCacheImpl* impl = upcast(this);
     for (auto& el : impl->currentState.imageSamplers) {
         if (IsEqual()(el, binding)) {

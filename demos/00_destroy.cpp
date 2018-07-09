@@ -238,6 +238,7 @@ int main(const int argc, const char *argv[]) {
 
         // For testing purposes, destroy and recreate the GPU buffer used for uniforms.
         if (true) {
+            descriptors->unsetUniformBuffer(gpubuf);
             vkDeviceWaitIdle(device);
             vkDestroyBuffer(device, gpubuf, nullptr);
             vkFreeMemory(device, gpumem, nullptr);

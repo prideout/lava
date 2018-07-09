@@ -1,4 +1,6 @@
-# Fix DescCache issues
+# DescCache (et al?) needs frame-based eviction and graveyard.
+
+    Cherry pick from MoltenVK branch.
 
 # SurfCache should take usage flags instead of enableRead / enableUpload
 

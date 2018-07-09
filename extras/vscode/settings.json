@@ -42,7 +42,9 @@
         "regex": "cpp",
         "__functional_base_03": "cpp",
         "__tuple": "cpp",
-        "array": "cpp"
+        "array": "cpp",
+        "deque": "cpp",
+        "unordered_set": "cpp"
     },
     "files.exclude": {
         "include/spdlog": true,

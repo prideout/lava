@@ -247,7 +247,7 @@ int main(const int argc, const char *argv[]) {
             vkBindBufferMemory(device, gpubuf, gpumem, 0);
         }
 
-        descriptors->releaseUnused(200);
+        descriptors->evictDescriptors(0, 2);
     }
 
     vkDestroyBuffer(device, gpubuf, nullptr);

@@ -26,7 +26,8 @@ struct CacheKey {
 
 struct CacheVal {
     VkDescriptorSet handle;
-    uint64_t timestamp;
+    uint64_t timestampMs;
+    uint64_t timestampFrame;
     // move-only (disallow copy) to allow keeping a pointer to a value in the map.
     CacheVal(CacheVal const&) = delete;
     CacheVal& operator=(CacheVal const&) = delete;
@@ -96,6 +97,7 @@ struct LavaDescCacheImpl : LavaDescCache {
     VkDescriptorPool descriptorPool;
     uint32_t numUniformBuffers;
     uint32_t numImageSamplers;
+    uint64_t currentFrame = 0;
     std::vector<VkWriteDescriptorSet> writes;
     std::vector<VkDescriptorBufferInfo> bufferWrites;
     std::vector<VkDescriptorImageInfo> imageWrites;
@@ -190,7 +192,8 @@ bool LavaDescCache::getDescriptorSet(VkDescriptorSet* descriptorSet,
         vector<VkWriteDescriptorSet>* writes) noexcept {
     LavaDescCacheImpl& impl = *upcast(this);
     if (!impl.dirtyFlags) {
-        impl.currentDescriptor->timestamp = getCurrentTime();
+        impl.currentDescriptor->timestampMs = getCurrentTime();
+        impl.currentDescriptor->timestampFrame = impl.currentFrame;
         *descriptorSet = impl.currentDescriptor->handle;
         return false;
     }
@@ -198,7 +201,8 @@ bool LavaDescCache::getDescriptorSet(VkDescriptorSet* descriptorSet,
     auto iter = impl.cache.find(impl.currentState);
     if (iter != impl.cache.end()) {
         impl.currentDescriptor = &(iter->second);
-        impl.currentDescriptor->timestamp = getCurrentTime();
+        impl.currentDescriptor->timestampMs = getCurrentTime();
+        impl.currentDescriptor->timestampFrame = impl.currentFrame;
         *descriptorSet = impl.currentDescriptor->handle;
         return true;
     }
@@ -261,7 +265,7 @@ bool LavaDescCache::getDescriptorSet(VkDescriptorSet* descriptorSet,
 
     const size_t size0 = impl.cache.size();
     iter = impl.cache.emplace(make_pair(impl.currentState, CacheVal {
-        *descriptorSet, getCurrentTime() })).first;
+        *descriptorSet, getCurrentTime(), impl.currentFrame })).first;
     const size_t size1 = impl.cache.size();
     LOG_CHECK(size1 > size0, "Hash error.");
 
@@ -307,13 +311,16 @@ void LavaDescCache::setImageSampler(uint32_t bindingIndex, VkDescriptorImageInfo
     }
 }
 
-void LavaDescCache::releaseUnused(uint64_t milliseconds) noexcept {
-    LavaDescCacheImpl* impl = upcast(this);
-    const uint64_t expiration = getCurrentTime() - milliseconds;
-    auto& cache = impl->cache;
-    for (decltype(impl->cache)::const_iterator iter = cache.begin(); iter != cache.end();) {
-        if (iter->second.timestamp < expiration) {
-            vkFreeDescriptorSets(impl->device, impl->descriptorPool, 1, &iter->second.handle);
+void LavaDescCache::evictDescriptors(uint64_t milliseconds, uint64_t nframes) noexcept {
+    LavaDescCacheImpl& impl = *upcast(this);
+    const uint64_t expirationMs = getCurrentTime() - milliseconds;
+    const uint64_t currentFrame = impl.currentFrame++;
+    const uint64_t expirationFrame = (nframes > currentFrame) ? 0 : currentFrame - nframes;
+    auto& cache = impl.cache;
+    for (decltype(impl.cache)::const_iterator iter = cache.begin(); iter != cache.end();) {
+        const auto& val = iter->second;
+        if (val.timestampMs < expirationMs && val.timestampFrame < expirationFrame) {
+            vkFreeDescriptorSets(impl.device, impl.descriptorPool, 1, &iter->second.handle);
             iter = cache.erase(iter);
         } else {
             ++iter;

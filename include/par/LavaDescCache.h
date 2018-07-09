@@ -52,8 +52,9 @@ public:
     void unsetImageSampler(VkDescriptorImageInfo binding) noexcept;
     void unsetInputAttachment(VkDescriptorImageInfo binding) noexcept;
 
-    // Evicts descriptor sets that were last used more than N milliseconds ago.
-    void releaseUnused(uint64_t milliseconds) noexcept;
+    // Frees descriptor sets that were last retrieved more than N milliseconds ago, and more than
+    // M frames ago. Also bumps the internal frame count.
+    void evictDescriptors(uint64_t milliseconds, uint64_t nframes) noexcept;
 protected:
     LavaDescCache() noexcept = default;
     // par::noncopyable

@@ -4,6 +4,8 @@
 
 # SurfCache should take usage flags instead of enableRead / enableUpload
 
+# SurfCache should provide a transition cmd for the stuff at the end of streamlines draw function
+
 # GPU selector
 
     GPU selector command line argument (integer) and LavaContext config

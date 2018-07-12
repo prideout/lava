@@ -72,23 +72,39 @@ struct IsEqual {
 struct HashFn {
     uint64_t operator()(const CacheKey& key) const {
         uint64_t ubhash = 0;
-        if (key.uniformBuffers.size()) {
-            size_t ubsize = key.uniformBuffers.size() * sizeof(key.uniformBuffers[0]);
-            assert(0 == (ubsize & 3) && "Hashing requires a size that is a multiple of 4.");
-            ubhash = murmurHash((uint32_t*) key.uniformBuffers.data(), ubsize / 4, 0u);
+        assert(sizeof(VkBuffer) == 8);
+        assert(sizeof(VkSampler) == 8);
+        assert(sizeof(VkImageView) == 8);
+        assert(sizeof(VkImageLayout) == 4);
+        static std::vector<uint32_t> src;
+        src.clear();
+        src.reserve(2 * key.uniformBuffers.size() + 5 * key.imageSamplers.size() +
+            5 * key.inputAttachments.size());
+        for (const auto& ub : key.uniformBuffers) {
+            auto p = (uint32_t*) &ub;
+            src.push_back(*p++);
+            src.push_back(*p++);
         }
-        uint64_t ishash = 0;
-        if (key.imageSamplers.size()) {
-            size_t issize = key.imageSamplers.size() * sizeof(key.imageSamplers[0]);
-            assert(0 == (issize & 3) && "Hashing requires a size that is a multiple of 4.");
-            ishash = murmurHash((uint32_t*) key.imageSamplers.data(), issize / 4, 0u);
+        for (const auto& is : key.imageSamplers) {
+            auto p = (uint32_t*) &is;
+            src.push_back(*p++);
+            src.push_back(*p++);
+            src.push_back(*p++);
+            src.push_back(*p++);
+            src.push_back(*p++);
         }
-        if (key.inputAttachments.size()) {
-            size_t issize = key.inputAttachments.size() * sizeof(key.inputAttachments[0]);
-            assert(0 == (issize & 3) && "Hashing requires a size that is a multiple of 4.");
-            ishash = murmurHash((uint32_t*) key.inputAttachments.data(), issize / 4, ishash);
+        for (const auto& ia : key.inputAttachments) {
+            auto p = (uint32_t*) &ia;
+            src.push_back(*p++);
+            src.push_back(*p++);
+            src.push_back(*p++);
+            src.push_back(*p++);
+            src.push_back(*p++);
         }
-        return ubhash | (ishash << 32);
+        if (src.empty()) {
+            return 0;
+        }
+        return murmurHash(src.data(), src.size(), 0);
     }
 };
 

@@ -51,14 +51,17 @@
 objects. It is open sourced under the MIT license, available at
 [<i class="fab fa-github"></i> prideout/lava](https://github.com/prideout/lava).
 
+!!! Warning
+    Lava is just an experimental playground that I made for myself, I do not recommend using it in a
+    production setting. In fact I don't even recommend it for learning Vulkan.
+
 In addition to reading this documentation page, a good way to learn the API is to study the
 [demos](https://github.com/prideout/lava/tree/master/demos) and the
 [headers](https://github.com/prideout/lava/tree/master/include/par).
 
-!!! Note
-    Lava only creates and destroys Vulkan objects; it rarely adds to the command buffer. For
-    example, the client application must invoke `vkCmdDraw` on its own, as well as any of the
-    `VkCmdBind*` functions.
+Lava only creates and destroys Vulkan objects; it rarely adds to the command buffer. For example,
+the client application must invoke `vkCmdDraw` on its own, as well as any of the `VkCmdBind*`
+functions.
 
 Each Lava class is completely independent of every other class, so clients can choose a subset
 of functionality as needed.

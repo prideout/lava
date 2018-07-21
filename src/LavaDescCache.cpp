@@ -72,7 +72,6 @@ struct IsEqual {
 
 struct HashFn {
     uint64_t operator()(const CacheKey& key) const {
-        uint64_t ubhash = 0;
         assert(sizeof(VkBuffer) == 8);
         assert(sizeof(VkSampler) == 8);
         assert(sizeof(VkImageView) == 8);

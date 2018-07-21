@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/prideout/lava.svg?branch=master)](https://travis-ci.org/prideout/lava)
 
+*Lava is just an experimental playground, I do not recommend using it in a production setting.*
+
 **Lava** is a toy C++ library composed of classes that make it easy to create and manage Vulkan
 objects.  Each Lava class is defined by a single header with no dependencies on anything other than
 `vulkan.h` and the STL.

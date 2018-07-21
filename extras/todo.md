@@ -1,6 +1,8 @@
-# DescCache (et al?) needs frame-based eviction and graveyard.
+# DescCache needs a reset method for when you swap over to a new command buffer.
 
-    Cherry pick from MoltenVK branch.
+# Add a test similar to 00_destroy from the moltenvk branch
+
+# See recent DescCache fixes; do we need these for other Caches?
 
 # SurfCache should take usage flags instead of enableRead / enableUpload
 

@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/prideout/lava.svg?branch=master)](https://travis-ci.org/prideout/lava)
 
-*At this point Lava is just an experimental playground, I do not recommend using it in a production
+*Lava is just an experimental playground, I do not recommend using it in a production
 setting.*
 
 **Lava** is a toy C++ library composed of classes that make it easy to create and manage Vulkan

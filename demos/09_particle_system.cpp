@@ -102,7 +102,7 @@ static void run_demo(LavaContext* context, GLFWwindow* window) {
 
     // Fetch the bluenoise data.
     par_easycurl_init(0);
-    #define BLUENOISE_BASEURL "http://github.prideout.net/assets/"
+    #define BLUENOISE_BASEURL "https://prideout.net/assets/"
     #define BLUENOISE_FILENAME "bluenoise.trimmed.bin"
     #define BLUENOISE_URL BLUENOISE_BASEURL BLUENOISE_FILENAME
     if (access(BLUENOISE_FILENAME, F_OK) == -1) {

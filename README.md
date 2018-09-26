@@ -9,7 +9,7 @@ setting.*
 objects.  Each Lava class is defined by a single header with no dependencies on anything other than
 `vulkan.h` and the STL.
 
-For more information, see the [documentation](http://github.prideout.net/lava/).
+For more information, see the [documentation](https://prideout.net/lava/).
 
 ## Scope
 

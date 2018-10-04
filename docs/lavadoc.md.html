@@ -1,0 +1,510 @@
+<meta charset="utf-8"><link rel="stylesheet" href="apidoc.css">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.13/css/all.css"
+    integrity="sha384-DNOHZ68U8hZfKXOrtjWvjxusGo9WQnrNx2sqG0tfsghAvtVlRW3tvkXWZh58N9jp"
+    crossorigin="anonymous">
+
+<!--
+// Quick reference for markdeep:
+//    http://casual-effects.com/markdeep/features.md.html
+//
+// To bake the HTML:
+//     chrome lavadoc.md.html --headless --dump-dom --virtual-time-budget=1000 > index.html
+//
+// Baking the HTML improves load time, fixes the flash of unstyled content, and allows for
+// deep linking.
+//
+-->
+
+**Lava Vulkan Utilities**
+
+![](https://github.com/prideout/lava/raw/master/extras/assets/triptych.png)
+<br>
+
+- [Overview](#overview)
+    - [Building and Running the Demos](#buildingandrunningthedemos)
+    - [LunarG SDK Instructions](#lunargsdkinstructions)
+- [Lava Components](#lavacomponents)
+    - [LavaContext](#lavacontext) creates an instance, a device, a swap chain, and some command
+        buffers.
+    - [LavaDescCache](#lavadesccache) creates a descriptor set layout and manages a set of corollary
+        descriptors.
+    - [LavaPipeCache](#lavapipecache) manages a set of pipeline objects for a given layout.
+    - [LavaCpuBuffer](#lavacpubuffer) is a shared CPU-GPU buffer, useful for staging or uniform
+        buffers.
+    - [LavaGpuBuffer](#lavagpubuffer) is a fast device-only buffer, useful for vertex buffers and
+        index buffers.
+    - [LavaTexture](#lavatexture) encapsulates an image, an image view, and a buffer staging area.
+    - *LavaSurfCache*
+    - *LavaLog*
+    - *LavaLoader*
+- [Amber Components](#ambercomponents)
+    - *AmberApplication*
+    - *AmberCompiler*
+    - *AmberProgram*
+- [Internal Guidelines](#internalguidelines)
+    - [Visual Studio Code](#visualstudiocode)
+    - [C++ Style](#c++style)
+
+## Overview
+
+**Lava** is a toy C++ library composed of classes that make it easy to create and manage Vulkan
+objects. It is open sourced under the MIT license, available at
+[<i class="fab fa-github"></i> prideout/lava](https://github.com/prideout/lava).
+
+!!! Warning
+    Lava is just an experimental playground that I made for myself, I do not recommend using it in a
+    production setting. In fact I don't even recommend it for learning Vulkan.
+
+In addition to reading this documentation page, a good way to learn the API is to study the
+[demos](https://github.com/prideout/lava/tree/master/demos) and the
+[headers](https://github.com/prideout/lava/tree/master/include/par).
+
+Lava only creates and destroys Vulkan objects; it rarely adds to the command buffer. For example,
+the client application must invoke `vkCmdDraw` on its own, as well as any of the `VkCmdBind*`
+functions.
+
+Each Lava class is completely independent of every other class, so clients can choose a subset
+of functionality as needed.
+
+Lava classes are defined in the `par` namespace, instanced using static `create` methods that
+consume simple POD structures. We recommend using initializer syntax to populate these structs. For
+example:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+#include &lt;par/LavaGpuBuffer.h&gt;
+
+using namespace par;
+
+LavaGpuBuffer* lavabuffer = LavaGpuBuffer::create({ // pass in a Config struct
+    .device = device,
+    .gpu = physicalDevice,
+    .size = sizeof(TRIANGLE_VERTICES),
+    .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+});
+const VkBuffer vkbuffer = lavabuffer->getBuffer();
+
+// do stuff with the VkBuffer here...
+
+delete lavabuffer;
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If desired, you can wrap your Lava objects in `unique_ptr` or `shared_ptr`, but please note that
+destruction order matters. For example, you will often want to ensure that LavaContext gets deleted
+after every other Lava object, since it destroys the **VkDevice** and **VkInstance**.
+
+### Building and Running the Demos
+
+For <i class="fab fa-android" style="color:darkseagreen"></i> Android, see the README in
+[extras/android](https://github.com/prideout/lava/tree/master/extras/android).
+
+For <i class="fab fa-linux"></i> Linux, do this first:
+
+```bash
+sudo apt-get install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libcurl4-openssl-dev
+export CC=clang CXX=clang++
+```
+
+On <i class="fab fa-apple" style="color:#aaa"></i> macOS, you first need clang (which comes with
+Xcode) and homebrew, then do this:
+
+```
+brew install cmake ninja
+```
+
+!!! Note
+    The demos require the contents of the
+    [extras](https://github.com/prideout/lava/tree/master/extras) folder (including submodules) but
+    the core Lava library has zero dependencies and can be built without fetching submodules.
+
+Then, for any platform, do this:
+
+1. Clone this repo with `--recursive` to get the submodules, or do `git submodule update --init`
+   after cloning.
+1. Install the LunarG Vulkan SDK.
+1. Invoke the following commands in your terminal.
+    ```bash
+    cd [path to repo]
+    mkdir .debug ; cd .debug ; cmake .. -G Ninja
+    ninja &amp;&amp; ./05_spinny_double
+    ```
+
+If you want to run every demo in sequence, do:
+
+```
+find 0* -exec ./{} \;
+```
+
+### LunarG SDK Instructions
+
+1. Download the tarball from their website.
+1. Copy or move its contents to `~/Vulkan`.  For example:
+    `mv ~/Downloads/vulkansdk-macos-1.1.73.0 ~/Vulkan`
+1. Add this to your `.bashrc`, replacing `macOS` as needed.
+
+```bash
+export VULKAN_SDK=$HOME/Vulkan
+export VK_LAYER_PATH=$VULKAN_SDK/macOS/etc/vulkan/explicit_layers.d
+export VK_ICD_FILENAMES=$VULKAN_SDK/macOS/etc/vulkan/icd.d/MoltenVK_icd.json
+export PATH="$VULKAN_SDK/macOS/bin:$PATH"
+```
+
+## Lava Components
+
+### LavaContext
+
+Use this class to create the standard litany of init-time Vulkan objects: an instance, a
+device, a couple command buffers, etc. It requires a callback function that will create the window
+surface, which can easily be provided as a lambda.
+
+!!! WARNING
+    Lava does not contain platform-specific code so it cannot know about the windowing system. The
+    app must provide a callback to create the **VkSurfaceKHR**.
+
+For example, if your app uses  [GLFW](http://www.glfw.org/), you could initialize LavaContext like
+so:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+LavaContext* context = LavaContext::create({
+    .depthBuffer = false,
+    .validation = true,
+    .samples = VK_SAMPLE_COUNT_4_BIT,
+    .createSurface = [window] (VkInstance instance) {
+        VkSurfaceKHR surface;
+        glfwCreateWindowSurface(instance, window, nullptr, &amp;surface);
+        return surface;
+    }
+});
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+After constructing the context, you can immediately extract the objects you need, such as the device
+and backbuffer resolution:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+const VkDevice device = context->getDevice();
+const VkExtent2D extent = context->getSize();
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To see all the getter methods and Config fields, take a look at
+[LavaContext.h](https://github.com/prideout/lava/blob/master/include/par/LavaContext.h).
+
+#### Frame API
+
+You can use LavaContext as an aid for submitting command buffers and presenting the swap chain.
+Simply wrap your command sequence in `beginFrame` / `endFrame` like this:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+VkCommandBuffer cmdbuffer = context->beginFrame();
+vkCmdBeginRenderPass(cmdbuffer, &amp;rpbi, VK_SUBPASS_CONTENTS_INLINE);
+vkCmdBindPipeline(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+vkCmdBindVertexBuffers(cmdbuffer, 0, 1, buffer, offsets);
+vkCmdDraw(cmdbuffer, 3, 1, 0, 0);
+vkCmdEndRenderPass(cmdbuffer);
+context->endFrame();
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The `beginFrame` method provides a double-buffered command buffer and waits for the previous buffer
+submission to finish executing. The `endFrame` method submits the command buffer and presents the
+backbuffer.
+
+In addition to `beginFrame` and `endFrame`, the context provides a `waitFrame` method, which allows
+clients to wait until the most recently rendered frame presents itself.
+
+#### Work API
+
+The work API in LavaContext is similar to beginFrame / endFrame, the main difference being that it
+does not automatically perform presentation or swapping.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+class LavaContext {
+    // ...
+    VkCommandBuffer beginWork() noexcept;
+    void endWork() noexcept;
+    void waitWork() noexcept;
+};
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The work API is especially useful for invoking `vkCmdCopy*` since it can be done at initialization
+time, before drawing a frame. See [LavaCpuBuffer](#LavaCpuBuffer) for an example.
+
+#### Recording API
+
+Another way to obtain a `VkCommandBuffer` from LavaContext is via the recording API:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+class LavaContext {
+    // ...
+    LavaRecording* createRecording() noexcept;
+    VkCommandBuffer beginRecording(LavaRecording*, uint32_t i) noexcept;
+    void endRecording() noexcept;
+    void presentRecording(LavaRecording*) noexcept;
+    void freeRecording(LavaRecording*) noexcept;
+    void waitRecording(LavaRecording*) noexcept;
+};
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Unlike `endFrame` and `endWork`, the `endRecording` method does not immediately submit the command
+buffer. For a usage example, see the
+[04_triangle_recorded](https://github.com/prideout/lava/blob/master/demos/04_triangle_recorded.cpp)
+demo.
+
+### LavaDescCache
+
+Upon construction, this consumes a count of uniform buffers and samplers and immediately creates a
+**VkDescriptorSetLayout** and **VkDescriptorPool**. Over its lifetime, it creates and evicts
+**VkDescriptorSet** according to the bindings that you push to it.
+
+For example, let's say you need only one binding for uniform buffers, and up to two textures. You
+can create the layout like this:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+VkDevice device = ...;
+VkBuffer ubo = ...;
+
+LavaDescCache* descriptors = LavaDescCache::create({
+    .device = device,
+    .uniformBuffers = { ubo }, // If you don't have a UBO yet, just say: { 0 }
+    .imageSamplers = { {}, {} }  // Declare two image samplers (not known yet)
+});
+const VkDescriptorSetLayout dlayout = descriptors->getLayout();
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can generate new descriptors by changing the bindings with `setUniformBuffer` and
+`setImageSampler`. For example:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+descriptors->setUniformBuffer(0, buf1);
+vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
+        descriptors->getDescPointer(), 0, 0);
+// draw here...
+
+descriptors->setUniformBuffer(0, buf2);
+descriptors->setImageSampler(1, myTexture);
+vkCmdBindDescriptorSets(cmdbuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, playout, 0, 1,
+        descriptors->getDescPointer(), 0, 0);
+// draw here...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can periodically evict unused descriptors by calling `releaseUnused`, which frees up descriptors
+that have been unused for a specified amount of time. For example:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+void MyRenderer::drawFrame() {
+    // ...
+    const uint64_t milliseconds = 1000;
+    mDescCache->releaseUnused(milliseconds);
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To see the complete API, take a look at
+[LavaDescCache.h](https://github.com/prideout/lava/blob/master/include/par/LavaDescCache.h).
+
+### LavaPipeCache
+
+This class makes it easy to create pipeline objects and modify rasterization state. Its construction
+config structure includes the vertex topology, descriptor set layouts (if any), render pass, and
+shaders. For example:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+LavaPipeCache* pipelines = LavaPipeCache::create({
+    .device = device,
+    .descriptorLayouts = {},
+    .renderPass = renderPass,
+    .vshader = vertexShaderModule,
+    .fshader = fragmentShaderModule,
+    .vertex = {
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .attributes = { {
+            .binding = 0u,
+            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .location = 0u,
+            .offset = 0u,
+        } },
+        .buffers = { {
+            .binding = 0u,
+            .stride = 12,
+        } }
+    }
+});
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can push changes to any of the above properties except the device and descriptor set layouts.
+After pushing a change, the subsequent call to `getPipeline()` will either create a new pipeline
+object, or return one from the cache. For example:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+VkPipeline pipeline = pipelines->getPipeline();
+// Draw stuff here...
+
+pipelines->setRenderPass(newRenderPass);
+pipelines->setRasterState(newRasterState);
+pipeline = pipelines->getPipeline();
+// Draw stuff here...
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Similar to **LavaDescCache**, unused descriptors can be evicted by calling `releaseUnused`. To see
+the complete API, take a look at
+[LavaPipeCache.h](https://github.com/prideout/lava/blob/master/include/par/LavaPipeCache.h).
+
+### LavaCpuBuffer
+
+This creates a single **VkBuffer**, using
+[vk_mem_alloc](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator) to consolidate
+**VkDeviceMemory** objects. Here's a usage example:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ C
+LavaCpuBuffer* stage = LavaCpuBuffer::create({
+    .device = device,
+    .gpu = gpu,
+    .size = sizeof(TRIANGLE_VERTICES),
+    .source = pverts,
+    .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+});
+
+delete pverts;
+
+VkCommandBuffer cmdbuffer = context->beginWork();
+const VkBufferCopy region = { .size = sizeof(TRIANGLE_VERTICES) };
+vkCmdCopyBuffer(cmdbuffer, stage->getBuffer(), destBuffer, 1, &amp;region);
+context->endWork();
+context->waitWork();
+
+delete stage;
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### LavaGpuBuffer
+
+Similar to [**LavaCpuBuffer**](#LavaCpuBuffer), but creates device-only memory.
+
+### LavaTexture
+
+This class won't load a texture from disk or decode a PNG file. However it does help create a
+**VkImage**, **VkImageLayout**, staging buffer, and layout transition.
+
+Constructing a texture is easy. Here's an example that uses
+[stb_image](https://github.com/nothings/stb) to decode a PNG file from disk:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~C
+uint8_t* texels = stbi_load(TEXTURE_FILENAME, &width, &height, 0, 4);
+LavaTexture* texture = LavaTexture::create({
+    .device = device, .gpu = gpu,
+    .size = width * height * 4u,
+    .source = texels,
+    .width = width,
+    .height = height,
+    .format = VK_FORMAT_R8G8B8A8_UNORM,
+});
+stbi_image_free(texels);
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+At this point, the staging buffer is populated but the image is not. The next step is to copy the
+staging data and transition the image layout. LavaTexture makes this convenient via the
+`uploadStage` method, which takes a **VkCommandBuffer** for input:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~C
+// Copy the data to device-only memory and transition to an optimal layout:
+texture->uploadStage(context->beginWork());
+context->endWork();
+context->waitWork();
+
+// At this point the texture is ready to be sampled from, and we can free the staging buffer:
+texture->freeStage();
+
+// Extract the Vulkan objects we need to set up a sampler:
+VkImageView imageView = texture->getImageView();
+VkImage image = texture->getImage();
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+## Amber Components
+
+The Lava core has very few dependencies, so we created an optional utility layer called **Amber**
+which is allowed to depend on outside repositories such as
+[glslang](https://github.com/KhronosGroup/glslang). This makes it easier to write simple demo apps.
+For now, the only Amber classes are:
+
+* [AmberApplication.h](https://github.com/prideout/lava/blob/master/include/par/AmberApplication.h)
+* [AmberProgram.h](https://github.com/prideout/lava/blob/master/include/par/AmberProgram.h)
+* [AmberCompiler.h](https://github.com/prideout/lava/blob/master/include/par/AmberCompiler.h)
+
+## Internal Guidelines
+
+### Visual Studio Code
+
+Do this to enable intellisense and markdown highlighting:
+
+```bash
+cd [path to repo]
+ln -s extras/vscode .vscode
+```
+
+### C++ Style
+
+The code is vertically compact, but no single line should be longer than 100 characters. All
+public-facing Lava types live in the `par` namespace.
+
+For `#include`, always use angle brackets unless including a private header that lives in the same
+directory. Includes are arranged in blocks, where each block is an alphabetized list of headers. The
+first block is composed of `par` headers, followed by a sorted list of blocks for each `extras/`
+library, followed by a block of C++ STL headers, followed by the block of standard C headers,
+followed by the block of private headers. For example:
+
+```cpp
+#include &lt;par/LavaContext.h&gt;
+#include &lt;par/LavaLog.h&gt;
+
+#include &lt;SPIRV/GlslangToSpv.h&gt;
+
+#include &lt;string&gt;
+#include &lt;vector&gt;
+
+#include "LavaInternal.h"
+```
+
+Methods and functions should have comments that are descriptive ("Opens the file") rather than
+imperative ("Open the file").
+
+<script>window.markdeepOptions = {tocStyle: 'none'};</script> 
+<script src="markdeep.min.js"></script>
+
+<!-- These get moved into HEAD by the fixup script -->
+<meta property="og:image"
+    content="https://github.com/prideout/lava/raw/master/extras/assets/icon.png" />
+<meta property="og:site_name" content="GitHub" />
+<meta property="og:type" content="object" />
+<meta property="og:title" content="prideout/lava" />
+<meta property="og:url" content="https://github.prideout.net/lava/" />
+<meta property="og:description" content="toy C++ library for vulkan experiments" />
+
+<!-- Do not use double-quotes or blank lines in the following script; they confuse markdeep. -->
+<script>
+window.setTimeout(function() {
+    // Move meta tags into <head>.
+    let head = document.querySelector('head');
+    let els = Array.prototype.slice.call(document.querySelectorAll('meta'));
+    for (let el of els) {
+        el.parentNode.removeChild(el);
+        head.insertBefore(el, null);
+    }
+    // Insert some new DOM elements at each heading.
+    let headers = document.querySelectorAll('.md h1, .md h2, .md h3, .md h4');
+    for (let header of headers) {
+        let targetAnchor1 = header.previousSibling;
+        let targetAnchor2 = targetAnchor1.previousSibling;
+        // Insert an anchor to this section.
+        let anchor = document.createElement('a'); 
+        anchor.appendChild(document.createTextNode('# '));  
+        anchor.setAttribute('href', '#' + targetAnchor2.name);
+        header.insertBefore(anchor, header.childNodes[0]);
+        // Insert a go-to-top link.
+        let gotop = document.createElement('a'); 
+        gotop.appendChild(document.createTextNode(' top'));  
+        gotop.setAttribute('href', '#');
+        gotop.classList.add('gotop');
+        header.appendChild(gotop);
+    }
+    // Remove <script>.
+    let scripts = Array.prototype.slice.call(document.querySelectorAll('script'));
+    for (let el of scripts) {
+        el.parentNode.removeChild(el);
+    }
+}, 100);
+</script>
